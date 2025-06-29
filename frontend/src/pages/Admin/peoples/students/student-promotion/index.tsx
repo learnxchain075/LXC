@@ -8,13 +8,12 @@ import { TableData } from "../../../../../core/data/interface";
 import CommonSelect from '../../../../../core/common/commonSelect';
 
 import { status, promotion, academicYear, allSection } from '../../../../../core/common/selectoption/selectoption';
-import { getClasses } from '../../../../services/teacher/classServices';
-import { getSections } from '../../../../services/teacher/sectionServices';
+
 
 
 import PredefinedDateRanges from '../../../../../core/common/datePicker';
 import TooltipOption from '../../../../../core/common/tooltipOption';
-import { bulkPromoteClass } from '../../../../services/admin/studentPromotionApi';
+
 
 import { bulkPromoteClass } from '../../../../../services/admin/studentPromotionApi';
 import { getClasses } from '../../../../../services/teacher/classServices';
@@ -403,8 +402,8 @@ const StudentPromotion = () => {
                                   <label className="form-label">Class</label>
                                   <CommonSelect
                                     className="select"
-                                    options={allClass}
-                                    defaultValue={allClass[0]}
+                                    options={classOptions}
+                                    defaultValue={classOptions[0]}
                                   />
                                 </div>
                               </div>
