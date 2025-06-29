@@ -14,6 +14,7 @@ import { IFeesForm, IFeesresponse } from "../feesService";
 import { getFeeById, getOverdueFees } from "../../../admin/feesApi";
 import { createFee, deleteFee, getAllFees, getFeesBySchool, updateFee } from "../../../accounts/feesServices";
 import { getSchoolStudents } from "../../../admin/studentRegister";
+import { getClassByschoolId, getAllStudentsInAclass } from "../../../teacher/classServices";
 import { closeModal } from "../../../../pages/Common/modalclose";
 
 const FeesManagement = () => {
@@ -43,28 +44,54 @@ const FeesManagement = () => {
     }
   };
 
-    const [students, setStudents] = useState<any[]>([]);
-const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
-const [searchKeyword, setSearchKeyword] = useState<string>("");
-    const fetchStudents = async () => {
-      const schoolId = localStorage.getItem('schoolId');
-      if (!schoolId) return;
-      try {
-        const res = await getSchoolStudents(schoolId);
-        setStudents(res.data);
-      } catch (err) {
-        console.error('Failed to fetch students', err);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [students, setStudents] = useState<any[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
+  const [searchKeyword, setSearchKeyword] = useState<string>("");
+
+  const fetchClasses = async () => {
+    const schoolId = localStorage.getItem("schoolId");
+    if (!schoolId) return;
+    try {
+      const res = await getClassByschoolId(schoolId);
+      setClasses(res.data?.data || []);
+    } catch (err) {
+      console.error("Failed to fetch classes", err);
+    }
+  };
+
+  const fetchStudents = async (classId: string) => {
+    if (!classId) {
+      setStudents([]);
+      return;
+    }
+    try {
+      const res = await getAllStudentsInAclass(classId);
+      const responseData = (res as any)?.data;
+      let studentsData: any[] = [];
+      if (responseData?.students && Array.isArray(responseData.students)) {
+        studentsData = responseData.students;
+      } else if (responseData?.data && Array.isArray(responseData.data)) {
+        studentsData = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        studentsData = responseData;
       }
-    };
+      setStudents(studentsData);
+    } catch (err) {
+      console.error("Failed to fetch students", err);
+    }
+  };
  const handleStudentSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedClassId) return;
     const keyword = e.target.value.trim().toLowerCase();
     setSearchKeyword(e.target.value);
     const filtered = students.filter((s) =>
       s.rollNo?.toLowerCase().includes(keyword)
     );
-  
+
     setFilteredStudents(filtered);
-  
+
     if (filtered.length === 1) {
       setFormData({ ...formData, studentId: filtered[0].id });
     } else {
@@ -86,9 +113,9 @@ const [searchKeyword, setSearchKeyword] = useState<string>("");
       setLoading(false);
     }
   };
-useEffect(()=>{
-  fetchStudents();
-},[])
+useEffect(() => {
+  fetchClasses();
+}, []);
   useEffect(() => {
     fetchFees();
 
@@ -245,6 +272,15 @@ useEffect(()=>{
       ),
     },
   ];
+
+  const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    setSelectedClassId(id);
+    setSearchKeyword("");
+    setFilteredStudents([]);
+    setFormData({ ...formData, studentId: "" });
+    fetchStudents(id);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -469,6 +505,22 @@ useEffect(()=>{
             <div className="modal-body">
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
+                  <label className="form-label">Class</label>
+                  <select
+                    className="form-control"
+                    value={selectedClassId}
+                    onChange={handleClassChange}
+                  >
+                    <option value="">Select Class</option>
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                        {cls.section ? `, ${cls.section}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-3">
                   <label className="form-label">Student RollNo</label>
                   {/* <input
                     type="text"
@@ -485,6 +537,7 @@ useEffect(()=>{
     value={searchKeyword}
     onChange={handleStudentSearch}
     placeholder="Search Student Roll No"
+    disabled={!selectedClassId}
   />
   {filteredStudents.length > 0 && (
     <ul className="dropdown-menu show position-static border">
