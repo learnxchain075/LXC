@@ -11,15 +11,17 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
     (config) => {
+        // Ensure headers object exists to avoid runtime errors when passing
+        // a config without headers (e.g. when setting only responseType).
+        if (!config.headers) config.headers = {};
+
         if (!config.headers.Authorization) {
             const jwt = localStorage.getItem(AppConfig.LOCAL_STORAGE_ACCESS_TOKEN_KEY);
-
 
             if (jwt !== "") {
                 config.headers["auth-token"] = `${jwt}`;
             }
         }
-
 
         return config;
     },
