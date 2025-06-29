@@ -47,7 +47,7 @@ COPY . .
 RUN npm run build
 
 # Expose backend port
-EXPOSE 5000
+EXPOSE 5001
 
 # Start the server (you can change this to "dev" for dev container)
 CMD ["node", "dist/index.js"]
