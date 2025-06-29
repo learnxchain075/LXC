@@ -12,7 +12,7 @@ export default defineConfig({
     global: 'window' // Fix for Dragula.js expecting `global`
   },
   server: {
-    port: 3001,
+    port: 3000,
     open: true,
   },
   cacheDir: '.vite',
