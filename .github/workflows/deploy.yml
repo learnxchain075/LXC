@@ -1,5 +1,5 @@
 # This is a GitHub Actions workflow file that builds and pushes Docker images for the teenz skin project.
-name: Deploy teenz skin
+name: Deploy LearnXChain
 
 on:
   push:
