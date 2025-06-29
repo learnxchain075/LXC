@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../db/prisma";
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import { createFeeInvoice } from "../../utils/invoiceUtils";
+import { createFeeInvoice, createCashFeeReceipts } from "../../utils/invoiceUtils";
 import { createFeeOrderSchema, verifyFeePaymentSchema } from "../../validations/payment/feePaymentValidation";
 import { razorpayInstance } from "../../config/razorpay";
 
@@ -173,6 +173,7 @@ export const verifyRazorpayPayment = async (req: Request, res: Response): Promis
     // }
 
     const invoiceDetails = await createFeeInvoice(payment.id);
+    const receipt = await createCashFeeReceipts(payment.id, req.user?.name || '', paymentDetails.method);
 
     res.status(200).json({
       message: "Payment successfully verified",
@@ -181,6 +182,7 @@ export const verifyRazorpayPayment = async (req: Request, res: Response): Promis
       paymentId: payment.id,
       invoiceNumber: invoiceDetails?.invoiceNumber,
       invoiceUrl: invoiceDetails?.url,
+      receipt,
     });
   } catch (error) {
     console.error("Error verifying payment:", error);
