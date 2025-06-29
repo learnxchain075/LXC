@@ -87,7 +87,9 @@ const FeesManagement = () => {
     const keyword = e.target.value.trim().toLowerCase();
     setSearchKeyword(e.target.value);
     const filtered = students.filter((s) =>
-      s.rollNo?.toLowerCase().includes(keyword)
+      s.rollNo?.toLowerCase().includes(keyword) ||
+      s.user?.name?.toLowerCase().includes(keyword) ||
+      s.fatherName?.toLowerCase().includes(keyword)
     );
 
     setFilteredStudents(filtered);
@@ -488,7 +490,7 @@ useEffect(() => {
 
       {/* Add/Edit Fee Modal */}
       <div className="modal fade" id="addFeeModal" tabIndex={-1} aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-dialog modal-dialog-centered modal-lg">
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">
@@ -521,7 +523,9 @@ useEffect(() => {
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label">Student RollNo</label>
+
+                  <label className="form-label">Student</label>
+
                   {/* <input
                     type="text"
                     className="form-control"
@@ -536,7 +540,9 @@ useEffect(() => {
     className="form-control"
     value={searchKeyword}
     onChange={handleStudentSearch}
-    placeholder="Search Student Roll No"
+
+    placeholder="Search Student Roll No or Name"
+
     disabled={!selectedClassId}
   />
   {filteredStudents.length > 0 && (
@@ -550,11 +556,11 @@ useEffect(() => {
               ...prev,
               studentId: student.id,
             }));
-            setSearchKeyword(student.rollNo); 
-            setFilteredStudents([]); 
+            setSearchKeyword(`${student.rollNo} - ${student.user?.name || student.fatherName}`);
+            setFilteredStudents([]);
           }}
         >
-          {student.rollNo} - {student.fatherName} 
+          {student.rollNo} - {student.user?.name || student.fatherName}
         </li>
       ))}
     </ul>
