@@ -135,10 +135,10 @@ export const withdrawStudent = async (req: Request, res: Response): Promise<any>
       where: { id: studentId },
       data: { status: 'INACTIVE', transferCertificate: certificateUrl },
     });
-    res.status(200).json({ message: 'Student status updated to INACTIVE', transferCertificate: certificateUrl });
-
-    await prisma.student.update({ where: { id: studentId }, data: { status: "INACTIVE" } });
-    res.status(200).json({ message: "Student status updated to INACTIVE" });
+    return res.status(200).json({
+      message: 'Student status updated to INACTIVE',
+      transferCertificate: certificateUrl,
+    });
 
   } catch (error: any) {
     console.error("Withdraw Error:", error);
