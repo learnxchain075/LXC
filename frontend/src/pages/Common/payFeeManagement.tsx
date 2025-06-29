@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Modal, Button } from "react-bootstrap";
 import { getClassByschoolId, getAllStudentsInAclass } from "../../services/teacher/classServices";
 import { toast, ToastContainer } from "react-toastify";
 import BaseApi from "../../services/BaseApi";
@@ -73,6 +74,31 @@ export const PayFeeManagement = () => {
   const dispatch = useDispatch();
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [razorpayKey, setRazorpayKey] = useState<string>("rzp_test_EJh0TkmUgkZNyG");
+  const [receiptPreview, setReceiptPreview] = useState<{ userUrl: string; officeUrl?: string } | null>(null);
+
+  const fetchBlobUrl = async (url: string) => {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return window.URL.createObjectURL(blob);
+  };
+
+  const openReceiptPreview = async (userUrl: string, officeUrl?: string) => {
+    try {
+      const userBlob = await fetchBlobUrl(userUrl);
+      const officeBlob = officeUrl ? await fetchBlobUrl(officeUrl) : undefined;
+      setReceiptPreview({ userUrl: userBlob, officeUrl: officeBlob });
+    } catch (err) {
+      toast.error("Failed to load receipt preview");
+    }
+  };
+
+  const closeReceiptPreview = () => {
+    if (receiptPreview) {
+      URL.revokeObjectURL(receiptPreview.userUrl);
+      if (receiptPreview.officeUrl) URL.revokeObjectURL(receiptPreview.officeUrl);
+    }
+    setReceiptPreview(null);
+  };
 
   // Fetch payment settings on component mount
   const fetchPaymentSettings = async (schoolId?: string) => {
@@ -361,12 +387,10 @@ export const PayFeeManagement = () => {
                 await fetchStudentFee(formData.studentId);
               }
               if (verifyRes.data.receipt) {
-                if (verifyRes.data.receipt.userUrl) {
-                  await downloadUrl(verifyRes.data.receipt.userUrl, `receipt_user_${verifyRes.data.paymentId}.pdf`);
-                }
-                if (verifyRes.data.receipt.officeUrl) {
-                  await downloadUrl(verifyRes.data.receipt.officeUrl, `receipt_office_${verifyRes.data.paymentId}.pdf`);
-                }
+                await openReceiptPreview(
+                  verifyRes.data.receipt.userUrl,
+                  verifyRes.data.receipt.officeUrl,
+                );
               } else if (verifyRes.data.paymentId) {
                 await handleDownloadReceipt(verifyRes.data.paymentId);
               }
@@ -631,6 +655,37 @@ export const PayFeeManagement = () => {
     <>
       <div className={isAdminOrSuperadmin ? "page-wrapper min-vh-100" : "p-4 min-vh-100"}>
         <ToastContainer position="top-center" autoClose={3000} />
+
+        {/* Receipt Preview Modal */}
+        <Modal show={!!receiptPreview} onHide={closeReceiptPreview} size="lg" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Fee Receipt</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {receiptPreview && (
+              <iframe
+                title="Fee Receipt"
+                src={receiptPreview.userUrl}
+                style={{ width: '100%', height: '500px', border: '1px solid #ccc' }}
+              ></iframe>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            {receiptPreview?.userUrl && (
+              <a href={receiptPreview.userUrl} download={`receipt_user.pdf`} className="btn btn-primary">
+                Download User Copy
+              </a>
+            )}
+            {receiptPreview?.officeUrl && (
+              <a href={receiptPreview.officeUrl} download={`receipt_office.pdf`} className="btn btn-secondary">
+                Download Office Copy
+              </a>
+            )}
+            <Button variant="secondary" onClick={() => { const win = window.open(receiptPreview?.userUrl || ''); win?.print(); }}>
+              Print
+            </Button>
+          </Modal.Footer>
+        </Modal>
         
         {/* Payment Processing Overlay */}
         {paymentProcessing && (
