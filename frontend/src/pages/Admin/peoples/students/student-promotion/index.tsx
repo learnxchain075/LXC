@@ -11,7 +11,10 @@ import { getClasses } from '../../../../services/teacher/classServices';
 import { getSections } from '../../../../services/teacher/sectionServices';
 import PredefinedDateRanges from '../../../../../core/common/datePicker';
 import TooltipOption from '../../../../../core/common/tooltipOption';
-import { bulkPromoteClass } from '../../../../services/admin/studentPromotionApi';
+
+import { bulkPromoteClass } from '../../../../../services/admin/studentPromotionApi';
+// import { bulkPromoteClass } from '../../../../services/admin/studentPromotionApi';
+
 
 const StudentPromotion = () => {
   const [isPromotion, setIsPromotion] = useState<boolean>(false);
@@ -27,6 +30,7 @@ const StudentPromotion = () => {
     toSession: "2025-2026",
   });
   const routes = all_routes;
+
 
   useEffect(() => {
     getClasses()
@@ -60,6 +64,18 @@ const StudentPromotion = () => {
   const handlePromoteStudents = async () => {
     try {
       await bulkPromoteClass(form);
+
+  const handlePromoteStudents = async () => {
+    try {
+      await bulkPromoteClass({
+        fromClassId: "class1",
+        toClassId: "class2",
+        fromSection: "A",
+        toSection: "B",
+        academicYear: "2024-2025",
+        toSession: "2025-2026",
+      });
+
       console.log("Promotion request sent");
     } catch (error) {
       console.error("Promotion error", error);
