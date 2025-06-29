@@ -523,7 +523,9 @@ useEffect(() => {
                   </select>
                 </div>
                 <div className="mb-3">
+
                   <label className="form-label">Student</label>
+
                   {/* <input
                     type="text"
                     className="form-control"
@@ -538,7 +540,9 @@ useEffect(() => {
     className="form-control"
     value={searchKeyword}
     onChange={handleStudentSearch}
+
     placeholder="Search Student Roll No or Name"
+
     disabled={!selectedClassId}
   />
   {filteredStudents.length > 0 && (
