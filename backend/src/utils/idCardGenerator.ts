@@ -2,6 +2,8 @@ import PDFDocument from 'pdfkit';
 import bwipjs from 'bwip-js';
 import { Student, User, Class, School } from '@prisma/client';
 
+
+
 export const generateStudentIdCard = async (
   student: Student & { user: User; class: Class; school: School & { user: User } }
 ): Promise<Buffer> => {
