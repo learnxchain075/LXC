@@ -74,31 +74,32 @@ export const PayFeeManagement = () => {
   const dispatch = useDispatch();
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [razorpayKey, setRazorpayKey] = useState<string>("rzp_test_EJh0TkmUgkZNyG");
-  const [receiptPreview, setReceiptPreview] = useState<{ userUrl: string; officeUrl?: string } | null>(null);
+const [receiptPreview, setReceiptPreview] = useState<{ userUrl: string; officeUrl?: string } | null>(null);
 
-  const fetchBlobUrl = async (url: string) => {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return window.URL.createObjectURL(blob);
-  };
+const fetchBlobUrl = async (url: string) => {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return window.URL.createObjectURL(blob);
+};
 
-  const openReceiptPreview = async (userUrl: string, officeUrl?: string) => {
-    try {
-      const userBlob = await fetchBlobUrl(userUrl);
-      const officeBlob = officeUrl ? await fetchBlobUrl(officeUrl) : undefined;
-      setReceiptPreview({ userUrl: userBlob, officeUrl: officeBlob });
-    } catch (err) {
-      toast.error("Failed to load receipt preview");
-    }
-  };
+const openReceiptPreview = async (userUrl: string, officeUrl?: string) => {
+  try {
+    const userBlob = await fetchBlobUrl(userUrl);
+    const officeBlob = officeUrl ? await fetchBlobUrl(officeUrl) : undefined;
+    setReceiptPreview({ userUrl: userBlob, officeUrl: officeBlob });
+  } catch (err) {
+    toast.error("Failed to load receipt preview");
+  }
+};
 
-  const closeReceiptPreview = () => {
-    if (receiptPreview) {
-      URL.revokeObjectURL(receiptPreview.userUrl);
-      if (receiptPreview.officeUrl) URL.revokeObjectURL(receiptPreview.officeUrl);
-    }
-    setReceiptPreview(null);
-  };
+const closeReceiptPreview = () => {
+  if (receiptPreview) {
+    URL.revokeObjectURL(receiptPreview.userUrl);
+    if (receiptPreview.officeUrl) URL.revokeObjectURL(receiptPreview.officeUrl);
+  }
+  setReceiptPreview(null);
+};
+
 
   // Fetch payment settings on component mount
   const fetchPaymentSettings = async (schoolId?: string) => {
@@ -387,10 +388,12 @@ export const PayFeeManagement = () => {
                 await fetchStudentFee(formData.studentId);
               }
               if (verifyRes.data.receipt) {
+
                 await openReceiptPreview(
                   verifyRes.data.receipt.userUrl,
                   verifyRes.data.receipt.officeUrl,
                 );
+
               } else if (verifyRes.data.paymentId) {
                 await handleDownloadReceipt(verifyRes.data.paymentId);
               }
@@ -657,7 +660,9 @@ export const PayFeeManagement = () => {
         <ToastContainer position="top-center" autoClose={3000} />
 
         {/* Receipt Preview Modal */}
+
         <Modal show={!!receiptPreview} onHide={closeReceiptPreview} size="lg" centered>
+
           <Modal.Header closeButton>
             <Modal.Title>Fee Receipt</Modal.Title>
           </Modal.Header>
@@ -672,12 +677,16 @@ export const PayFeeManagement = () => {
           </Modal.Body>
           <Modal.Footer>
             {receiptPreview?.userUrl && (
+
               <a href={receiptPreview.userUrl} download={`receipt_user.pdf`} className="btn btn-primary">
+
                 Download User Copy
               </a>
             )}
             {receiptPreview?.officeUrl && (
+
               <a href={receiptPreview.officeUrl} download={`receipt_office.pdf`} className="btn btn-secondary">
+
                 Download Office Copy
               </a>
             )}
