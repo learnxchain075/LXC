@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ImageWithBasePath from "../../../../../core/common/imageWithBasePath";
 import { all_routes } from "../../../../../router/all_routes";
@@ -6,13 +6,65 @@ import Table from "../../../../../core/common/dataTable/index";
 import { TableData } from "../../../../../core/data/interface";
 // import { Studentlist } from '../../../../core/data/json/studentList';
 import CommonSelect from '../../../../../core/common/commonSelect';
-import { status, promotion, academicYear, allClass, allSection } from '../../../../../core/common/selectoption/selectoption';
+import { status, promotion, academicYear, allSection } from '../../../../../core/common/selectoption/selectoption';
+import { getClasses } from '../../../../services/teacher/classServices';
+import { getSections } from '../../../../services/teacher/sectionServices';
 import PredefinedDateRanges from '../../../../../core/common/datePicker';
 import TooltipOption from '../../../../../core/common/tooltipOption';
+import { bulkPromoteClass } from '../../../../services/admin/studentPromotionApi';
 
 const StudentPromotion = () => {
   const [isPromotion, setIsPromotion] = useState<boolean>(false);
+  const [classOptions, setClassOptions] = useState<{ value: string; label: string }[]>([]);
+  const [fromSections, setFromSections] = useState<{ value: string; label: string }[]>([]);
+  const [toSections, setToSections] = useState<{ value: string; label: string }[]>([]);
+  const [form, setForm] = useState({
+    fromClassId: "",
+    toClassId: "",
+    fromSection: "",
+    toSection: "",
+    academicYear: "2024-2025",
+    toSession: "2025-2026",
+  });
   const routes = all_routes;
+
+  useEffect(() => {
+    getClasses()
+      .then((res) => {
+        const mapped = res.data.map((c: any) => ({ value: c.id, label: c.name }));
+        setClassOptions(mapped);
+      })
+      .catch(() => setClassOptions([]));
+  }, []);
+
+  useEffect(() => {
+    if (form.fromClassId) {
+      getSections(form.fromClassId)
+        .then((res) => setFromSections(res.data.map((s: any) => ({ value: s.id, label: s.name }))))
+        .catch(() => setFromSections([]));
+    } else {
+      setFromSections([]);
+    }
+  }, [form.fromClassId]);
+
+  useEffect(() => {
+    if (form.toClassId) {
+      getSections(form.toClassId)
+        .then((res) => setToSections(res.data.map((s: any) => ({ value: s.id, label: s.name }))))
+        .catch(() => setToSections([]));
+    } else {
+      setToSections([]);
+    }
+  }, [form.toClassId]);
+
+  const handlePromoteStudents = async () => {
+    try {
+      await bulkPromoteClass(form);
+      console.log("Promotion request sent");
+    } catch (error) {
+      console.error("Promotion error", error);
+    }
+  };
   // const data = Studentlist;
   const columns = [
     {
@@ -133,6 +185,9 @@ const StudentPromotion = () => {
                 </div>
                 <div className="d-flex my-xl-auto right-content align-items-center flex-wrap">
                   <TooltipOption />
+                  <Link to={routes.studentList} className="btn btn-light ms-2">
+                    Exit
+                  </Link>
 
                 </div>
               </div>
@@ -172,16 +227,16 @@ const StudentPromotion = () => {
                                 <label className="form-label">Class</label>
                                 <CommonSelect
                                   className="select"
-                                  options={allClass}
-                                  defaultValue={allClass[0]}
+                                  options={classOptions}
+                                  onChange={(o) => setForm({ ...form, fromClassId: o?.value || "" })}
                                 />
                               </div>
                               <div className=" flex-fill mb-0">
                                 <label className="form-label">Section</label>
                                 <CommonSelect
                                   className="select"
-                                  options={allSection}
-                                  defaultValue={allSection[0]}
+                                  options={fromSections}
+                                  onChange={(o) => setForm({ ...form, fromSection: o?.value || "" })}
                                 />
                               </div>
                             </div>
@@ -206,6 +261,7 @@ const StudentPromotion = () => {
                             <CommonSelect
                               className="select"
                               options={academicYear}
+                              onChange={(o) => setForm({ ...form, toSession: o?.value || "" })}
                               defaultValue={academicYear[0]}
                             />
                           </div>
@@ -219,16 +275,16 @@ const StudentPromotion = () => {
                                 <label className="form-label">Class</label>
                                 <CommonSelect
                                   className="select"
-                                  options={allClass}
-                                  defaultValue={allClass[0]}
+                                  options={classOptions}
+                                  onChange={(o) => setForm({ ...form, toClassId: o?.value || "" })}
                                 />
                               </div>
                               <div className=" flex-fill ">
                                 <label className="form-label">Section</label>
                                 <CommonSelect
                                   className="select"
-                                  options={allSection}
-                                  defaultValue={allSection[0]}
+                                  options={toSections}
+                                  onChange={(o) => setForm({ ...form, toSection: o?.value || "" })}
                                 />
                               </div>
                             </div>
@@ -459,6 +515,7 @@ const StudentPromotion = () => {
                   className="btn btn-danger"
                   id="toprightToastBtn"
                   data-bs-dismiss="modal"
+                  onClick={handlePromoteStudents}
                 >
                   Promote
                 </Link>

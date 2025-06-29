@@ -6,6 +6,7 @@ import { TableData } from "../../../../../core/data/interface";
 import StudentModals from "../studentModals";
 import Table from "../../../../../core/common/dataTable/index";
 import PredefinedDateRanges from "../../../../../core/common/datePicker";
+import { withdrawStudent } from "../../../../../services/admin/studentPromotionApi";
 import {
   allClass,
   allSection,
@@ -43,6 +44,7 @@ const userobj=useSelector((state:any)=>state.auth.userobj);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [showCollectFeesModal, setShowCollectFeesModal] = useState(false);
   const [showAddFeesModal, setShowAddFeesModal] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
 
 useEffect(()=>{
     const fetchStudentList = async () => {
@@ -83,6 +85,18 @@ fetchdata();
   const handleAddFees = (student: IStudentForm) => {
     setSelectedStudent(student);
     setShowAddFeesModal(true);
+  };
+
+  const handleExitStudent = async () => {
+    if (!selectedStudent) return;
+    try {
+      await withdrawStudent({ studentId: selectedStudent.id });
+      setStudentList((prev) => prev.map((s) => (s.id === selectedStudent.id ? { ...s, status: 'INACTIVE' } : s)));
+    } catch (err) {
+      console.error('Exit error', err);
+    } finally {
+      setShowExitModal(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -284,6 +298,19 @@ fetchdata();
                   >
                     <i className="ti ti-arrow-ramp-right-2 me-2" />
                     Promote Student
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="dropdown-item rounded-1"
+                    to="#"
+                    onClick={() => {
+                      setShowExitModal(true);
+                      setSelectedStudent(record);
+                    }}
+                  >
+                    <i className="ti ti-logout me-2" />
+                    Exit Student
                   </Link>
                 </li>
                 <li>
@@ -566,6 +593,26 @@ fetchdata();
         onClose={() => setShowAddFeesModal(false)}
         selectedStudent={selectedStudent}
       />
+      {showExitModal && selectedStudent && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-body text-center">
+                <h4>Confirm Exit</h4>
+                <p>Are you sure you want to withdraw {selectedStudent.user?.name}?</p>
+                <div className="d-flex justify-content-center">
+                  <button className="btn btn-light me-3" onClick={() => setShowExitModal(false)}>
+                    Cancel
+                  </button>
+                  <button className="btn btn-danger" onClick={handleExitStudent}>
+                    Exit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
