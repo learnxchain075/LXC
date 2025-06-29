@@ -1,44 +1,77 @@
 import PDFDocument from 'pdfkit';
+import bwipjs from 'bwip-js';
 import { Student, User, Class, School } from '@prisma/client';
 
 export const generateStudentIdCard = async (
   student: Student & { user: User; class: Class; school: School & { user: User } }
 ): Promise<Buffer> => {
-  const doc = new PDFDocument({ size: [350, 220], margin: 20 });
+  const doc = new PDFDocument({ size: [350, 220], margin: 5 });
   const buffers: Buffer[] = [];
   doc.on('data', d => buffers.push(d));
 
-  // Background
-  doc.rect(0, 0, 350, 220).fill('#f5f5f5');
+  // Theme colors
+  const primary = '#0d47a1';
+  const accent = '#42a5f5';
+  const bg = '#ffffff';
 
-  // Header - school name and address
-  doc.fillColor('#000').fontSize(16).text(student.school.schoolName, {
+  // Background and border
+  doc.rect(0, 0, 350, 220).fill(bg);
+  doc.roundedRect(0.5, 0.5, 349, 219, 8).lineWidth(2).stroke(primary);
+
+  // Header with school name and logo
+  doc.fillColor(primary).rect(0, 0, 350, 40).fill();
+  if (student.school.schoolLogo) {
+    try {
+      doc.image(student.school.schoolLogo, 10, 5, { width: 30, height: 30 });
+    } catch (err) {
+      /* ignore image errors */
+    }
+  }
+  doc.fillColor('#fff').fontSize(16).text(student.school.schoolName, 50, 12, {
     align: 'center'
   });
-  doc.fontSize(9).text(student.school.user.address, {
-    align: 'center'
-  });
-  doc.moveDown();
 
-  // Photo
+  // Student photo
   if (student.user.profilePic) {
     try {
-      doc.image(student.user.profilePic, 20, 70, { width: 60, height: 60 });
+      doc
+        .rect(20, 60, 70, 80)
+        .lineWidth(1)
+        .stroke(accent);
+      doc.image(student.user.profilePic, 20, 60, { width: 70, height: 80, align: 'center' });
     } catch (err) {
-      // ignore image errors
+      /* ignore image errors */
     }
   }
 
-  // Student info
-  const startY = student.user.profilePic ? 70 : doc.y;
-  const textX = 90;
-  doc.fontSize(12)
-    .text(`Name: ${student.user.name}`, textX, startY)
-    .text(`Admission No: ${student.admissionNo}`, textX, startY + 20)
-    .text(`Class: ${student.class.name}`, textX, startY + 40)
-    .text(`Roll No: ${student.rollNo}`, textX, startY + 60)
-    .text(`Blood Group: ${student.user.bloodType}`, textX, startY + 80)
-    .text(`Contact: ${student.user.phone}`, textX, startY + 100);
+  // Student information
+  const textX = 110;
+  const startY = 60;
+  doc.fillColor(primary)
+    .fontSize(12)
+    .text(`Name:`, textX, startY)
+    .text(`Admission No:`, textX, startY + 18)
+    .text(`Class:`, textX, startY + 36)
+    .text(`Roll No:`, textX, startY + 54);
+  doc.fillColor('#000')
+    .text(student.user.name, textX + 80, startY)
+    .text(student.admissionNo, textX + 80, startY + 18)
+    .text(student.class.name, textX + 80, startY + 36)
+    .text(student.rollNo, textX + 80, startY + 54);
+
+  // Barcode section
+  try {
+    const barcode = await bwipjs.toBuffer({
+      bcid: 'code128',
+      text: student.admissionNo,
+      scale: 2,
+      height: 10,
+      includetext: false
+    });
+    doc.image(barcode, 20, 170, { width: 150, height: 40 });
+  } catch (err) {
+    console.error('Barcode generation failed', err);
+  }
 
   doc.end();
 
