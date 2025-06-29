@@ -9,10 +9,27 @@ import CommonSelect from '../../../../../core/common/commonSelect';
 import { status, promotion, academicYear, allClass, allSection } from '../../../../../core/common/selectoption/selectoption';
 import PredefinedDateRanges from '../../../../../core/common/datePicker';
 import TooltipOption from '../../../../../core/common/tooltipOption';
+import { bulkPromoteClass } from '../../../../services/admin/studentPromotionApi';
 
 const StudentPromotion = () => {
   const [isPromotion, setIsPromotion] = useState<boolean>(false);
   const routes = all_routes;
+
+  const handlePromoteStudents = async () => {
+    try {
+      await bulkPromoteClass({
+        fromClassId: "class1",
+        toClassId: "class2",
+        fromSection: "A",
+        toSection: "B",
+        academicYear: "2024-2025",
+        toSession: "2025-2026",
+      });
+      console.log("Promotion request sent");
+    } catch (error) {
+      console.error("Promotion error", error);
+    }
+  };
   // const data = Studentlist;
   const columns = [
     {
@@ -459,6 +476,7 @@ const StudentPromotion = () => {
                   className="btn btn-danger"
                   id="toprightToastBtn"
                   data-bs-dismiss="modal"
+                  onClick={handlePromoteStudents}
                 >
                   Promote
                 </Link>
