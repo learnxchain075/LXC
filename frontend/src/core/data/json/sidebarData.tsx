@@ -191,6 +191,7 @@ export const SidebarData: SidebarItem[] = [
             roles: ["admin"],
           },
           { label: "Student Promotion", link: routes.studentPromotion },
+          { label: "Student ID Card", link: routes.studentIdCard },
         ],
       },
       {

@@ -298,7 +298,8 @@ const AdminMenuItems = () => {
             { "name": "All Students", "route": all_routes.studentList, "icon": "ti ti-list" },
             // { "name": "Student List", "route": all_routes.studentGrid, "icon": "ti ti-users" },
             // { "name": "Student Details", "route": all_routes.studentDetail, "icon": "ti ti-id" },
-            { "name": "Student Promotion", "route": all_routes.studentPromotion, "icon": "ti ti-arrow-up" }
+            { "name": "Student Promotion", "route": all_routes.studentPromotion, "icon": "ti ti-arrow-up" },
+            { "name": "Student ID Card", "route": all_routes.studentIdCard, "icon": "ti ti-id-badge" }
           ]
         },
         {
