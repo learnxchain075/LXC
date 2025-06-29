@@ -46,7 +46,7 @@ export async function recordCashPayment(req: Request, res: Response, next: NextF
       });
     }
 
-    const receipt = await createCashFeeReceipts(payment.id, req.user?.name || '');
+    const receipt = await createCashFeeReceipts(payment.id, req.user?.name || '', 'Cash');
 
     res.status(201).json({ payment, receipt });
   } catch (error) {

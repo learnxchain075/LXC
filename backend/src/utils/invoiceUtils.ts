@@ -234,6 +234,7 @@ import { generateCashFeeReceiptHtml, CashFeeReceiptData } from '../template/feeR
 export const createCashFeeReceipts = async (
   paymentId: string,
   receivedBy: string,
+  paymentMode: string = 'Cash',
 ): Promise<{ invoiceNumber: string; userUrl: string; officeUrl: string } | undefined> => {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
@@ -279,7 +280,7 @@ export const createCashFeeReceipts = async (
     gstAmount,
     totalAmount: payment.amount,
     amountInWords,
-    paymentMode: 'Cash',
+    paymentMode,
     receivedBy,
     receivedFrom: fee.student.user?.name || 'N/A',
     qrImage,

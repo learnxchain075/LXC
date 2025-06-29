@@ -360,8 +360,15 @@ export const PayFeeManagement = () => {
               } else {
                 await fetchStudentFee(formData.studentId);
               }
-              if (verifyRes.data.paymentId) {
-                await handleDownloadReceipt(verifyRes.data.paymentId);
+              if (verifyRes.data.receipt) {
+                if (verifyRes.data.receipt.userUrl) {
+                  openInNewTab(verifyRes.data.receipt.userUrl);
+                }
+                if (verifyRes.data.receipt.officeUrl) {
+                  openInNewTab(verifyRes.data.receipt.officeUrl);
+                }
+              } else if (verifyRes.data.paymentId) {
+                await handleOpenReceipt(verifyRes.data.paymentId);
               }
               resetForm();
             } else {
@@ -419,19 +426,17 @@ export const PayFeeManagement = () => {
     handlePayment();
   };
 
-  const handleDownloadReceipt = async (paymentId: string) => {
+  const openInNewTab = (url: string) => {
+    window.open(url, '_blank');
+  };
+
+  const handleOpenReceipt = async (paymentId: string) => {
     try {
       const res = await BaseApi.getRequest(`/school/fee/invoice/${paymentId}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `receipt_${paymentId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.open(url, '_blank');
     } catch (err) {
-      toast.error('Failed to download receipt');
+      toast.error('Failed to open receipt');
     }
   };
 
@@ -444,7 +449,7 @@ export const PayFeeManagement = () => {
       fixed: "left" as const,
       render: (student: any, record: IFeeData) => (
         <div>
-          <div className="fw-bold">{record?.student?.name || "N/A"}</div>
+          <div className="fw-bold">{record?.student?.user?.name || "N/A"}</div>
           <div className="text-muted small">{record?.student?.rollNo || "N/A"}</div>
         </div>
       ),
@@ -573,7 +578,7 @@ export const PayFeeManagement = () => {
             <button
               type="button"
               className="btn btn-sm btn-outline-primary"
-              onClick={() => handleDownloadReceipt(record.id)}
+              onClick={() => handleOpenReceipt(record.id)}
             >
               <i className="ti ti-download me-1"></i>Download
             </button>
