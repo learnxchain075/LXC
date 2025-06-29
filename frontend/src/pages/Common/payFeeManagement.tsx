@@ -76,16 +76,21 @@ export const PayFeeManagement = () => {
   const [razorpayKey, setRazorpayKey] = useState<string>("rzp_test_EJh0TkmUgkZNyG");
 const [receiptPreview, setReceiptPreview] = useState<{ userUrl: string; officeUrl?: string } | null>(null);
 
-const fetchBlobUrl = async (url: string) => {
-  const res = await fetch(url);
-  const blob = await res.blob();
+const fetchReceiptBlob = async (paymentId: string, copy: 'user' | 'office') => {
+  const res = await BaseApi.getRequest(`/school/fee/receipt/${paymentId}?copy=${copy}`, { responseType: 'blob' });
+  const blob = new Blob([res.data], { type: 'application/pdf' });
   return window.URL.createObjectURL(blob);
 };
 
-const openReceiptPreview = async (userUrl: string, officeUrl?: string) => {
+const openReceiptPreview = async (paymentId: string) => {
   try {
-    const userBlob = await fetchBlobUrl(userUrl);
-    const officeBlob = officeUrl ? await fetchBlobUrl(officeUrl) : undefined;
+    const userBlob = await fetchReceiptBlob(paymentId, 'user');
+    let officeBlob: string | undefined;
+    try {
+      officeBlob = await fetchReceiptBlob(paymentId, 'office');
+    } catch (_) {
+      // Office copy might not exist — silently continue
+    }
     setReceiptPreview({ userUrl: userBlob, officeUrl: officeBlob });
   } catch (err) {
     toast.error("Failed to load receipt preview");
@@ -387,15 +392,10 @@ const closeReceiptPreview = () => {
               } else {
                 await fetchStudentFee(formData.studentId);
               }
-              if (verifyRes.data.receipt) {
 
-                await openReceiptPreview(
-                  verifyRes.data.receipt.userUrl,
-                  verifyRes.data.receipt.officeUrl,
-                );
+              if (verifyRes.data.paymentId) {
+                await openReceiptPreview(verifyRes.data.paymentId);
 
-              } else if (verifyRes.data.paymentId) {
-                await handleDownloadReceipt(verifyRes.data.paymentId);
               }
               resetForm();
             } else {
@@ -453,30 +453,13 @@ const closeReceiptPreview = () => {
     handlePayment();
   };
 
-  const downloadUrl = async (url: string, filename: string) => {
+  const handleDownloadReceipt = async (paymentId: string, copy: 'user' | 'office' = 'user') => {
     try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      toast.error('Failed to download receipt');
-    }
-  };
-
-  const handleDownloadReceipt = async (paymentId: string) => {
-    try {
-      const res = await BaseApi.getRequest(`/school/fee/invoice/${paymentId}`, { responseType: 'blob' });
+      const res = await BaseApi.getRequest(`/school/fee/receipt/${paymentId}?copy=${copy}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `receipt_${paymentId}.pdf`;
+      link.download = `${copy}_receipt_${paymentId}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);

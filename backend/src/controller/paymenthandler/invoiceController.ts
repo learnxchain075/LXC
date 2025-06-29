@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import puppeteer from "puppeteer";
 import QRCode from "qrcode";
 import { Role } from "@prisma/client";
+import axios from "axios";
 import { prisma } from "../../db/prisma";
 import { uploadFile } from "../../config/upload";
 import {
@@ -218,5 +219,64 @@ export const downloadFeeInvoice: RequestHandler = async (req, res) => {
     console.error("Fee invoice error", error);
     res.status(500).json({ message: "Failed to generate invoice" });
     return;
+  }
+};
+
+export const downloadFeeReceipt: RequestHandler = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const copy = (req.query.copy as string) === "office" ? "office" : "user";
+
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        fee: {
+          include: {
+            student: { include: { user: true } },
+            school: { include: { user: true } },
+          },
+        },
+      },
+    });
+    if (!payment || !payment.fee) {
+      res.status(404).json({ message: "Payment not found" });
+      return;
+    }
+
+    const fee = payment.fee;
+    const allowedUserIds = [fee.school.userId, fee.student.userId];
+    const allowedEmails = [
+      fee.student.fatheremail,
+      fee.student.motherEmail,
+      fee.student.guardianEmail,
+    ];
+    if (
+      !allowedUserIds.includes(req.user!.id) &&
+      !allowedEmails.includes(req.user!.email)
+    ) {
+      res.status(403).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const url =
+      copy === "office"
+        ? (payment as any).officeInvoiceUrl
+        : payment.invoiceUrl;
+
+    if (!url) {
+      res.status(404).json({ message: "Receipt not available" });
+      return;
+    }
+
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename=${copy}_receipt_${payment.invoiceNumber || paymentId}.pdf`
+    );
+    res.send(Buffer.from(response.data));
+  } catch (error) {
+    console.error("Fee receipt download error", error);
+    res.status(500).json({ message: "Failed to download receipt" });
   }
 };
