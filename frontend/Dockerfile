@@ -4,19 +4,21 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and install dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
-RUN npm install
+# Install pnpm globally
+RUN npm install -g pnpm
 
-# Copy the frontend code
+# Copy only dependency manifests first (leverages Docker cache)
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of your frontend code
 COPY . .
 
 # Build the frontend
-RUN npm run build
+RUN pnpm run build
 
 # Serve the frontend with a simple web server
-CMD ["npx", "serve", "-s", "build"]
-
-# Expose frontend port
 EXPOSE 3000
-
+CMD ["npx", "serve", "-s", "build"]
