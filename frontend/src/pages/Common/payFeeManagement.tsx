@@ -360,7 +360,14 @@ export const PayFeeManagement = () => {
               } else {
                 await fetchStudentFee(formData.studentId);
               }
-              if (verifyRes.data.paymentId) {
+              if (verifyRes.data.receipt) {
+                if (verifyRes.data.receipt.userUrl) {
+                  await downloadUrl(verifyRes.data.receipt.userUrl, `receipt_user_${verifyRes.data.paymentId}.pdf`);
+                }
+                if (verifyRes.data.receipt.officeUrl) {
+                  await downloadUrl(verifyRes.data.receipt.officeUrl, `receipt_office_${verifyRes.data.paymentId}.pdf`);
+                }
+              } else if (verifyRes.data.paymentId) {
                 await handleDownloadReceipt(verifyRes.data.paymentId);
               }
               resetForm();
@@ -419,6 +426,23 @@ export const PayFeeManagement = () => {
     handlePayment();
   };
 
+  const downloadUrl = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      toast.error('Failed to download receipt');
+    }
+  };
+
   const handleDownloadReceipt = async (paymentId: string) => {
     try {
       const res = await BaseApi.getRequest(`/school/fee/invoice/${paymentId}`, { responseType: 'blob' });
@@ -444,7 +468,7 @@ export const PayFeeManagement = () => {
       fixed: "left" as const,
       render: (student: any, record: IFeeData) => (
         <div>
-          <div className="fw-bold">{record?.student?.name || "N/A"}</div>
+          <div className="fw-bold">{record?.student?.user?.name || "N/A"}</div>
           <div className="text-muted small">{record?.student?.rollNo || "N/A"}</div>
         </div>
       ),
