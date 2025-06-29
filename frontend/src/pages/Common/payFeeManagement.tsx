@@ -51,7 +51,9 @@ interface IFeeData {
 export const PayFeeManagement = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
+
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const user = useSelector((state: any) => state.auth.userObj);
   const [studentFee, setStudentFee] = useState<number>(0);
@@ -120,6 +122,7 @@ export const PayFeeManagement = () => {
     try {
       setLoading(true);
       const res = await getAllStudentsInAclass(classId);
+
       let studentsData: any[] = [];
       const responseData = (res as any)?.data;
       if (responseData?.students && Array.isArray(responseData.students)) {
@@ -130,6 +133,9 @@ export const PayFeeManagement = () => {
         studentsData = responseData;
       }
       setStudents(studentsData);
+
+//       setStudents(res.data?.students || []);
+
     } catch (err) {
       toast.error("Failed to fetch students");
     } finally {
