@@ -221,13 +221,17 @@ export const sendInvoicePdfEmail = async (
     ? { filename: "invoice.pdf", content: pdfBuffer }
     : { filename: "invoice.pdf", path: invoiceUrl };
 
-  await transporter.sendMail({
-    from: `"LearnXChain" <${process.env.MAIL_USER}>`,
-    to: emailTo,
-    subject: "Invoice",
-    text: "Please find your invoice attached.",
-    attachments: [attachment],
-  });
+  try {
+    await transporter.sendMail({
+      from: `"LearnXChain" <${process.env.MAIL_USER}>`,
+      to: emailTo,
+      subject: "Invoice",
+      text: "Please find your invoice attached.",
+      attachments: [attachment],
+    });
+  } catch (err) {
+    Logger.error(err);
+  }
 };
 
 export const renderAndSendEmail = async (
