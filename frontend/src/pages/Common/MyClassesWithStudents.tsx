@@ -756,6 +756,8 @@ const MyClassesWithStudents = () => {
   const [classList, setClassList] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [activeTab, setActiveTab] = useState<"subjects" | "students" | "sections">("subjects");
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
 
   const getClassNameById = useCallback(
     (classId: string) => {
@@ -767,57 +769,113 @@ const MyClassesWithStudents = () => {
   const getSectionNameById = useCallback(
     (classId: string, sectionId: string) => {
       const classData = classList.find((cls) => cls.id === classId);
-      return classData?.Section.find((sec) => sec.id === sectionId)?.name || sectionId;
+      return (
+        classData?.Section.find((sec) => sec.id === sectionId)?.name || sectionId
+      );
     },
     [classList]
   );
 
   const fetchClasses = useCallback(async () => {
     try {
+      setIsLoadingClasses(true);
       const teacherId = user?.teacherId || localStorage.getItem("teacherId") || "";
       const response = await getClassesByTeacherId(teacherId);
-      setClassList(
-        response?.data?.classes.map((cls: any) => ({
-          ...cls,
-          Subject: cls.Subject.map((sub: any) => ({
-            ...sub,
-            status: sub.status || "Active",
-          })),
-          section: cls.Section.map((sec) => sec.name).join(", ") || cls.section || "N/A",
-        })) || []
-      );
+      console.log("Classes API Response:", response);
+      
+      // Handle different possible response structures
+      let classesData: any[] = [];
+      const responseData = (response as any)?.data;
+      
+      if (responseData?.data && Array.isArray(responseData.data)) {
+        classesData = responseData.data;
+      } else if (responseData?.classes && Array.isArray(responseData.classes)) {
+        classesData = responseData.classes;
+      } else if (Array.isArray(responseData)) {
+        classesData = responseData;
+      } else if (Array.isArray(response)) {
+        classesData = response;
+      }
+      
+      if (!Array.isArray(classesData)) {
+        console.error("classesData is not an array:", classesData);
+        toast.error("Invalid classes data format received", { autoClose: 3000 });
+        setClassList([]);
+        return;
+      }
+      
+      const processedClasses = classesData.map((cls: any) => ({
+        ...cls,
+        Subject: Array.isArray(cls.Subject) ? cls.Subject.map((sub: any) => ({
+          ...sub,
+          status: sub.status || "Active",
+        })) : [],
+        section: cls.section || "",
+      }));
+      
+      console.log("Processed classes:", processedClasses);
+      setClassList(processedClasses);
     } catch (error) {
       console.error("Error fetching classes:", error);
-      toast.error("Failed to load classes", { autoClose: 3000 });
+      toast.error("Failed to load classes. Please try again.", { autoClose: 3000 });
       setClassList([]);
+    } finally {
+      setIsLoadingClasses(false);
     }
   }, [user]);
 
   const fetchStudents = useCallback(
     async (classId: string) => {
       try {
+        setIsLoadingStudents(true);
         const response = await getAllStudentsInAclass(classId);
-        const students = response?.data?.students
+        console.log("Students API Response:", response);
+        
+        // Handle different possible response structures
+        let studentsData: any[] = [];
+        const responseData = (response as any)?.data;
+        
+        if (responseData?.data && Array.isArray(responseData.data)) {
+          studentsData = responseData.data;
+        } else if (responseData?.students && Array.isArray(responseData.students)) {
+          studentsData = responseData.students;
+        } else if (Array.isArray(responseData)) {
+          studentsData = responseData;
+        } else if (Array.isArray(response)) {
+          studentsData = response;
+        }
+        
+        if (!Array.isArray(studentsData)) {
+          console.error("studentsData is not an array:", studentsData);
+          toast.error("Invalid students data format received", { autoClose: 3000 });
+          return [];
+        }
+        
+        const students = studentsData
           .filter((student: any) => student.classId === classId)
           .map((student: any) => ({
             id: student.id,
             key: student.id,
             admissionNo: student.admissionNo || `A${student.id}`,
             rollNo: student.rollNo || `R${student.id}`,
-            name: student?.user?.name,
+            name: student?.user?.name || student.name || "Unknown Student",
             classId: getClassNameById(classId) || "",
             sectionId: getSectionNameById(classId, student.sectionId) || "",
             attendance: student.attendance || "Present",
             present: student.attendance === "Present",
             absent: student.attendance === "Absent",
             notes: student.notes || "",
-            img: student?.user.profilePic || "",
+            img: student?.user?.profilePic || student.profilePic || "",
           })) || [];
+        
+        console.log("Processed students:", students);
         return students;
       } catch (error) {
         console.error("Error fetching students:", error);
-        toast.error("Failed to load students", { autoClose: 3000 });
+        toast.error("Failed to load students. Please try again.", { autoClose: 3000 });
         return [];
+      } finally {
+        setIsLoadingStudents(false);
       }
     },
     [getClassNameById, getSectionNameById]
@@ -832,6 +890,7 @@ const MyClassesWithStudents = () => {
       const selected = classList.find((cls) => cls.id === classId);
       if (selected) {
         if (!selected.students) {
+          setIsLoadingStudents(true);
           const students = await fetchStudents(classId);
           setClassList((prev) =>
             prev.map((cls) =>
@@ -905,24 +964,23 @@ const MyClassesWithStudents = () => {
         dataIndex: "type",
         sorter: (a: any, b: any) => a.type.localeCompare(b.type),
       },
-    {
-  title: "Status",
-  dataIndex: "status",
-  render: (text: string) => (
-    <span className="d-inline-flex align-items-center">
-      <i
-        className="ti ti-circle-filled me-2"
-        style={{
-          color: text.toLowerCase() === "active" ? "green" : "red",
-          fontSize: "0.6rem",
-        }}
-      ></i>
-      {text}
-    </span>
-  ),
-  sorter: (a: any, b: any) => a.status.localeCompare(b.status),
-},
-
+      {
+        title: "Status",
+        dataIndex: "status",
+        render: (text: string) => (
+          <span className="d-inline-flex align-items-center">
+            <i
+              className="ti ti-circle-filled me-2"
+              style={{
+                color: text.toLowerCase() === "active" ? "green" : "red",
+                fontSize: "0.6rem",
+              }}
+            ></i>
+            {text}
+          </span>
+        ),
+        sorter: (a: any, b: any) => a.status.localeCompare(b.status),
+      },
       ...(user?.role === "admin"
         ? [
             {
@@ -1013,60 +1071,26 @@ const MyClassesWithStudents = () => {
         dataIndex: "classId",
         sorter: (a: any, b: any) => a.classId.localeCompare(b.classId),
       },
-      // {
-      //   title: "Section",
-      //   dataIndex: "sectionId",
-      //   render: (text: string, record: any) => getSectionNameById(record.classId, text) || "N/A",
-      //   sorter: (a: any, b: any) => (a.sectionId || "").localeCompare(b.sectionId || ""),
-      // },
-      // {
-      //   title: "Attendance",
-      //   dataIndex: "attendance",
-      //   render: (text: string) => (
-      //     <span
-      //       className={`inline-flex items-center px-2 py-1 rounded-full text-sm ${
-      //         text === "Present"
-      //           ? isDark
-      //             ? "bg-green-800 text-green-200"
-      //             : "bg-green-100 text-green-700"
-      //           : isDark
-      //           ? "bg-red-800 text-red-200"
-      //           : "bg-red-100 text-red-700"
-      //       }`}
-      //     >
-      //       <i className="ti ti-circle-filled text-xs mr-1"></i>
-      //       {text}
-      //     </span>
-      //   ),
-      //   sorter: (a: any, b: any) => a.attendance.localeCompare(b.attendance),
-      // },
-
       {
-  title: "Attendance",
-  dataIndex: "attendance",
-  render: (text: string) => (
-    <span className="d-inline-flex align-items-center">
-      <i
-        className="ti ti-circle-filled me-2"
-        style={{ color: text === "Present" ? "green" : "red", fontSize: "0.6rem" }}
-      ></i>
-      {text}
-    </span>
-  ),
-  sorter: (a: any, b: any) => a.attendance.localeCompare(b.attendance),
-}
-
+        title: "Attendance",
+        dataIndex: "attendance",
+        render: (text: string) => (
+          <span className="d-inline-flex align-items-center">
+            <i
+              className="ti ti-circle-filled me-2"
+              style={{ color: text === "Present" ? "green" : "red", fontSize: "0.6rem" }}
+            ></i>
+            {text}
+          </span>
+        ),
+        sorter: (a: any, b: any) => a.attendance.localeCompare(b.attendance),
+      },
     ],
     [isDark, getSectionNameById]
   );
 
   const sectionColumns = useMemo(
     () => [
-      // {
-      //   title: "Section ID",
-      //   dataIndex: "id",
-      //   sorter: (a: any, b: any) => a.id.localeCompare(b.id),
-      // },
       {
         title: "Section Name",
         dataIndex: "name",
@@ -1080,118 +1104,170 @@ const MyClassesWithStudents = () => {
 
   return (
     <div className={isMobile ? "page-wrapper" : "pt-4"}>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="top-center" autoClose={3000} />
       <div className="content">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
         </div>
-        <div
-          className={`rounded-lg shadow ${
-            isDark ? "bg-gray-800" : "bg-white"
-          }`}
-        >
-          <div
-            className={`p-4 border-b ${
-              isDark ? "border-gray-700" : "border-gray-200"
-            }`}
-          >
-            <h4
-              className={`text-lg font-medium ${
-                isDark ? "text-gray-100" : "text-gray-800"
-              }`}
-            >
-              Class List
-            </h4>
+        
+        {isLoadingClasses ? (
+          <div className={`rounded-lg shadow p-8 text-center ${isDark ? "bg-gray-800" : "bg-white"}`}>
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <h5 className={`${isDark ? "text-gray-100" : "text-gray-800"}`}>Loading Classes...</h5>
+            <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>Please wait while we fetch your class information.</p>
           </div>
-          <div className="p-0">
-            <Table
-              className={isDark ? "table table-dark" : "table table-light"}
-              columns={classColumns}
-              dataSource={classList}
-              rowKey="id"
-              pagination={false}
-            />
-          </div>
-        </div>
-        {selectedClass && (
-          <div
-            className={`rounded-lg shadow mt-4 ${
-              isDark ? "bg-gray-800" : "bg-white"
-            }`}
-          >
+        ) : (
+          <>
             <div
-              className={`p-4 border-b ${
-                isDark ? "border-gray-700" : "border-gray-200"
+              className={`rounded-lg shadow ${
+                isDark ? "bg-gray-800" : "bg-white"
               }`}
             >
-              <h4
-                className={`text-lg font-medium ${
-                  isDark ? "text-gray-100" : "text-gray-800"
+              <div
+                className={`p-4 border-b ${
+                  isDark ? "border-gray-700" : "border-gray-200"
                 }`}
               >
-                {selectedClass.name} Details
-              </h4>
+                <h4
+                  className={`text-lg font-medium ${
+                    isDark ? "text-gray-100" : "text-gray-800"
+                  }`}
+                >
+                  Class List
+                </h4>
+              </div>
+              <div className="p-0">
+                <Table
+                  className={isDark ? "table table-dark" : "table table-light"}
+                  columns={classColumns}
+                  dataSource={classList}
+                  rowKey="id"
+                  pagination={false}
+                  locale={{
+                    emptyText: (
+                      <div className="text-center py-8">
+                        <i className="ti ti-inbox text-4xl text-gray-400 mb-3"></i>
+                        <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>No classes found</p>
+                      </div>
+                    )
+                  }}
+                />
+              </div>
             </div>
-            <div className="p-4">
-              <Tabs
-                activeKey={activeTab}
-                onChange={(key) => setActiveTab(key as "subjects" | "students" | "sections")}
-                items={[
-                  {
-                    key: "subjects",
-                    label: (
-                      <span className={isDark ? "text-gray-300" : "text-gray-600"}>
-                        Subjects
-                      </span>
-                    ),
-                    children: (
-                      <Table
-                        className={isDark ? "table table-dark" : "table table-light"}
-                        columns={subjectColumns}
-                        dataSource={selectedClass.Subject}
-                        rowKey="id"
-                        pagination={false}
-                      />
-                    ),
-                  },
-                  {
-                    key: "students",
-                    label: (
-                      <span className={isDark ? "text-gray-300" : "text-gray-600"}>
-                        Students
-                      </span>
-                    ),
-                    children: (
-                      <Table
-                        className={isDark ? "table table-dark" : "table table-light"}
-                        columns={studentColumns}
-                        dataSource={selectedClass.students || []}
-                        rowKey="id"
-                        pagination={false}
-                      />
-                    ),
-                  },
-                  {
-                    key: "sections",
-                    label: (
-                      <span className={isDark ? "text-gray-300" : "text-gray-600"}>
-                        Sections
-                      </span>
-                    ),
-                    children: (
-                      <Table
-                        className={isDark ? "table table-dark" : "table table-light"}
-                        columns={sectionColumns}
-                        dataSource={selectedClass.Section}
-                        rowKey="id"
-                        pagination={false}
-                      />
-                    ),
-                  },
-                ]}
-                className="ant-tabs-custom"
-              />
-            </div>
-          </div>
+            {selectedClass && (
+              <div
+                className={`rounded-lg shadow mt-4 ${
+                  isDark ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <div
+                  className={`p-4 border-b ${
+                    isDark ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <h4
+                    className={`text-lg font-medium ${
+                      isDark ? "text-gray-100" : "text-gray-800"
+                    }`}
+                  >
+                    {selectedClass.name} Details
+                  </h4>
+                </div>
+                <div className="p-4">
+                  <Tabs
+                    activeKey={activeTab}
+                    onChange={(key) => setActiveTab(key as "subjects" | "students" | "sections")}
+                    items={[
+                      {
+                        key: "subjects",
+                        label: (
+                          <span className={isDark ? "text-gray-300" : "text-gray-600"}>
+                            Subjects
+                          </span>
+                        ),
+                        children: (
+                          <Table
+                            className={isDark ? "table table-dark" : "table table-light"}
+                            columns={subjectColumns}
+                            dataSource={selectedClass.Subject}
+                            rowKey="id"
+                            pagination={false}
+                            locale={{
+                              emptyText: (
+                                <div className="text-center py-8">
+                                  <i className="ti ti-book text-4xl text-gray-400 mb-3"></i>
+                                  <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>No subjects found</p>
+                                </div>
+                              )
+                            }}
+                          />
+                        ),
+                      },
+                      {
+                        key: "students",
+                        label: (
+                          <span className={isDark ? "text-gray-300" : "text-gray-600"}>
+                            Students
+                          </span>
+                        ),
+                        children: isLoadingStudents ? (
+                          <div className="text-center py-8">
+                            <div className="spinner-border text-primary mb-3" role="status">
+                              <span className="visually-hidden">Loading...</span>
+                            </div>
+                            <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>Loading students...</p>
+                          </div>
+                        ) : (
+                          <Table
+                            className={isDark ? "table table-dark" : "table table-light"}
+                            columns={studentColumns}
+                            dataSource={selectedClass.students || []}
+                            rowKey="id"
+                            pagination={false}
+                            locale={{
+                              emptyText: (
+                                <div className="text-center py-8">
+                                  <i className="ti ti-users text-4xl text-gray-400 mb-3"></i>
+                                  <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>No students found</p>
+                                </div>
+                              )
+                            }}
+                          />
+                        ),
+                      },
+                      {
+                        key: "sections",
+                        label: (
+                          <span className={isDark ? "text-gray-300" : "text-gray-600"}>
+                            Sections
+                          </span>
+                        ),
+                        children: (
+                          <Table
+                            className={isDark ? "table table-dark" : "table table-light"}
+                            columns={sectionColumns}
+                            dataSource={selectedClass.Section}
+                            rowKey="id"
+                            pagination={false}
+                            locale={{
+                              emptyText: (
+                                <div className="text-center py-8">
+                                  <i className="ti ti-layout-grid text-4xl text-gray-400 mb-3"></i>
+                                  <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>No sections found</p>
+                                </div>
+                              )
+                            }}
+                          />
+                        ),
+                      },
+                    ]}
+                    className="ant-tabs-custom"
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

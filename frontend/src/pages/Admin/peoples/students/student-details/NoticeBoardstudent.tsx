@@ -169,11 +169,22 @@ type NoticeBoardData = {
   events: Event[];
 };
 
-class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null };
-  static getDerivedStateFromError(error) {
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+  
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
+  
   render() {
     if (this.state.hasError) {
       return (
@@ -190,10 +201,30 @@ class ErrorBoundary extends React.Component {
 const NoticeBoardstudent = () => {
   const [data, setData] = useState<NoticeBoardData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
 
   const SkeletonPlaceholder = ({ className = "", style = {} }: { className?: string; style?: React.CSSProperties }) => (
     <span className={`placeholder bg-secondary ${className}`} style={style} />
   );
+
+  // Animation for new/unread items
+  const highlightStyle = {
+    animation: 'highlight-fade 2s ease-in-out',
+    background: 'linear-gradient(90deg, #fffbe6 0%, #e6f7ff 100%)',
+  };
+  const animationStyles = `
+    @keyframes highlight-fade {
+      0% { background: #fffbe6; }
+      100% { background: #fff; }
+    }
+  `;
+
+  // Helper to check if item is new (published today or in the future)
+  const isNew = (dateStr: string) => {
+    const today = new Date();
+    const itemDate = new Date(dateStr);
+    return itemDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  };
 
   useEffect(() => {
     setIsLoading(true);
@@ -213,49 +244,23 @@ const NoticeBoardstudent = () => {
                 }),
                 description: notice.message,
                 attachment: notice.attachment,
-                noticeDate: new Date(notice.noticeDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                }),
-                publishDate: new Date(notice.publishDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                }),
+                noticeDate: notice.noticeDate,
+                publishDate: notice.publishDate,
               }));
             const events = response.data.notices
               .filter((notice: INotice) => new Date(notice.publishDate) > new Date())
               .map((notice: INotice) => ({
                 key: notice.id,
                 title: notice.title,
-                date: new Date(notice.publishDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                }),
+                date: notice.publishDate,
                 description: notice.message,
                 attachment: notice.attachment,
               }));
             const holidays = response.data.holidays.map((holiday: IHoliday) => ({
               key: holiday.id,
               title: holiday.name,
-              startDate: new Date(holiday.date).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              }),
-              endDate: holiday.toDay
-                ? new Date(holiday.toDay).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })
-                : new Date(holiday.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  }),
+              startDate: holiday.date,
+              endDate: holiday.toDay || holiday.date,
             }));
             return { notices, holidays, events };
           }
@@ -274,12 +279,24 @@ const NoticeBoardstudent = () => {
         console.error(error);
         setIsLoading(false);
       });
-  }, []);
+  }, [refreshKey]);
+
+  const handleRefresh = () => setRefreshKey((k) => k + 1);
 
   return (
     <ErrorBoundary>
-      <div className="container-fluid p-4 bg-dark-theme min-vh-100">
-        <ToastContainer position="top-center" autoClose={3000} />
+      <style>{animationStyles}</style>
+      <div className="container-fluid p-4 bg-light min-vh-100">
+        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h5 className="fw-bold text-dark mb-0">
+            <i className="bi bi-megaphone me-2"></i>
+            Notice Board
+          </h5>
+          <button className="btn btn-outline-primary btn-sm" onClick={handleRefresh} disabled={isLoading}>
+            <i className="bi bi-arrow-clockwise me-1"></i>Refresh
+          </button>
+        </div>
         {isLoading ? (
           <div className="placeholder-glow">
             <SkeletonPlaceholder className="col-6 mb-4" style={{ height: "2rem" }} />
@@ -287,7 +304,7 @@ const NoticeBoardstudent = () => {
               <div key={index} className="mb-5">
                 <SkeletonPlaceholder className="col-4 mb-3" style={{ height: "1.5rem" }} />
                 {[...Array(3)].map((_, idx) => (
-                  <div key={idx} className="card mb-3 p-3 shadow-sm bg-white dark:bg-gray-800">
+                  <div key={idx} className="card mb-3 p-3 shadow-sm bg-white">
                     <div className="d-flex align-items-center mb-2">
                       <SkeletonPlaceholder className="rounded-circle me-3" style={{ width: "40px", height: "40px" }} />
                       <SkeletonPlaceholder className="col-4" style={{ height: "1.2rem" }} />
@@ -300,96 +317,110 @@ const NoticeBoardstudent = () => {
             ))}
           </div>
         ) : data ? (
-          <div className="card flex-fill shadow-sm bg-white dark:bg-gray-900 p-4">
-            <h5 className="text-xl font-semibold mb-4 dark:text-white">Notice Board</h5>
+          <div className="card flex-fill shadow-sm bg-white p-4">
             <div className="mb-5">
-              <h6 className="font-bold text-lg mb-3 dark:text-white">Events</h6>
+              <h6 className="fw-bold text-lg mb-3 text-dark">
+                <i className="bi bi-calendar-event me-2"></i>
+                Events <span className="badge bg-primary ms-2">{data.events.length}</span>
+              </h6>
               {data.events.length > 0 ? (
                 data.events.map((event) => (
-                  <div key={event.key} className="card mb-3 p-3 shadow-sm bg-white dark:bg-gray-800">
+                  <div key={event.key} className="card mb-3 p-3 shadow-sm bg-white" style={isNew(event.date) ? highlightStyle : {}}>
                     <div className="d-flex align-items-center mb-2">
-                      <span className="bg-blue-100 text-blue-800 rounded-circle p-2 me-3">
-                        <i className="ti ti-calendar-event text-xl" />
+                      <span className="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3">
+                        <i className="bi bi-calendar-event fs-5" />
                       </span>
-                      <span className="badge bg-blue-500 text-white">Event</span>
+                      <span className="badge bg-primary">Event</span>
                     </div>
-                    <h6 className="font-bold text-dark dark:text-white mb-2">{event.title}</h6>
-                    <p className="text-sm text-secondary dark:text-gray-400 mb-2">
-                      <i className="ti ti-clock me-1" /> {event.date}
+                    <h6 className="fw-bold text-dark mb-2">{event.title}</h6>
+                    <p className="text-muted mb-2">
+                      <i className="bi bi-clock me-1" /> {new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </p>
-                    <p className="text-dark dark:text-white mb-2">{event.description}</p>
+                    <p className="text-dark mb-2">{event.description}</p>
                     {event.attachment && (
                       <a
                         href={event.attachment}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-500 hover:underline dark:text-blue-400"
+                        className="text-primary text-decoration-none"
                       >
+                        <i className="bi bi-paperclip me-1"></i>
                         View Attachment
                       </a>
                     )}
                   </div>
                 ))
               ) : (
-                <p className="text-center text-secondary dark:text-gray-400">No upcoming events.</p>
+                <p className="text-center text-muted">No upcoming events.</p>
               )}
             </div>
             <div className="mb-5">
-              <h6 className="font-bold text-lg mb-3 dark:text-white">Notices</h6>
+              <h6 className="fw-bold text-lg mb-3 text-dark">
+                <i className="bi bi-bell me-2"></i>
+                Notices <span className="badge bg-warning ms-2">{data.notices.length}</span>
+              </h6>
               {data.notices.length > 0 ? (
                 data.notices.map((notice) => (
-                  <div key={notice.key} className="card mb-3 p-3 shadow-sm bg-white dark:bg-gray-800">
+                  <div key={notice.key} className="card mb-3 p-3 shadow-sm bg-white" style={isNew(notice.publishDate) ? highlightStyle : {}}>
                     <div className="d-flex align-items-center mb-2">
-                      <span className="bg-yellow-100 text-yellow-800 rounded-circle p-2 me-3">
-                        <i className="ti ti-bell text-xl" />
+                      <span className="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3">
+                        <i className="bi bi-bell fs-5" />
                       </span>
-                      <span className="badge bg-yellow-500 text-white">Notice</span>
+                      <span className="badge bg-warning">Notice</span>
                     </div>
-                    <h6 className="font-bold text-dark dark:text-white mb-2">{notice.title}</h6>
-                    <p className="text-sm text-secondary dark:text-gray-400 mb-2">
-                      <i className="ti ti-clock me-1" /> Notice Date: {notice.noticeDate} | Publish Date: {notice.publishDate}
+                    <h6 className="fw-bold text-dark mb-2">{notice.title}</h6>
+                    <p className="text-muted mb-2">
+                      <i className="bi bi-clock me-1" /> Notice Date: {new Date(notice.noticeDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} | Publish Date: {new Date(notice.publishDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </p>
-                    <p className="text-dark dark:text-white mb-2">{notice.description}</p>
+                    <p className="text-dark mb-2">{notice.description}</p>
                     {notice.attachment && (
                       <a
                         href={notice.attachment}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-500 hover:underline dark:text-blue-400"
+                        className="text-primary text-decoration-none"
                       >
+                        <i className="bi bi-paperclip me-1"></i>
                         View Attachment
                       </a>
                     )}
                   </div>
                 ))
               ) : (
-                <p className="text-center text-secondary dark:text-gray-400">No notices available.</p>
+                <p className="text-center text-muted">No notices available.</p>
               )}
             </div>
             <div>
-              <h6 className="font-bold text-lg mb-3 dark:text-white">Holidays</h6>
+              <h6 className="fw-bold text-lg mb-3 text-dark">
+                <i className="bi bi-calendar-check me-2"></i>
+                Holidays <span className="badge bg-success ms-2">{data.holidays.length}</span>
+              </h6>
               {data.holidays.length > 0 ? (
                 data.holidays.map((holiday) => (
-                  <div key={holiday.key} className="card mb-3 p-3 shadow-sm bg-white dark:bg-gray-800">
+                  <div key={holiday.key} className="card mb-3 p-3 shadow-sm bg-white" style={isNew(holiday.startDate) ? highlightStyle : {}}>
                     <div className="d-flex align-items-center mb-2">
-                      <span className="bg-green-100 text-green-800 rounded-circle p-2 me-3">
-                        <i className="ti ti-beach text-xl" />
+                      <span className="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3">
+                        <i className="bi bi-calendar-check fs-5" />
                       </span>
-                      <span className="badge bg-green-500 text-white">Holiday</span>
+                      <span className="badge bg-success">Holiday</span>
                     </div>
-                    <h6 className="font-bold text-dark dark:text-white mb-2">{holiday.title}</h6>
-                    <p className="text-sm text-secondary dark:text-gray-400 mb-2">
-                      <i className="ti ti-clock me-1" /> {holiday.startDate} to {holiday.endDate}
+                    <h6 className="fw-bold text-dark mb-2">{holiday.title}</h6>
+                    <p className="text-muted mb-2">
+                      <i className="bi bi-clock me-1" /> {new Date(holiday.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} to {new Date(holiday.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-center text-secondary dark:text-gray-400">No holidays scheduled.</p>
+                <p className="text-center text-muted">No holidays scheduled.</p>
               )}
             </div>
           </div>
         ) : (
-          <div className="text-center text-secondary dark:text-white">Failed to load data.</div>
+          <div className="text-center text-muted">
+            <i className="bi bi-exclamation-triangle display-4 mb-3"></i>
+            <h5>Failed to load data</h5>
+            <p>Please try refreshing the page.</p>
+          </div>
         )}
       </div>
     </ErrorBoundary>

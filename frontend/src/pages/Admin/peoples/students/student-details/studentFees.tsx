@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ImageWithBasePath from "../../../../../core/common/imageWithBasePath";
 import { all_routes } from "../../../../../router/all_routes";
@@ -8,369 +8,247 @@ import StudentBreadcrumb from "./studentBreadcrumb";
 import Table from "../../../../../core/common/dataTable/index";
 import { TableData } from "../../../../../core/data/interface";
 import useMobileDetection from "../../../../../core/common/mobileDetection";
-// import { leaveData } from "../../../../core/data/json/leaveData";
-// import { Attendance } from "../../../../core/data/json/attendance";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { getFeesByStudentId, IFee } from "../../../../../services/student/StudentAllApi";
 
 const StudentFees = () => {
   const routes = all_routes;
-  // const data = leaveData;
-  // const data2 = Attendance;
-const [showFeesLink, setShowFeesLink] = useState(false);
   const isMobile = useMobileDetection();
-  const columns = [
+  const [feesData, setFeesData] = useState<IFee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState('2024 / 2025');
+
+  // Mock fees data for fallback
+  const mockFeesData = [
     {
-      title: "Leave Type",
-      dataIndex: "leaveType",
-      sorter: (a: TableData, b: TableData) =>
-        a.leaveType.length - b.leaveType.length,
+      id: '1',
+      studentId: '1',
+      schoolId: '1',
+      amount: 2000,
+      amountPaid: 2000,
+      dueDate: '2024-03-25',
+      category: 'Admission Fees',
+      finePerDay: 10,
+      status: 'Paid',
+      discount: 200,
+      scholarship: 0,
+      paymentDate: '2024-01-25',
+      createdAt: '2024-01-01',
+      updatedAt: '2024-01-25',
+      lastReminderSentAt: null,
+      Payment: [{
+        id: '1',
+        amount: 2000,
+        status: 'Completed',
+        method: 'Cash',
+        razorpayOrderId: 'order_123',
+        razorpayPaymentId: 'pay_123',
+        paymentDate: '2024-01-25',
+        createdAt: '2024-01-25'
+      }],
+      school: {
+        id: '1',
+        schoolName: 'Sample School'
+      }
     },
     {
-      title: "Leave Date",
-      dataIndex: "leaveDate",
-      sorter: (a: TableData, b: TableData) =>
-        a.leaveDate.length - b.leaveDate.length,
-    },
-    {
-      title: "No of Days",
-      dataIndex: "noOfDays",
-      sorter: (a: TableData, b: TableData) =>
-        parseFloat(a.noOfDays) - parseFloat(b.noOfDays),
-    },
-    {
-      title: "Applied On",
-      dataIndex: "appliedOn",
-      sorter: (a: TableData, b: TableData) =>
-        a.appliedOn.length - b.appliedOn.length,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (text: string) => (
-        <>
-          {text === "Approved" ? (
-            <span className="badge badge-soft-success d-inline-flex align-items-center">
-              <i className="ti ti-circle-filled fs-5 me-1"></i>
-              {text}
-            </span>
-          ) : (
-            <span className="badge badge-soft-danger d-inline-flex align-items-center">
-              <i className="ti ti-circle-filled fs-5 me-1"></i>
-              {text}
-            </span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.status.length - b.status.length,
-    },
+      id: '2',
+      studentId: '1',
+      schoolId: '1',
+      amount: 2500,
+      amountPaid: 2500,
+      dueDate: '2024-04-10',
+      category: 'Monthly Fees',
+      finePerDay: 10,
+      status: 'Paid',
+      discount: 250,
+      scholarship: 0,
+      paymentDate: '2024-04-03',
+      createdAt: '2024-01-01',
+      updatedAt: '2024-04-03',
+      lastReminderSentAt: null,
+      Payment: [{
+        id: '2',
+        amount: 2500,
+        status: 'Completed',
+        method: 'Cash',
+        razorpayOrderId: 'order_124',
+        razorpayPaymentId: 'pay_124',
+        paymentDate: '2024-04-03',
+        createdAt: '2024-04-03'
+      }],
+      school: {
+        id: '1',
+        schoolName: 'Sample School'
+      }
+    }
   ];
-  const columns2 = [
-    {
-      title: "Date | Month",
-      dataIndex: "date",
-      sorter: (a: TableData, b: TableData) => a.date.length - b.date.length,
-    },
-    {
-      title: "Jan",
-      dataIndex: "jan",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.jan.length - b.jan.length,
-    },
-    {
-      title: "feb",
-      dataIndex: "feb",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.feb.length - b.feb.length,
-    },
-    {
-      title: "mar",
-      dataIndex: "mar",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.mar.length - b.mar.length,
-    },
-    {
-      title: "apr",
-      dataIndex: "apr",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.apr.length - b.apr.length,
-    },
-    {
-      title: "may",
-      dataIndex: "may",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.may.length - b.may.length,
-    },
-    {
-      title: "jun",
-      dataIndex: "jun",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.jun.length - b.jun.length,
-    },
-    {
-      title: "jul",
-      dataIndex: "jul",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.jul.length - b.jul.length,
-    },
-    {
-      title: "aug",
-      dataIndex: "aug",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.aug.length - b.aug.length,
-    },
-    {
-      title: "sep",
-      dataIndex: "sep",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.sep.length - b.sep.length,
-    },
-    {
-      title: "oct",
-      dataIndex: "oct",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.oct.length - b.oct.length,
-    },
-    {
-      title: "nov",
-      dataIndex: "nov",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.nov.length - b.nov.length,
-    },
-    {
-      title: "dec",
-      dataIndex: "dec",
-      render: (text: string) => (
-        <>
-          {text === "1" ? (
-            <span className="attendance-range bg-success"></span>
-          ) : text === "2" ? (
-            <span className="attendance-range bg-pending"></span>
-          ) : text === "3" ? (
-            <span className="attendance-range bg-dark"></span>
-          ) : text === "4" ? (
-            <span className="attendance-range bg-danger"></span>
-          ) : (
-            <span className="attendance-range bg-info"></span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.dec.length - b.dec.length,
-    },
-  ];
+
+  useEffect(() => {
+    const fetchFeesData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getFeesByStudentId('current-student-id');
+        
+        if (response.data.success) {
+          setFeesData(response.data.fees);
+          toast.success('Fees data loaded successfully!', { autoClose: 3000 });
+        } else {
+          throw new Error('Failed to load fees data');
+        }
+      } catch (error: any) {
+        console.error('Error fetching fees data:', error);
+        setFeesData(mockFeesData);
+        toast.warning('Using sample data due to API error', { autoClose: 3000 });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFeesData();
+  }, []);
+
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return (
+          <span className="badge bg-success d-inline-flex align-items-center">
+            <i className="bi bi-check-circle me-1"></i>
+            Paid
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="badge bg-warning d-inline-flex align-items-center">
+            <i className="bi bi-clock me-1"></i>
+            Pending
+          </span>
+        );
+      case 'overdue':
+        return (
+          <span className="badge bg-danger d-inline-flex align-items-center">
+            <i className="bi bi-exclamation-triangle me-1"></i>
+            Overdue
+          </span>
+        );
+      default:
+        return (
+          <span className="badge bg-secondary d-inline-flex align-items-center">
+            <i className="bi bi-question-circle me-1"></i>
+            {status}
+          </span>
+        );
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const calculateTotal = () => {
+    return feesData.reduce((sum, fee) => sum + fee.amount, 0);
+  };
+
+  const calculateTotalPaid = () => {
+    return feesData.reduce((sum, fee) => sum + fee.amountPaid, 0);
+  };
+
+  const calculateTotalDiscount = () => {
+    return feesData.reduce((sum, fee) => sum + fee.discount, 0);
+  };
+
+  if (isLoading) {
+    return (
+      <div className={isMobile ? "page-wrapper" : "p-3"}>
+        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
+        <div className="content">
+          <div className="row">
+            <div className="col-12">
+              <div className="card">
+                <div className="card-body text-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p className="mt-3 text-muted">Loading fees data...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
    <>
-      {/* Page Wrapper */}
       <div className={isMobile ? "page-wrapper" : "p-3"}>
+        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
         <div className="content">
-         
-        
           <div className="row">
-            {/* Student Information */}
-          
-            {/* /Student Information */}
             <div className="col-12 d-flex flex-column">
               <div className="row">
                 <div className="col-md-12">
-                  {/* Navigation */}
-               
-                  {/* /Navigation */}
-                  <div className="card">
-                    <div className="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
-                      <h4 className="mb-3">Fees</h4>
+                  <div className="card border-0 shadow-sm">
+                    <div className="card-header bg-white border-0 d-flex align-items-center justify-content-between flex-wrap pb-0">
+                      <h4 className="mb-3 fw-bold text-dark">
+                        <i className="bi bi-credit-card me-2"></i>
+                        Fees Management
+                      </h4>
                       <div className="d-flex align-items-center flex-wrap">
                         <div className="dropdown mb-3 me-2">
-                          <Link
-                            to=""
-                            className="btn btn-outline-light bg-white dropdown-toggle"
+                          <button
+                            className="btn btn-outline-primary dropdown-toggle"
+                            type="button"
                             data-bs-toggle="dropdown"
                             data-bs-auto-close="outside"
                           >
-                            <i className="ti ti-calendar-due me-2" />
-                            Year : 2024 / 2025
-                          </Link>
+                            <i className="bi bi-calendar me-2" />
+                            Year: {selectedYear}
+                          </button>
                           <ul className="dropdown-menu p-3">
                             <li>
-                              <Link to="" className="dropdown-item rounded-1">
-                                Year : 2024 / 2025
-                              </Link>
+                              <button 
+                                className="dropdown-item rounded-1"
+                                onClick={() => setSelectedYear('2024 / 2025')}
+                              >
+                                Year: 2024 / 2025
+                              </button>
                             </li>
                             <li>
-                              <Link to="" className="dropdown-item rounded-1">
-                                Year : 2023 / 2024
-                              </Link>
+                              <button 
+                                className="dropdown-item rounded-1"
+                                onClick={() => setSelectedYear('2023 / 2024')}
+                              >
+                                Year: 2023 / 2024
+                              </button>
                             </li>
                             <li>
-                              <Link to="" className="dropdown-item rounded-1">
-                                Year : 2022 / 2023
-                              </Link>
+                              <button 
+                                className="dropdown-item rounded-1"
+                                onClick={() => setSelectedYear('2022 / 2023')}
+                              >
+                                Year: 2022 / 2023
+                              </button>
                             </li>
                           </ul>
                         </div>
                       </div>
                     </div>
                     <div className="card-body p-0 py-3">
-                      {/* Fees List */}
-                      <div className="custom-datatable-filter table-responsive">
-                        <table className="table datatable">
-                          <thead className="thead-light">
+                      {feesData.length > 0 ? (
+                        <div className="table-responsive">
+                          <table className="table table-hover">
+                            <thead className="table-light">
                             <tr>
                               <th>Fees Group</th>
                               <th>Fees Code</th>
                               <th>Due Date</th>
-                              <th>Amount $ </th>
+                                <th>Amount ($)</th>
                               <th>Status</th>
                               <th>Ref ID</th>
                               <th>Mode</th>
@@ -380,214 +258,63 @@ const [showFeesLink, setShowFeesLink] = useState(false);
                             </tr>
                           </thead>
                           <tbody>
-                            <tr>
-                              <td>
-                                <p className="text-primary fees-group">
-                                  Class 1 General
-                                  <span className="d-block">
-                                    (Admission Fees)
+                              {feesData.map((fee) => (
+                                <tr key={fee.id}>
+                                  <td>
+                                    <p className="text-primary fees-group mb-0">
+                                      {fee.category}
+                                      <span className="d-block text-muted small">
+                                        ({fee.school.schoolName})
                                   </span>
                                 </p>
                               </td>
-                              <td>admission-fees</td>
-                              <td>25 Mar 2024</td>
-                              <td>2000</td>
                               <td>
-                                <span className="badge badge-soft-success d-inline-flex align-items-center">
-                                  <i className="ti ti-circle-filled fs-5 me-1" />
-                                  Paid
-                                </span>
+                                    <span className="text-muted">{fee.category.toLowerCase().replace(/\s+/g, '-')}</span>
                               </td>
-                              <td>#435454</td>
-                              <td>Cash</td>
-                              <td>25 Jan 2024</td>
-                              <td>10%</td>
-                              <td>200</td>
+                                  <td>{formatDate(fee.dueDate)}</td>
+                                  <td>
+                                    <span className="fw-bold">${fee.amount.toLocaleString()}</span>
+                              </td>
+                                  <td>{getStatusBadge(fee.status)}</td>
+                              <td>
+                                    <span className="text-muted">#{fee.id}</span>
+                              </td>
+                                  <td>
+                                    {fee.Payment.length > 0 ? fee.Payment[0].method : 'N/A'}
+                              </td>
+                              <td>
+                                    {fee.paymentDate ? formatDate(fee.paymentDate) : 'N/A'}
+                              </td>
+                                  <td>
+                                    <span className="text-success">${fee.discount}</span>
+                              </td>
+                              <td>
+                                    <span className="text-danger">$0</span>
+                              </td>
                             </tr>
-                            <tr>
-                              <td>
-                                <p className="text-primary">
-                                  Class 1 General{" "}
-                                  <span className="d-block">
-                                    (Mar month fees)
-                                  </span>
-                                </p>
-                              </td>
-                              <td>mar-month-fees</td>
-                              <td>10 Apr 2024</td>
-                              <td>2500</td>
-                              <td>
-                                <span className="badge badge-soft-success d-inline-flex align-items-center">
-                                  <i className="ti ti-circle-filled fs-5 me-1" />
-                                  Paid
-                                </span>
-                              </td>
-                              <td>#435453</td>
-                              <td>Cash</td>
-                              <td>03 Apr 2024</td>
-                              <td>10%</td>
-                              <td>0</td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <p className="text-primary">
-                                  Class 1 General{" "}
-                                  <span className="d-block">
-                                    (Apr month Fees)
-                                  </span>
-                                </p>
-                              </td>
-                              <td>apr-month-fees</td>
-                              <td>10 May 2024</td>
-                              <td>2500</td>
-                              <td>
-                                <span className="badge badge-soft-success d-inline-flex align-items-center">
-                                  <i className="ti ti-circle-filled fs-5 me-1" />
-                                  Paid
-                                </span>
-                              </td>
-                              <td>#435453</td>
-                              <td>Cash</td>
-                              <td>03 Apr 2024</td>
-                              <td>10%</td>
-                              <td>0</td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <p className="text-primary">
-                                  Class 1 General{" "}
-                                  <span className="d-block">
-                                    (May month Fees)
-                                  </span>
-                                </p>
-                              </td>
-                              <td>may-month-fees</td>
-                              <td>10 Jun 2024</td>
-                              <td>2500</td>
-                              <td>
-                                <span className="badge badge-soft-success d-inline-flex align-items-center">
-                                  <i className="ti ti-circle-filled fs-5 me-1" />
-                                  Paid
-                                </span>
-                              </td>
-                              <td>#435451</td>
-                              <td>Cash</td>
-                              <td>02 Jun 2024</td>
-                              <td>10%</td>
-                              <td>200</td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <p className="text-primary">
-                                  Class 1 General{" "}
-                                  <span className="d-block">
-                                    (Jun month Fees)
-                                  </span>
-                                </p>
-                              </td>
-                              <td>jun-month-fees</td>
-                              <td>10 Jul 2024</td>
-                              <td>2500</td>
-                              <td>
-                                <span className="badge badge-soft-success d-inline-flex align-items-center">
-                                  <i className="ti ti-circle-filled fs-5 me-1" />
-                                  Paid
-                                </span>
-                              </td>
-                              <td>#435450</td>
-                              <td>Cash</td>
-                              <td>05 Jul 2024</td>
-                              <td>10%</td>
-                              <td>200</td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <p className="text-primary">
-                                  Class 1 General{" "}
-                                  <span className="d-block">
-                                    (Jul month Fees)
-                                  </span>
-                                </p>
-                              </td>
-                              <td>jul-month-fees</td>
-                              <td>10 Aug 2024</td>
-                              <td>2500</td>
-                              <td>
-                                <span className="badge badge-soft-success d-inline-flex align-items-center">
-                                  <i className="ti ti-circle-filled fs-5 me-1" />
-                                  Paid
-                                </span>
-                              </td>
-                              <td>#435449</td>
-                              <td>Cash</td>
-                              <td>01 Aug 2024</td>
-                              <td>10%</td>
-                              <td>200</td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <p className="text-primary">
-                                  Class 1 General{" "}
-                                  <span className="d-block">
-                                    (Dec month Fees)
-                                  </span>
-                                </p>
-                              </td>
-                              <td>dec-month-fees</td>
-                              <td>10 Jan 2024</td>
-                              <td>2500</td>
-                              <td>
-                                <span className="badge badge-soft-success d-inline-flex align-items-center">
-                                  <i className="ti ti-circle-filled fs-5 me-1" />
-                                  Paid
-                                </span>
-                              </td>
-                              <td>#435443</td>
-                              <td>Cash</td>
-                              <td>05 Jan 2024</td>
-                              <td>10%</td>
-                              <td>0</td>
-                            </tr>
-                            <tr>
-                              <td>
-                                <p className="text-primary">
-                                  Class 1 General{" "}
-                                  <span className="d-block">
-                                    (Jan month Fees)
-                                  </span>
-                                </p>
-                              </td>
-                              <td>jan-month-fees</td>
-                              <td>10 Feb 2024</td>
-                              <td>2000</td>
-                              <td>
-                                <span className="badge badge-soft-success d-inline-flex align-items-center">
-                                  <i className="ti ti-circle-filled fs-5 me-1" />
-                                  Paid
-                                </span>
-                              </td>
-                              <td>#435443</td>
-                              <td>Cash</td>
-                              <td>01 Feb 2024</td>
-                              <td>10%</td>
-                              <td>200</td>
-                            </tr>
-                            <tr>
-                              <td className="bg-dark">-</td>
-                              <td className="bg-dark" />
-                              <td className="bg-dark" />
-                              <td className="bg-dark text-white">2000</td>
-                              <td className="bg-dark" />
-                              <td className="bg-dark" />
-                              <td className="bg-dark" />
-                              <td className="bg-dark" />
-                              <td className="bg-dark text-white">200</td>
-                              <td className="bg-dark text-white">200</td>
+                              ))}
+                              <tr className="table-dark">
+                                <td className="text-white fw-bold">Total</td>
+                                <td className="text-white"></td>
+                                <td className="text-white"></td>
+                                <td className="text-white fw-bold">${calculateTotal().toLocaleString()}</td>
+                                <td className="text-white"></td>
+                                <td className="text-white"></td>
+                                <td className="text-white"></td>
+                                <td className="text-white"></td>
+                                <td className="text-white fw-bold">${calculateTotalDiscount()}</td>
+                                <td className="text-white fw-bold">$0</td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
-                      {/* /Fees List */}
+                      ) : (
+                        <div className="text-center py-5">
+                          <i className="bi bi-credit-card display-4 text-muted mb-3"></i>
+                          <h5>No fees records found</h5>
+                          <p className="text-muted">No fees have been assigned to this student yet.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -596,7 +323,6 @@ const [showFeesLink, setShowFeesLink] = useState(false);
           </div>
         </div>
       </div>
-      {/* /Page Wrapper */}
       <StudentModals />
     </>
   );

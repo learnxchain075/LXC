@@ -1,0 +1,8 @@
+.modern-table-wrapper {
+  padding-bottom: 32px;
+}
+
+.ant-table-pagination {
+  margin-top: 32px !important;
+  margin-bottom: 0 !important;
+} 

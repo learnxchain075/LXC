@@ -18,10 +18,11 @@ interface IPaymentHistory {
   amount: number;
   razorpayOrderId: string;
   razorpayPaymentId: string | null;
-  paymentMethod: string | null;
+  paymentMethod?: string | null; // For admin API
+  method?: string | null; // For student API
   status: string;
   paymentDate: string;
-  failureReason: string | null;
+  failureReason?: string | null;
 }
 
 interface IFeeData {
@@ -71,16 +72,16 @@ export const PayFeeManagement = () => {
   const [razorpayKey, setRazorpayKey] = useState<string>("rzp_test_EJh0TkmUgkZNyG");
 
   // Fetch payment settings on component mount
-  const fetchPaymentSettings = async () => {
+  const fetchPaymentSettings = async (schoolId?: string) => {
     try {
-      const schoolId = localStorage.getItem("schoolId");
-      if (!schoolId) {
+      const targetSchoolId = schoolId || localStorage.getItem("schoolId");
+      if (!targetSchoolId) {
         console.warn("No school ID found");
         setPaymentConfigured(false);
         return;
       }
 
-      const response = await BaseApi.getRequest(`/school/admin/payment-secret/school/${schoolId}`);
+      const response = await BaseApi.getRequest(`/school/admin/payment-secret/school/${targetSchoolId}`);
       if (response.data && response.data.keyId) {
         console.log("Fetched Razorpay key:", response.data.keyId);
         setRazorpayKey(response.data.keyId);
@@ -128,15 +129,33 @@ export const PayFeeManagement = () => {
         res = await getFeesByStudent(studentId);
       }
       console.log("Fetched fee data:", res.data);
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        console.log("Setting feeId to:", res.data[0]?.id);
+      
+      // Handle different response structures
+      let feeDataArray = [];
+      if (res.data && res.data.success && res.data.fees) {
+        // Student API response structure: {success: true, fees: Array}
+        feeDataArray = res.data.fees;
+      } else if (res.data && Array.isArray(res.data)) {
+        // Admin API response structure: Array directly
+        feeDataArray = res.data;
+      }
+      
+      if (feeDataArray.length > 0) {
+        console.log("Setting feeId to:", feeDataArray[0]?.id);
+        const firstFee = feeDataArray[0];
         setFormData((prevData) => ({
           ...prevData,
-          feeId: res.data[0]?.id || "",
+          feeId: firstFee?.id || "",
+          schoolId: firstFee?.schoolId || localStorage.getItem("schoolId") || "",
         }));
-        setStudentFee(res.data[0]?.amount || 0);
-        setPaidFee(res.data[0]?.amountPaid || 0);
-        setFeeData(res.data || []);
+        setStudentFee(firstFee?.amount || 0);
+        setPaidFee(firstFee?.amountPaid || 0);
+        setFeeData(feeDataArray);
+        
+        // For students, fetch payment settings using the schoolId from fee data
+        if (user.role === "student" && firstFee?.schoolId) {
+          await fetchPaymentSettings(firstFee.schoolId);
+        }
       } else {
         setFeeData([]);
         setStudentFee(0);
@@ -224,7 +243,7 @@ export const PayFeeManagement = () => {
       studentId: user.role === "student" ? localStorage.getItem("studentId") || "" : "",
       amount: 0 as number,
       category: "",
-      schoolId: localStorage.getItem("schoolId") || "",
+      schoolId: user.role === "student" ? (feeData[0]?.schoolId || localStorage.getItem("schoolId") || "") : localStorage.getItem("schoolId") || "",
       feeId: "",
     });
     setSearchKeyword("");
@@ -239,8 +258,8 @@ export const PayFeeManagement = () => {
       fetchStudentFee(localStorage.getItem("studentId") || "");
     } else {
       fetchStudents();
+      fetchPaymentSettings();
     }
-    fetchPaymentSettings();
     // eslint-disable-next-line
   }, [user.role, dispatch]);
 
@@ -381,18 +400,18 @@ export const PayFeeManagement = () => {
 
   const columns: ColumnsType<IFeeData> = [
     // Define your columns here
-    {
+    ...(user.role === "admin" || user.role === "superadmin" ? [{
       title: "Student Info",
       dataIndex: "student",
       key: "student",
-      fixed: "left",
+      fixed: "left" as const,
       render: (student: any, record: IFeeData) => (
         <div>
           <div className="fw-bold">{record?.student?.name || "N/A"}</div>
           <div className="text-muted small">{record?.student?.rollNo || "N/A"}</div>
         </div>
       ),
-    },
+    }] : []),
     {
       title: "Fee Details",
       dataIndex: "category",
@@ -487,8 +506,8 @@ export const PayFeeManagement = () => {
         title: "Payment Method",
         dataIndex: "paymentMethod",
         key: "paymentMethod",
-        render: (method: string | null) => (
-          <span className="text-capitalize">{method || "N/A"}</span>
+        render: (method: string | null, record: IPaymentHistory) => (
+          <span className="text-capitalize">{record.paymentMethod || record.method || "N/A"}</span>
         ),
       },
       {

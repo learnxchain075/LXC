@@ -666,7 +666,6 @@ import StudentModals from "../studentModals";
 import StudentSidebar from "./studentSidebar";
 import StudentBreadcrumb from "./studentBreadcrumb";
 import useMobileDetection from "../../../../../core/common/mobileDetection";
-
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getExamsResultsByStudentId, IExam } from "../../../../../services/student/StudentAllApi";
@@ -691,90 +690,141 @@ const StudentResult = () => {
   const routes = all_routes;
   const isMobile = useMobileDetection();
   const [examData, setExamData] = useState<ExamData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    toast.promise(
-      getExamsResultsByStudentId()
-        .then((response) => {
-          if (response.data.success) {
-            const groupedByMonth = response.data.exams.reduce((acc: { [key: string]: IExam[] }, exam: IExam) => {
-              const month = new Date(exam.startTime).toLocaleString('en-US', { month: 'long' });
-              acc[month] = acc[month] || [];
-              acc[month].push(exam);
-              return acc;
-            }, {});
-            const transformedData = Object.keys(groupedByMonth).map((month, index) => {
-              const exams = groupedByMonth[month];
-              const examDetails = exams.map((exam: IExam) => {
-                const maxMarks = exam.totalMarks || 100;
-                const minMarks = exam.passMark || 35;
-                const marksObtained = exam.results.length > 0 ? exam.results[0].score : null;
-                const result = marksObtained !== null ? (marksObtained >= minMarks ? 'Pass' : 'Fail') : 'N/A';
-                return {
-                  subject: `${exam.subject.name} (${exam.subject.code})`,
-                  maxMarks,
-                  minMarks,
-                  marksObtained,
-                  result,
-                };
-              });
-              const totalMarks = examDetails.reduce((sum, e) => sum + e.maxMarks, 0);
-              const marksObtained = examDetails.reduce((sum, e) => sum + (e.marksObtained || 0), 0);
-              const hasMissingScores = examDetails.some(e => e.marksObtained === null);
-              const hasScores = examDetails.some(e => e.marksObtained !== null);
-              const percentage = hasScores ? (totalMarks ? ((marksObtained / totalMarks) * 100).toFixed(2) : '0.00') : 'N/A';
-              const overallResult = hasMissingScores ? 'Fail' : (hasScores && examDetails.every(e => e.marksObtained === null || e.result === 'Pass') ? 'Pass' : 'Fail');
+    const fetchExamData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getExamsResultsByStudentId();
+        
+        if (response.data.success) {
+          const groupedByMonth = response.data.exams.reduce((acc: { [key: string]: IExam[] }, exam: IExam) => {
+            const month = new Date(exam.startTime).toLocaleString('en-US', { month: 'long' });
+            acc[month] = acc[month] || [];
+            acc[month].push(exam);
+            return acc;
+          }, {});
+          
+          const transformedData = Object.keys(groupedByMonth).map((month, index) => {
+            const exams = groupedByMonth[month];
+            const examDetails = exams.map((exam: IExam) => {
+              const maxMarks = exam.totalMarks || 100;
+              const minMarks = exam.passMark || 35;
+              const marksObtained = exam.results.length > 0 ? exam.results[0].score : null;
+              const result = marksObtained !== null ? (marksObtained >= minMarks ? 'Pass' : 'Fail') : 'N/A';
               return {
-                id: `collapse${index + 1}`,
-                title: `Monthly Test (${month})`,
-                exams: examDetails,
-                totalMarks,
-                marksObtained: hasScores ? marksObtained : null,
-                percentage,
-                overallResult,
+                subject: `${exam.subject.name} (${exam.subject.code})`,
+                maxMarks,
+                minMarks,
+                marksObtained,
+                result,
               };
             });
-            return transformedData;
-          }
-          throw new Error('API response unsuccessful');
-        }),
-      {
-       // pending: 'Fetching exams and results...',
-        success: 'Exams and results loaded!',
-        error: 'Failed to load exams and results.',
+            
+            const totalMarks = examDetails.reduce((sum, e) => sum + e.maxMarks, 0);
+            const marksObtained = examDetails.reduce((sum, e) => sum + (e.marksObtained || 0), 0);
+            const hasMissingScores = examDetails.some(e => e.marksObtained === null);
+            const hasScores = examDetails.some(e => e.marksObtained !== null);
+            const percentage = hasScores ? (totalMarks ? ((marksObtained / totalMarks) * 100).toFixed(2) : '0.00') : 'N/A';
+            const overallResult = hasMissingScores ? 'Fail' : (hasScores && examDetails.every(e => e.marksObtained === null || e.result === 'Pass') ? 'Pass' : 'Fail');
+            
+            return {
+              id: `collapse${index + 1}`,
+              title: `Monthly Test (${month})`,
+              exams: examDetails,
+              totalMarks,
+              marksObtained: hasScores ? marksObtained : null,
+              percentage,
+              overallResult,
+            };
+          });
+          
+          setExamData(transformedData);
+          toast.success('Exams and results loaded successfully!', { autoClose: 3000 });
+        } else {
+          throw new Error('Failed to load exam data');
+        }
+      } catch (error: any) {
+        console.error('Error fetching exam data:', error);
+        toast.error(error.message || 'Failed to load exams and results', { autoClose: 3000 });
+      } finally {
+        setIsLoading(false);
       }
-    )
-      .then((transformedData) => setExamData(transformedData))
-      .catch((error) => console.error(error));
+    };
+
+    fetchExamData();
   }, []);
 
-  if (!examData.length) return (
-    <div className="text-center dark:text-white">Loading...</div>
-  );
+  if (isLoading) {
+    return (
+      <div className={isMobile ? "page-wrapper" : "p-3"}>
+        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
+        <div className="content">
+          <div className="row">
+            <div className="col-12">
+              <div className="card">
+                <div className="card-body text-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p className="mt-3 text-muted">Loading exam results...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!examData.length) {
+    return (
+      <div className={isMobile ? "page-wrapper" : "p-3"}>
+        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
+        <div className="content">
+          <div className="row">
+            <div className="col-12">
+              <div className="card">
+                <div className="card-body text-center py-5">
+                  <i className="bi bi-exclamation-triangle display-4 text-muted mb-3"></i>
+                  <h5>No exam results available</h5>
+                  <p className="text-muted">No exam results have been published yet.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className={isMobile ? "page-wrapper" : "p-3"}>
-        <ToastContainer position="top-right" autoClose={3000} />
+        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
         <div className="content">
           <div className="row">
             <div className="col-12 d-flex flex-column">
               <div className="row">
                 <div className="col-md-12">
-                  <div className="card">
-                    <div className="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
-                      <h4 className="mb-3">Exams & Results</h4>
+                  <div className="card border-0 shadow-sm">
+                    <div className="card-header bg-white border-0 d-flex align-items-center justify-content-between flex-wrap pb-0">
+                      <h4 className="fw-bold text-dark mb-3">
+                        <i className="bi bi-mortarboard text-primary me-2"></i>
+                        Exams & Results
+                      </h4>
                       <div className="d-flex align-items-center flex-wrap">
                         <div className="dropdown mb-3 me-2">
-                          <Link
-                            to="#"
-                            className="btn btn-outline-light bg-white dropdown-toggle"
+                          <button
+                            className="btn btn-outline-primary dropdown-toggle"
+                            type="button"
                             data-bs-toggle="dropdown"
                             data-bs-auto-close="outside"
                           >
-                            <i className="ti ti-calendar-due me-2" />
+                            <i className="bi bi-calendar me-2"></i>
                             Year : 2024 / 2025
-                          </Link>
+                          </button>
                           <ul className="dropdown-menu p-3">
                             <li>
                               <Link to="#" className="dropdown-item rounded-1">
@@ -795,21 +845,21 @@ const StudentResult = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="card-body">
-                      <div className="accordions-items-seperate" id="accordionExample">
+                    <div className="card-body p-4">
+                      <div className="accordion" id="accordionExample">
                         {examData.map((exam, index) => (
-                          <div className="accordion-item" key={exam.id}>
+                          <div className="accordion-item border-0 shadow-sm mb-3" key={exam.id}>
                             <h2 className="accordion-header">
                               <button
-                                className={`accordion-button ${index === 0 ? '' : 'collapsed'}`}
+                                className={`accordion-button ${index === 0 ? '' : 'collapsed'} fw-bold`}
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target={`#${exam.id}`}
                                 aria-expanded={index === 0 ? 'true' : 'false'}
                                 aria-controls={exam.id}
                               >
-                                <span className={`avatar avatar-sm ${exam.overallResult === 'Pass' ? 'bg-success' : 'bg-danger'} me-2`}>
-                                  <i className="ti ti-checks" />
+                                <span className={`badge ${exam.overallResult === 'Pass' ? 'bg-success' : 'bg-danger'} me-3`}>
+                                  <i className="bi bi-check-circle"></i>
                                 </span>
                                 {exam.title}
                               </button>
@@ -819,43 +869,77 @@ const StudentResult = () => {
                               className={`accordion-collapse collapse ${index === 0 ? 'show' : ''}`}
                               data-bs-parent="#accordionExample"
                             >
-                              <div className="accordion-body">
+                              <div className="accordion-body p-4">
                                 <div className="table-responsive">
-                                  <table className="table">
-                                    <thead className="thead-light">
+                                  <table className="table table-hover">
+                                    <thead className="table-light">
                                       <tr>
-                                        <th>Subject</th>
-                                        <th>Max Marks</th>
-                                        <th>Min Marks</th>
-                                        <th>Marks Obtained</th>
-                                        <th className="text-end">Result</th>
+                                        <th scope="col">
+                                          <i className="bi bi-book me-1"></i>
+                                          Subject
+                                        </th>
+                                        <th scope="col">
+                                          <i className="bi bi-star me-1"></i>
+                                          Max Marks
+                                        </th>
+                                        <th scope="col">
+                                          <i className="bi bi-flag me-1"></i>
+                                          Min Marks
+                                        </th>
+                                        <th scope="col">
+                                          <i className="bi bi-trophy me-1"></i>
+                                          Marks Obtained
+                                        </th>
+                                        <th scope="col" className="text-end">
+                                          <i className="bi bi-check-circle me-1"></i>
+                                          Result
+                                        </th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {exam.exams.map((subject, idx) => (
                                         <tr key={idx}>
-                                          <td>{subject.subject}</td>
-                                          <td>{subject.maxMarks}</td>
-                                          <td>{subject.minMarks}</td>
-                                          <td>{subject.marksObtained ?? 'N/A'}</td>
+                                          <td>
+                                            <span className="fw-medium">{subject.subject}</span>
+                                          </td>
+                                          <td>
+                                            <span className="text-muted">{subject.maxMarks}</span>
+                                          </td>
+                                          <td>
+                                            <span className="text-muted">{subject.minMarks}</span>
+                                          </td>
+                                          <td>
+                                            <span className="fw-bold">{subject.marksObtained ?? 'N/A'}</span>
+                                          </td>
                                           <td className="text-end">
-                                            <span className={`badge ${subject.result === 'Pass' ? 'badge-soft-success' : subject.result === 'Fail' ? 'badge-soft-danger' : 'badge-soft-danger'} d-inline-flex align-items-center`}>
-                                              <i className="ti ti-circle-filled fs-5 me-1" />
+                                            <span className={`badge ${subject.result === 'Pass' ? 'bg-success' : subject.result === 'Fail' ? 'bg-danger' : 'bg-secondary'}`}>
+                                              <i className={`bi ${subject.result === 'Pass' ? 'bi-check-circle' : subject.result === 'Fail' ? 'bi-x-circle' : 'bi-question-circle'} me-1`}></i>
                                               {subject.result}
                                             </span>
                                           </td>
                                         </tr>
                                       ))}
-                                      <tr>
-                                        <td className="bg-dark text-white">Rank : N/A</td>
-                                        <td className="bg-dark text-white">Total : {exam.totalMarks}</td>
-                                        <td className="bg-dark text-white" colSpan={2}>Marks Obtained : {exam.marksObtained ?? 'N/A'}</td>
-                                        <td className="bg-dark text-white text-end">
+                                      <tr className="table-dark">
+                                        <td className="text-white fw-bold">
+                                          <i className="bi bi-trophy me-1"></i>
+                                          Rank : N/A
+                                        </td>
+                                        <td className="text-white fw-bold">
+                                          Total : {exam.totalMarks}
+                                        </td>
+                                        <td className="text-white" colSpan={2}>
+                                          Marks Obtained : {exam.marksObtained ?? 'N/A'}
+                                        </td>
+                                        <td className="text-white text-end">
                                           <div className="d-flex align-items-center justify-content-end">
-                                            <span className="me-2">Percentage : {exam.percentage}</span>
-                                            <h6 className="fw-normal text-white">
-                                              Result : <span className={exam.overallResult === 'Pass' ? 'text-success' : 'text-danger'}> {exam.overallResult}</span>
-                                            </h6>
+                                            <span className="me-3">
+                                              <i className="bi bi-percent me-1"></i>
+                                              {exam.percentage}%
+                                            </span>
+                                            <span className={`badge ${exam.overallResult === 'Pass' ? 'bg-success' : 'bg-danger'}`}>
+                                              <i className={`bi ${exam.overallResult === 'Pass' ? 'bi-check-circle' : 'bi-x-circle'} me-1`}></i>
+                                              {exam.overallResult}
+                                            </span>
                                           </div>
                                         </td>
                                       </tr>

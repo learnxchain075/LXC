@@ -15,6 +15,10 @@ import { getLessonByteacherId } from "../../../../../services/teacher/lessonServ
 import {
   createLeaveRequest,
   getMyLeaves,
+  getAllLeaveRequests,
+  approveLeaveRequest,
+  rejectLeaveRequest,
+  getLeaveRequestsBySchool,
 } from "../../../../../services/teacher/leaveService";
 
 import { ILeaveRequest } from "../../../../../services/types/teacher/ILeaveRequest";
@@ -86,12 +90,14 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
   const [students, setStudents] = useState<any[]>([]);
   const [timetable, setTimetable] = useState<Lesson[]>([]);
   const [leaves, setLeaves] = useState<any[]>([]);
+  const [studentLeaveRequests, setStudentLeaveRequests] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [savingAttendance, setSavingAttendance] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
-  const [localTeacherData, setLocalTeacherData] = useState<any>(null); // Added local state
+  const [localTeacherData, setLocalTeacherData] = useState<any>(null);
+  const [loadingLeaveRequests, setLoadingLeaveRequests] = useState(false);
 
   const [leaveForm, setLeaveForm] = useState({
     leaveType: "",
@@ -125,7 +131,7 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
 
   const fetchTeacherDetails = async () => {
     try {
-      setIsDataLoading(true); // Sync with isDataLoading
+      setIsDataLoading(true); 
       const response = await getTeacherById(localStorage.getItem("teacherId") ?? "");
       if (response.status === 200) {
         const teacherDetails = response.data;
@@ -143,7 +149,7 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
     }
   };
 
-  // Modified useEffect to handle teacherdata and fetch if null
+
   useEffect(() => {
     if (teacherdata) {
       setLocalTeacherData(teacherdata);
@@ -239,7 +245,22 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
             getClassesByTeacherId(teacherId),
           ]);
           setTimetable(lessonsResponse?.data as any || []);
-          setClassList(classesResponse?.data.classes || []);
+          
+       
+          let classesData = [];
+          const responseData = (classesResponse as any)?.data;
+          
+          if (responseData?.data && Array.isArray(responseData.data)) {
+            classesData = responseData.data;
+          } else if (responseData?.classes && Array.isArray(responseData.classes)) {
+            classesData = responseData.classes;
+          } else if (Array.isArray(responseData)) {
+            classesData = responseData;
+          } else if (Array.isArray(classesResponse)) {
+            classesData = classesResponse;
+          }
+          
+          setClassList(classesData);
         }
 
         const leavesResponse = await getMyLeaves();
@@ -298,33 +319,150 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
     }
   }, [user.role, localTeacherData]);
 
+  // Fetch student leave requests
+  const fetchStudentLeaveRequests = useCallback(async () => {
+    if (user.role !== "teacher") return;
+    
+    setLoadingLeaveRequests(true);
+    try {
+      const schoolId = localStorage.getItem("schoolId");
+      if (!schoolId) {
+        toast.error("School ID not found");
+        return;
+      }
+console.log("object",schoolId);
+      const response = await getLeaveRequestsBySchool(schoolId);
+      
+      const allLeaveRequests = response.data || [];
+      
+      // Filter for student leave requests that are pending approval
+      const studentRequests = allLeaveRequests.filter((request: any) => {
+        return request.user?.role === "student" && 
+               request.status === "pending" &&
+               request.user?.student?.schoolId === schoolId;
+      });
+
+      const processedRequests = studentRequests.map((request: any) => ({
+        id: request.id,
+        studentName: request.user?.name || "Unknown Student",
+        studentId: request.user?.id,
+        admissionNo: request.user?.student?.admissionNo || "N/A",
+        classId: request.user?.student?.classId || "N/A",
+        sectionId: request.user?.student?.sectionId || "N/A",
+        leaveType: request.reason.split(":")[0].trim(),
+        reason: request.reason.split(":").slice(1).join(":").trim(),
+        fromDate: new Date(request.fromDate).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        toDate: new Date(request.toDate).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        noOfDays: Math.ceil(
+          (new Date(request.toDate).getTime() - new Date(request.fromDate).getTime()) /
+            (1000 * 60 * 60 * 24)
+        ) + 1,
+        appliedOn: new Date(request.createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        status: request.status || "pending",
+      }));
+
+      setStudentLeaveRequests(processedRequests);
+    } catch (error) {
+      console.error("Error fetching student leave requests:", error);
+      toast.error("Failed to load student leave requests");
+    } finally {
+      setLoadingLeaveRequests(false);
+    }
+  }, [user.role]);
+
+  // Handle approve/reject leave requests
+  const handleApproveLeave = async (leaveId: string) => {
+    try {
+      await approveLeaveRequest(leaveId);
+      toast.success("Leave request approved successfully");
+      fetchStudentLeaveRequests(); // Refresh the list
+    } catch (error) {
+      console.error("Error approving leave request:", error);
+      toast.error("Failed to approve leave request");
+    }
+  };
+
+  const handleRejectLeave = async (leaveId: string) => {
+    try {
+      await rejectLeaveRequest(leaveId);
+      toast.success("Leave request rejected successfully");
+      fetchStudentLeaveRequests(); // Refresh the list
+    } catch (error) {
+      console.error("Error rejecting leave request:", error);
+      toast.error("Failed to reject leave request");
+    }
+  };
+
+  useEffect(() => {
+    if (localTeacherData && user.role === "teacher") {
+      fetchStudentLeaveRequests();
+    }
+  }, [localTeacherData, user.role, fetchStudentLeaveRequests]);
+
   useEffect(() => {
     const fetchStudents = async () => {
       if (addFormData.classId && addFormData.sectionId) {
         setLoadingStudents(true);
         try {
           const response = await getAllStudentsInAclass(addFormData.classId);
-          setStudents(
-            response?.data?.students
-              .filter((student: any) => student.classId === addFormData.classId)
-              .map((student: any) => ({
-                id: student.id,
-                key: student.id,
-                admissionNo: student.admissionNo || `A${student.id}`,
-                rollNo: student.rollNo || `R${student.id}`,
-                name: student?.user?.name,
-                classId: getClassNameById(addFormData.classId) || "",
-                sectionId: getSectionNameById(addFormData.classId, addFormData.sectionId) || "",
-                attendance: student.attendance || "Present",
-                present: student.attendance === "Present",
-                absent: student.attendance === "Absent",
-                notes: student.notes || "",
-                img: student?.user.profilePic || "",
-              })) || []
-          );
+          console.log("Students API Response:", response);
+          
+          // Handle different possible response structures
+          let studentsData = [];
+          const responseData = (response as any)?.data;
+          
+          if (responseData?.data && Array.isArray(responseData.data)) {
+            studentsData = responseData.data;
+          } else if (responseData?.students && Array.isArray(responseData.students)) {
+            studentsData = responseData.students;
+          } else if (Array.isArray(responseData)) {
+            studentsData = responseData;
+          } else if (Array.isArray(response)) {
+            studentsData = response;
+          }
+          
+          // Ensure studentsData is an array before filtering
+          if (!Array.isArray(studentsData)) {
+            console.error("studentsData is not an array:", studentsData);
+            toast.error("Invalid students data format received", { autoClose: 3000 });
+            setStudents([]);
+            return;
+          }
+          
+          const filteredStudents = studentsData
+            .filter((student: any) => student.classId === addFormData.classId)
+            .map((student: any) => ({
+              id: student.id,
+              key: student.id,
+              admissionNo: student.admissionNo || `A${student.id}`,
+              rollNo: student.rollNo || `R${student.id}`,
+              name: student?.user?.name || "Unknown Student",
+              classId: getClassNameById(addFormData.classId) || "",
+              sectionId: getSectionNameById(addFormData.classId, addFormData.sectionId) || "",
+              attendance: student.attendance || "Present",
+              present: student.attendance === "Present",
+              absent: student.attendance === "Absent",
+              notes: student.notes || "",
+              img: student?.user?.profilePic || "",
+            }));
+          
+          setStudents(filteredStudents);
         } catch (error) {
           console.error("Error fetching students:", error);
           toast.error("Failed to load students");
+          setStudents([]);
         } finally {
           setLoadingStudents(false);
         }
@@ -760,6 +898,103 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
     },
   ];
 
+  const studentLeaveRequestColumns = [
+    {
+      title: "Student Name",
+      dataIndex: "studentName",
+      render: (text: string) => <Link to="#" className="link-primary">{text}</Link>,
+      sorter: (a: any, b: any) => a.studentName.localeCompare(b.studentName),
+    },
+    {
+      title: "Admission No",
+      dataIndex: "admissionNo",
+      sorter: (a: any, b: any) => a.admissionNo.localeCompare(b.admissionNo),
+    },
+    {
+      title: "Leave Type",
+      dataIndex: "leaveType",
+      render: (text: string) => (
+        <span className="badge badge-soft-info">{text}</span>
+      ),
+      sorter: (a: any, b: any) => a.leaveType.localeCompare(b.leaveType),
+    },
+    {
+      title: "Reason",
+      dataIndex: "reason",
+      render: (text: string) => (
+        <span className="text-muted" style={{ maxWidth: "200px", display: "block" }}>
+          {text}
+        </span>
+      ),
+      sorter: (a: any, b: any) => a.reason.localeCompare(b.reason),
+    },
+    {
+      title: "From Date",
+      dataIndex: "fromDate",
+      sorter: (a: any, b: any) => new Date(a.fromDate).getTime() - new Date(b.fromDate).getTime(),
+    },
+    {
+      title: "To Date",
+      dataIndex: "toDate",
+      sorter: (a: any, b: any) => new Date(a.toDate).getTime() - new Date(b.toDate).getTime(),
+    },
+    {
+      title: "No. of Days",
+      dataIndex: "noOfDays",
+      render: (text: number) => (
+        <span className="badge badge-soft-warning">{text} days</span>
+      ),
+      sorter: (a: any, b: any) => a.noOfDays - b.noOfDays,
+    },
+    {
+      title: "Applied On",
+      dataIndex: "appliedOn",
+      sorter: (a: any, b: any) => new Date(a.appliedOn).getTime() - new Date(b.appliedOn).getTime(),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (text: string) => (
+        <span
+          className={`badge badge-soft-${
+            text === "approved" ? "success" : 
+            text === "rejected" ? "danger" : "warning"
+          } d-inline-flex align-items-center`}
+        >
+          <i className="ti ti-circle-filled fs-5 me-1"></i>
+          {text.charAt(0).toUpperCase() + text.slice(1)}
+        </span>
+      ),
+      sorter: (a: any, b: any) => a.status.localeCompare(b.status),
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      render: (_: any, record: any) => (
+        <div className="d-flex gap-2">
+          <button
+            type="button"
+            className="btn btn-success btn-sm"
+            onClick={() => handleApproveLeave(record.id)}
+            disabled={record.status !== "pending"}
+          >
+            <i className="ti ti-check me-1"></i>
+            Approve
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger btn-sm"
+            onClick={() => handleRejectLeave(record.id)}
+            disabled={record.status !== "pending"}
+          >
+            <i className="ti ti-x me-1"></i>
+            Reject
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <ErrorBoundary>
       <div
@@ -807,6 +1042,18 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
                           Teacher Attendance
                         </Link>
                       </li>
+                      {user.role === "teacher" && (
+                        <li className="me-3 mb-3">
+                          <Link
+                            to="#"
+                            className="nav-link rounded fs-12 fw-semibold"
+                            data-bs-toggle="tab"
+                            data-bs-target="#student_leave_requests"
+                          >
+                            Student Leave Requests
+                          </Link>
+                        </li>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -1406,6 +1653,112 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
                             )}
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="tab-pane fade" id="student_leave_requests">
+                    <div className="card flex-fill mb-3">
+                      <div className="card-header d-flex align-items-center justify-content-between flex-wrap p-2 pb-1">
+                        <h4 className="mb-2">Student Leave Requests</h4>
+                        <div className="d-flex align-items-center flex-wrap">
+                          <button
+                            onClick={fetchStudentLeaveRequests}
+                            className="btn btn-outline-primary btn-sm me-2"
+                            disabled={loadingLeaveRequests}
+                          >
+                            <i className="ti ti-refresh me-1"></i>
+                            {loadingLeaveRequests ? "Refreshing..." : "Refresh"}
+                          </button>
+                          <div className="dropdown mb-2">
+                            <Link
+                              to="#"
+                              className="btn btn-outline-light bg-white dropdown-toggle"
+                              data-bs-toggle="dropdown"
+                            >
+                              <i className="ti ti-filter me-2" /> Filter
+                            </Link>
+                            <ul className="dropdown-menu p-3">
+                              <li>
+                                <Link to="#" className="dropdown-item rounded-1">
+                                  All Requests
+                                </Link>
+                              </li>
+                              <li>
+                                <Link to="#" className="dropdown-item rounded-1">
+                                  Pending Only
+                                </Link>
+                              </li>
+                              <li>
+                                <Link to="#" className="dropdown-item rounded-1">
+                                  Approved Only
+                                </Link>
+                              </li>
+                              <li>
+                                <Link to="#" className="dropdown-item rounded-1">
+                                  Rejected Only
+                                </Link>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="card-body p-0 py-2">
+                        {loadingLeaveRequests ? (
+                          <div className="placeholder-glow">
+                            {Array(5)
+                              .fill(0)
+                              .map((_, index) => (
+                                <div key={index} className="p-3 border-bottom">
+                                  <SkeletonPlaceholder
+                                    className="col-3 mb-2"
+                                  />
+                                  <SkeletonPlaceholder
+                                    className="col-2 mb-2"
+                                  />
+                                  <SkeletonPlaceholder
+                                    className="col-2 mb-2"
+                                  />
+                                  <SkeletonPlaceholder
+                                    className="col-3 mb-2"
+                                  />
+                                  <SkeletonPlaceholder
+                                    className="col-2 mb-2"
+                                  />
+                                </div>
+                              ))}
+                          </div>
+                        ) : studentLeaveRequests.length === 0 ? (
+                          <div className="text-center p-5">
+                            <div className="mb-3">
+                              <i className="ti ti-calendar-off fs-1 text-muted"></i>
+                            </div>
+                            <h5 className="text-muted">No Leave Requests</h5>
+                            <p className="text-muted mb-3">
+                              There are no pending student leave requests at the moment.
+                            </p>
+                            <button
+                              onClick={fetchStudentLeaveRequests}
+                              className="btn btn-primary btn-sm"
+                            >
+                              <i className="ti ti-refresh me-1"></i>
+                              Refresh
+                            </button>
+                          </div>
+                        ) : (
+                          <Table
+                            dataSource={studentLeaveRequests}
+                            columns={studentLeaveRequestColumns}
+                            rowKey="id"
+                            className={isDark ? "table table-dark" : "table table-light"}
+                            pagination={{
+                              pageSize: 10,
+                              showSizeChanger: true,
+                              showQuickJumper: true,
+                              showTotal: (total, range) =>
+                                `${range[0]}-${range[1]} of ${total} items`,
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
