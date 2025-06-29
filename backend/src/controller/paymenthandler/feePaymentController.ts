@@ -172,12 +172,15 @@ export const verifyRazorpayPayment = async (req: Request, res: Response): Promis
     //   }
     // }
 
-    await createFeeInvoice(payment.id);
+    const invoiceDetails = await createFeeInvoice(payment.id);
 
     res.status(200).json({
       message: "Payment successfully verified",
       totalPaid,
       status: newStatus,
+      paymentId: payment.id,
+      invoiceNumber: invoiceDetails?.invoiceNumber,
+      invoiceUrl: invoiceDetails?.url,
     });
   } catch (error) {
     console.error("Error verifying payment:", error);

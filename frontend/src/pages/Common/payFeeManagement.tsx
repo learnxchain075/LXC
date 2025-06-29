@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSchoolStudents } from "../../services/admin/studentRegister";
+import { getClassByschoolId, getAllStudentsInAclass } from "../../services/teacher/classServices";
 import { toast, ToastContainer } from "react-toastify";
 import BaseApi from "../../services/BaseApi";
 import { getFeesByStudent } from "../../services/accounts/feesServices";
@@ -50,9 +50,10 @@ interface IFeeData {
 
 export const PayFeeManagement = () => {
   const [students, setStudents] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
   const user = useSelector((state: any) => state.auth.userObj);
-  const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
-  const [searchKeyword, setSearchKeyword] = useState<string>("");
   const [studentFee, setStudentFee] = useState<number>(0);
   const [paidFee, setPaidFee] = useState<number>(0);
   const [feeData, setFeeData] = useState<IFeeData[]>([]);
@@ -103,19 +104,41 @@ export const PayFeeManagement = () => {
     }
   };
 
-  const fetchStudents = async () => {
+  const fetchClasses = async () => {
     const schoolId = localStorage.getItem("schoolId");
     if (!schoolId) return;
     try {
+      const res = await getClassByschoolId(schoolId);
+      setClasses(res.data?.data || []);
+    } catch (err) {
+      toast.error("Failed to fetch classes");
+    }
+  };
+
+  const fetchStudentsByClass = async (classId: string) => {
+    if (!classId) return;
+    try {
       setLoading(true);
-      const res = await getSchoolStudents(schoolId);
-     // console.log("Fetched students:", res.data);
-      setStudents(res.data || []);
+      const res = await getAllStudentsInAclass(classId);
+      let studentsData: any[] = [];
+      const responseData = (res as any)?.data;
+      if (responseData?.students && Array.isArray(responseData.students)) {
+        studentsData = responseData.students;
+      } else if (responseData?.data && Array.isArray(responseData.data)) {
+        studentsData = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        studentsData = responseData;
+      }
+      setStudents(studentsData);
     } catch (err) {
       toast.error("Failed to fetch students");
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchStudents = async () => {
+    await fetchClasses();
   };
 
   const fetchStudentFee = async (studentId: string) => {
@@ -148,6 +171,13 @@ export const PayFeeManagement = () => {
           feeId: firstFee?.id || "",
           schoolId: firstFee?.schoolId || localStorage.getItem("schoolId") || "",
         }));
+        const categories = Array.from(new Set(feeDataArray.map((f: any) => f.category)));
+        setAvailableCategories(categories);
+        if (categories.length > 0) {
+          setFormData(prev => ({ ...prev, category: categories[0] }));
+        } else {
+          setFormData(prev => ({ ...prev, category: "" }));
+        }
         setStudentFee(firstFee?.amount || 0);
         setPaidFee(firstFee?.amountPaid || 0);
         setFeeData(feeDataArray);
@@ -172,25 +202,21 @@ export const PayFeeManagement = () => {
     }
   };
 
-  const handleStudentSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const keyword = e.target.value.trim().toLowerCase();
-    setSearchKeyword(e.target.value);
-    const filtered = students.filter((s) =>
-      s.rollNo?.toLowerCase().includes(keyword)
-    );
-    setFilteredStudents(filtered);
+
+  const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    setSelectedClassId(id);
+    setStudents([]);
     setFormData({ ...formData, studentId: "" });
     setFeeData([]);
     setStudentFee(0);
     setPaidFee(0);
-    setFetchError(null);
+    if (id) fetchStudentsByClass(id);
   };
 
-  const handleStudentSelect = (student: any) => {
-    setFormData({ ...formData, studentId: student.id });
-    setSearchKeyword(student.rollNo);
-    setFilteredStudents([]);
-    fetchStudentFee(student.id);
+  const handleStudentSelect = (studentId: string) => {
+    setFormData({ ...formData, studentId });
+    fetchStudentFee(studentId);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -201,18 +227,6 @@ export const PayFeeManagement = () => {
     }));
   };
 
-  // Auto-select category when fee data is loaded
-  useEffect(() => {
-    if (feeData.length > 0) {
-      const firstFee = feeData[0];
-      if (firstFee.category && !formData.category) {
-        setFormData(prevData => ({
-          ...prevData,
-          category: firstFee.category
-        }));
-      }
-    }
-  }, [feeData]);
 
   // Helper function to get category display name
   const getCategoryDisplayName = (category: string) => {
@@ -246,8 +260,6 @@ export const PayFeeManagement = () => {
       schoolId: user.role === "student" ? (feeData[0]?.schoolId || localStorage.getItem("schoolId") || "") : localStorage.getItem("schoolId") || "",
       feeId: "",
     });
-    setSearchKeyword("");
-    setFilteredStudents([]);
     setFeeData([]);
     setStudentFee(0);
     setPaidFee(0);
@@ -257,7 +269,7 @@ export const PayFeeManagement = () => {
     if (user.role === "student") {
       fetchStudentFee(localStorage.getItem("studentId") || "");
     } else {
-      fetchStudents();
+      fetchClasses();
       fetchPaymentSettings();
     }
     // eslint-disable-next-line
@@ -342,6 +354,9 @@ export const PayFeeManagement = () => {
               } else {
                 await fetchStudentFee(formData.studentId);
               }
+              if (verifyRes.data.paymentId) {
+                await handleDownloadReceipt(verifyRes.data.paymentId);
+              }
               resetForm();
             } else {
               toast.error(verifyRes.data?.message || "Payment verification failed.");
@@ -396,6 +411,22 @@ export const PayFeeManagement = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handlePayment();
+  };
+
+  const handleDownloadReceipt = async (paymentId: string) => {
+    try {
+      const res = await BaseApi.getRequest(`/school/fee/invoice/${paymentId}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `receipt_${paymentId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Failed to download receipt');
+    }
   };
 
   const columns: ColumnsType<IFeeData> = [
@@ -528,6 +559,23 @@ export const PayFeeManagement = () => {
           </div>
         ),
       },
+      {
+        title: "Receipt",
+        key: "receipt",
+        render: (_, record: IPaymentHistory) => (
+          record.status === "PAID" ? (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary"
+              onClick={() => handleDownloadReceipt(record.id)}
+            >
+              <i className="ti ti-download me-1"></i>Download
+            </button>
+          ) : (
+            <span className="text-muted">N/A</span>
+          )
+        ),
+      },
     ];
 
     return (
@@ -597,39 +645,43 @@ export const PayFeeManagement = () => {
                     </div>
                   ) : isAdminOrSuperadmin ? (
                     <form onSubmit={handleSubmit}>
-                      {/* Student Search Section */}
+                      {/* Class and Student Selection */}
                       <div className="row mb-4">
                         <div className="col-md-6">
                           <div className="form-group">
                             <label className="form-label fw-semibold">
-                              <i className="ti ti-search me-1"></i>
-                              Search Student
+                              <i className="ti ti-building-bank me-1"></i>
+                              Select Class
                             </label>
-                            <div className="position-relative">
-                              <input
-                                type="text"
-                                className="form-control form-control-lg"
-                                value={searchKeyword}
-                                onChange={handleStudentSearch}
-                                placeholder="Enter student roll number..."
-                              />
-                              <i className="ti ti-user position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
-                            </div>
-                            {filteredStudents.length > 0 && (
-                              <div className="position-absolute w-100 bg-white border rounded shadow-sm mt-1" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
-                                {filteredStudents.map((student) => (
-                                  <div
-                                    key={student.id}
-                                    className="p-3 border-bottom cursor-pointer hover-bg-light"
-                                    style={{ cursor: 'pointer' }}
-                                    onClick={() => handleStudentSelect(student)}
-                                  >
-                                    <div className="fw-medium">{student.rollNo}</div>
-                                    <div className="small text-muted">{student.fatherName}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                            <select
+                              className="form-control form-control-lg"
+                              value={selectedClassId}
+                              onChange={handleClassChange}
+                            >
+                              <option value="">Select Class</option>
+                              {classes.map((cls) => (
+                                <option key={cls.id} value={cls.id}>{cls.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <div className="form-group">
+                            <label className="form-label fw-semibold">
+                              <i className="ti ti-user me-1"></i>
+                              Select Student
+                            </label>
+                            <select
+                              className="form-control form-control-lg"
+                              value={formData.studentId}
+                              onChange={(e) => handleStudentSelect(e.target.value)}
+                              disabled={!selectedClassId}
+                            >
+                              <option value="">Select Student</option>
+                              {students.map((stu) => (
+                                <option key={stu.id} value={stu.id}>{stu.rollNo} - {stu.user?.name || stu.fatherName}</option>
+                              ))}
+                            </select>
                           </div>
                         </div>
                       </div>
@@ -685,11 +737,11 @@ export const PayFeeManagement = () => {
                                 required
                               >
                                 <option value="">Select Category</option>
-                                <option value="tuition">Tuition Fee</option>
-                                <option value="library">Library Fee</option>
-                                <option value="transport">Transport Fee</option>
-                                <option value="hostel">Hostel Fee</option>
-                                <option value="other">Other Fee</option>
+                                {availableCategories.map((cat) => (
+                                  <option key={cat} value={cat}>
+                                    {getCategoryDisplayName(cat)}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           </div>
@@ -876,11 +928,11 @@ export const PayFeeManagement = () => {
                                   required
                                 >
                                   <option value="">Select Category</option>
-                                  <option value="tuition">Tuition Fee</option>
-                                  <option value="library">Library Fee</option>
-                                  <option value="transport">Transport Fee</option>
-                                  <option value="hostel">Hostel Fee</option>
-                                  <option value="other">Other Fee</option>
+                                  {availableCategories.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                      {getCategoryDisplayName(cat)}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
                             </div>
