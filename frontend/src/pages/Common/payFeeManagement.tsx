@@ -51,6 +51,9 @@ interface IFeeData {
 export const PayFeeManagement = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
+
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const user = useSelector((state: any) => state.auth.userObj);
   const [studentFee, setStudentFee] = useState<number>(0);
@@ -119,7 +122,20 @@ export const PayFeeManagement = () => {
     try {
       setLoading(true);
       const res = await getAllStudentsInAclass(classId);
-      setStudents(res.data?.students || []);
+
+      let studentsData: any[] = [];
+      const responseData = (res as any)?.data;
+      if (responseData?.students && Array.isArray(responseData.students)) {
+        studentsData = responseData.students;
+      } else if (responseData?.data && Array.isArray(responseData.data)) {
+        studentsData = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        studentsData = responseData;
+      }
+      setStudents(studentsData);
+
+//       setStudents(res.data?.students || []);
+
     } catch (err) {
       toast.error("Failed to fetch students");
     } finally {
@@ -161,6 +177,13 @@ export const PayFeeManagement = () => {
           feeId: firstFee?.id || "",
           schoolId: firstFee?.schoolId || localStorage.getItem("schoolId") || "",
         }));
+        const categories = Array.from(new Set(feeDataArray.map((f: any) => f.category)));
+        setAvailableCategories(categories);
+        if (categories.length > 0) {
+          setFormData(prev => ({ ...prev, category: categories[0] }));
+        } else {
+          setFormData(prev => ({ ...prev, category: "" }));
+        }
         setStudentFee(firstFee?.amount || 0);
         setPaidFee(firstFee?.amountPaid || 0);
         setFeeData(feeDataArray);
@@ -210,18 +233,6 @@ export const PayFeeManagement = () => {
     }));
   };
 
-  // Auto-select category when fee data is loaded
-  useEffect(() => {
-    if (feeData.length > 0) {
-      const firstFee = feeData[0];
-      if (firstFee.category && !formData.category) {
-        setFormData(prevData => ({
-          ...prevData,
-          category: firstFee.category
-        }));
-      }
-    }
-  }, [feeData]);
 
   // Helper function to get category display name
   const getCategoryDisplayName = (category: string) => {
@@ -348,6 +359,9 @@ export const PayFeeManagement = () => {
                 await fetchStudentFee(localStorage.getItem("studentId") || "");
               } else {
                 await fetchStudentFee(formData.studentId);
+              }
+              if (verifyRes.data.paymentId) {
+                await handleDownloadReceipt(verifyRes.data.paymentId);
               }
               resetForm();
             } else {
@@ -729,11 +743,11 @@ export const PayFeeManagement = () => {
                                 required
                               >
                                 <option value="">Select Category</option>
-                                <option value="tuition">Tuition Fee</option>
-                                <option value="library">Library Fee</option>
-                                <option value="transport">Transport Fee</option>
-                                <option value="hostel">Hostel Fee</option>
-                                <option value="other">Other Fee</option>
+                                {availableCategories.map((cat) => (
+                                  <option key={cat} value={cat}>
+                                    {getCategoryDisplayName(cat)}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                           </div>
@@ -920,11 +934,11 @@ export const PayFeeManagement = () => {
                                   required
                                 >
                                   <option value="">Select Category</option>
-                                  <option value="tuition">Tuition Fee</option>
-                                  <option value="library">Library Fee</option>
-                                  <option value="transport">Transport Fee</option>
-                                  <option value="hostel">Hostel Fee</option>
-                                  <option value="other">Other Fee</option>
+                                  {availableCategories.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                      {getCategoryDisplayName(cat)}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
                             </div>
