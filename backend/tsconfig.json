@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    //  "target": "es2021"
+    "target": "es6",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "typeRoots": ["./src/types","node_modules/@types"],
+    "types": ["jest","mocha"],
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    // "resolveJsonModule": true ,
+    // "forceConsistentCasingInFileNames": true ,
+    // "skipLibCheck": true ,
+   
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests"]
+}

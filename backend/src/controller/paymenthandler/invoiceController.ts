@@ -1,0 +1,222 @@
+import { RequestHandler } from "express";
+import puppeteer from "puppeteer";
+import QRCode from "qrcode";
+import { Role } from "@prisma/client";
+import { prisma } from "../../db/prisma";
+import { uploadFile } from "../../config/upload";
+import {
+  generatePlanInvoiceHtml,
+  generateFeeInvoiceHtml,
+} from "../../template/invoiceTemplates";
+import {
+  generateInvoiceNumber,
+  logInvoiceDownload,
+} from "../../utils/invoiceUtils";
+import { sendInvoicePdfEmail } from "../../utils/mailer";
+
+export const downloadPlanInvoice: RequestHandler = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+      include: { plan: true, school: { include: { user: true } }, payment: true },
+    });
+    if (!subscription || !subscription.payment) {
+      res.status(404).json({ message: "Subscription not found" });
+      return;
+    }
+
+    if (
+      req.user?.id !== subscription.school.userId &&
+      req.user?.role !== Role.superadmin
+    ) {
+      res.status(403).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const paymentRecord: any = subscription.payment as any;
+    let invoiceNumber = paymentRecord.invoiceNumber;
+    if (!invoiceNumber) {
+      invoiceNumber = await generateInvoiceNumber(subscription.schoolId);
+      await prisma.payment.update({
+        where: { id: subscription.payment.id },
+        data: { invoiceNumber },
+      });
+    }
+
+    const totalAmount = subscription.payment.amount;
+    const baseAmount = Number((totalAmount / 1.18).toFixed(2));
+    const gstAmount = Number((totalAmount - baseAmount).toFixed(2));
+
+    const qrImage = await QRCode.toDataURL(
+      `${process.env.BASE_URL}/api/v1/school/plan/invoice/${subscriptionId}`
+    );
+
+    const html = generatePlanInvoiceHtml({
+      schoolName: subscription.school.schoolName,
+      invoiceNumber,
+      planName: subscription.plan.name,
+      baseAmount,
+      gstAmount,
+      totalAmount,
+      date: new Date(
+        subscription.payment.updatedAt ?? subscription.payment.createdAt
+      ).toLocaleDateString(),
+      logoUrl: subscription.school.schoolLogo || undefined,
+      address: subscription.school.user.address,
+      qrImage,
+      lang: (req.query.lang as "HI" | "EN") || "EN",
+    });
+
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+    const pdfBuffer = (await page.pdf({ format: "A4" })) as Buffer;
+    await browser.close();
+
+    let invoiceUrl = paymentRecord.invoiceUrl;
+    if (!invoiceUrl) {
+      const upload = await uploadFile(
+        pdfBuffer,
+        "invoices",
+        "raw",
+        `plan_${invoiceNumber}.pdf`
+      );
+      invoiceUrl = upload.url;
+      await prisma.payment.update({
+        where: { id: subscription.payment.id },
+        data: { invoiceUrl },
+      });
+
+      await sendInvoicePdfEmail(
+        subscription.school.user.email,
+        invoiceUrl,
+        pdfBuffer
+      );
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${invoiceNumber}.pdf`
+    );
+    res.send(pdfBuffer);
+
+    await logInvoiceDownload(invoiceNumber, req.user!.id);
+    return;
+  } catch (error) {
+    console.error("Plan invoice error", error);
+    res.status(500).json({ message: "Failed to generate invoice" });
+    return;
+  }
+};
+
+export const downloadFeeInvoice: RequestHandler = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        fee: {
+          include: {
+            student: { include: { user: true } },
+            school: { include: { user: true } },
+          },
+        },
+      },
+    });
+    if (!payment || !payment.fee) {
+      res.status(404).json({ message: "Payment not found" });
+      return;
+    }
+
+    const fee = payment.fee;
+    const allowedUserIds = [fee.school.userId, fee.student.userId];
+    const allowedEmails = [
+      fee.student.fatheremail,
+      fee.student.motherEmail,
+      fee.student.guardianEmail,
+    ];
+    if (
+      !allowedUserIds.includes(req.user!.id) &&
+      !allowedEmails.includes(req.user!.email)
+    ) {
+      res.status(403).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const payRecord: any = payment as any;
+    let invoiceNumber = payRecord.invoiceNumber;
+    if (!invoiceNumber) {
+      invoiceNumber = await generateInvoiceNumber(fee.schoolId);
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { invoiceNumber },
+      });
+    }
+
+    const classInfo = await prisma.class.findUnique({ where: { id: fee.student.classId }, select: { name: true } });
+
+    const qrImage = await QRCode.toDataURL(
+      `${process.env.BASE_URL}/api/v1/school/fee/invoice/${paymentId}`
+    );
+
+    const html = generateFeeInvoiceHtml({
+      schoolName: fee.school.schoolName,
+      studentName: payment.fee.student.user?.name || "N/A",
+      className: classInfo?.name || "N/A",
+      invoiceNumber,
+      paymentDate: new Date(payment.updatedAt ?? payment.createdAt).toLocaleDateString(),
+      paymentMethod: payment.paymentMethod || "N/A",
+      totalFee: fee.amount,
+      amountPaid: payment.amount,
+      pendingAmount: fee.amount - fee.amountPaid,
+      feeStatus: fee.status,
+      logoUrl: fee.school.schoolLogo || undefined,
+      address: fee.school.user.address,
+      qrImage,
+      lang: (req.query.lang as "HI" | "EN") || "EN",
+    });
+
+    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+    const pdfBuffer = (await page.pdf({ format: "A4" })) as Buffer;
+    await browser.close();
+
+    let invoiceUrl = payRecord.invoiceUrl;
+    if (!invoiceUrl) {
+      const upload = await uploadFile(
+        pdfBuffer,
+        "invoices",
+        "raw",
+        `fee_${invoiceNumber}.pdf`
+      );
+      invoiceUrl = upload.url;
+      await prisma.payment.update({ where: { id: payment.id }, data: { invoiceUrl } });
+
+      const recipients = new Set<string>();
+      if (payment.fee.student.user?.email) recipients.add(payment.fee.student.user.email);
+      if (payment.fee.student.guardianEmail) recipients.add(payment.fee.student.guardianEmail);
+      if (payment.fee.student.fatheremail) recipients.add(payment.fee.student.fatheremail);
+      if (payment.fee.student.motherEmail) recipients.add(payment.fee.student.motherEmail);
+      for (const email of recipients) {
+        await sendInvoicePdfEmail(email, invoiceUrl, pdfBuffer);
+      }
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${invoiceNumber}.pdf`
+    );
+    res.send(pdfBuffer);
+
+    await logInvoiceDownload(invoiceNumber, req.user!.id);
+    return;
+  } catch (error) {
+    console.error("Fee invoice error", error);
+    res.status(500).json({ message: "Failed to generate invoice" });
+    return;
+  }
+};

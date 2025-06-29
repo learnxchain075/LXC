@@ -1,0 +1,15 @@
+
+@use "../utils/variables" as *;
+@use "../utils/mixins" as *;
+.rating {
+    i {
+        &.filled {
+            color: $warning;
+        }
+    }
+
+    .rating-rate {
+        color: $black;
+        margin-left: 5px;
+    }
+}

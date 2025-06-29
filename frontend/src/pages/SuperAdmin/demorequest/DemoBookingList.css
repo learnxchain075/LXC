@@ -1,0 +1,25 @@
+.demo-table th,
+.demo-table td {
+  vertical-align: middle;
+  white-space: normal !important;
+  word-break: break-word;
+}
+
+.demo-table tr:hover {
+  background-color: #f6f9ff;
+  transition: background-color 0.2s;
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .demo-table th,
+  .demo-table td {
+    font-size: 14px;
+    padding: 10px;
+  }
+}

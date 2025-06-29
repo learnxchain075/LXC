@@ -1,0 +1,119 @@
+.custom-loader-overlay {
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  flex-direction: column;
+}
+
+/* ========== RING LOADER ========== */
+.ring-loader {
+  border: 6px solid;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+/* ========== WAVE LOADER ========== */
+.wave-loader {
+  display: flex;
+  gap: 4px;
+  align-items: end;
+}
+.wave-loader div {
+  width: 6px;
+  height: 15px;
+  animation: wave 1.2s ease-in-out infinite;
+}
+.wave-loader div:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.wave-loader div:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.wave-loader div:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.wave-loader div:nth-child(5) {
+  animation-delay: 0.4s;
+}
+@keyframes wave {
+  0%,
+  100% {
+    height: 15px;
+  }
+  50% {
+    height: 30px;
+  }
+}
+
+/* ========== CUBE LOADER ========== */
+.cube-loader {
+  width: 25px;
+  height: 25px;
+  animation: cube-rotate 1.2s infinite linear;
+}
+@keyframes cube-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(90deg) scale(1.1);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  75% {
+    transform: rotate(270deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========== CIRCLE BOUNCE ========== */
+.circle-bounce-loader {
+  display: flex;
+  gap: 10px;
+}
+.circle-bounce-loader div {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  animation: bounceCircle 0.6s infinite alternate;
+}
+.circle-bounce-loader div:nth-child(2) {
+  animation-delay: 0.2s;
+}
+@keyframes bounceCircle {
+  from {
+    transform: translateY(0px);
+  }
+  to {
+    transform: translateY(-15px);
+  }
+}
+
+/* ========== GLOW LOADER ========== */
+.glow-loader {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  animation: glow 1.5s ease-in-out infinite;
+}
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 0px rgba(0, 0, 0, 0.2);
+    transform: scale(0.9);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(0, 0, 0, 0.2);
+    transform: scale(0.9);
+  }
+}

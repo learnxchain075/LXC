@@ -1,0 +1,14 @@
+@use "../utils/variables" as *;
+@use "../utils/mixins" as *;
+.dash-select-student {
+    margin-bottom: 10px;
+    .avatar {
+        border: 1px solid transparent;
+        &:hover {
+            border-color: $primary;
+        }
+        &.active {
+            border-color: $primary;
+        }
+    }
+}

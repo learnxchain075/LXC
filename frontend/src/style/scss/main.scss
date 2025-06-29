@@ -1,0 +1,226 @@
+// /****** Utils ******/
+// @import "utils/variables";
+// @import "utils/mixins";
+
+// /******* Base *******/
+// @import "base/base";
+// @import "base/background";
+
+// /****** Layout ******/
+// @import "layout/common";
+// @import "layout/content";
+// @import "layout/header";
+// @import "layout/sidebar";
+// @import "layout/notification";
+// @import "layout/theme-settings";
+
+// /******* Components ******/
+// @import "components/avatar";
+// @import "components/boostrap";
+// @import "components/button";
+// @import "components/badge";
+// @import "components/border";
+// @import "components/calendar";
+// @import "components/chart";
+// @import "components/call";
+// @import "components/chat";
+// @import "components/dropdown";
+// @import "components/email";
+// @import "components/file-manager";
+// @import "components/file-upload";
+// @import "components/icons";
+// @import "components/progress";
+// @import "components/pagination";
+// @import "components/font";
+// @import "components/typography";
+// @import "components/alerts";
+// @import "components/popovers";
+// @import "components/forms";
+// @import "components/notes";
+// @import "components/todo";
+// @import "components/tables";
+// @import "components/accordion";
+// @import "components/breadcrumb";
+// @import "components/cards";
+// @import "components/tooltips";
+// @import "components/navs-tabs";
+// @import "components/ribbon";
+// @import "components/popup";
+// @import "components/grid";
+// @import "components/timeline";
+// @import "components/sweetalert";
+
+// /******* Pages ******/
+// @import "pages/student";
+// @import "pages/student-details";
+// @import "pages/notice-board";
+// @import "pages/events";
+// @import "pages/settings";
+// @import "pages/blog";
+// @import "pages/dashboard";
+// @import "pages/login";
+// @import "pages/error";
+// @import "pages/invoice";
+// @import "pages/student-dashboard";
+// @import "pages/parent-dashboard";
+// @import "pages/teacher-dashboard";
+// @import "pages/themes";
+
+
+// /******* Vendors ******/
+// @import "vendors/select2";
+// @import "vendors/datatables";
+// @import "vendors/rangepicker-plugin";
+
+
+
+// /****** Utils ******/
+// @use "utils/variables" as *;
+// @use "utils/mixins" as *;
+
+// /******* Base *******/
+// @use "base/base";
+// @use "base/background";
+
+// /****** Layout ******/
+// @use "layout/common";
+// @use "layout/content";
+// @use "layout/header";
+// @use "layout/sidebar";
+// @use "layout/notification";
+// @use "layout/theme-settings";
+
+// /******* Components ******/
+// @use "components/avatar";
+// @use "components/boostrap";
+// @use "components/button";
+// @use "components/badge";
+// @use "components/border";
+// @use "components/calendar";
+// @use "components/chart";
+// @use "components/call";
+// @use "components/chat";
+// @use "components/dropdown";
+// @use "components/email";
+// @use "components/file-manager";
+// @use "components/file-upload";
+// @use "components/icons";
+// @use "components/progress";
+// @use "components/pagination";
+// @use "components/font";
+// @use "components/typography";
+// @use "components/alerts";
+// @use "components/popovers";
+// @use "components/forms";
+// @use "components/notes";
+// @use "components/todo";
+// @use "components/tables";
+// @use "components/accordion";
+// @use "components/breadcrumb";
+// @use "components/cards";
+// @use "components/tooltips";
+// @use "components/navs-tabs";
+// @use "components/ribbon";
+// @use "components/popup";
+// @use "components/grid";
+// @use "components/timeline";
+// @use "components/sweetalert";
+
+// /******* Pages ******/
+// @use "pages/student";
+// @use "pages/student-details";
+// @use "pages/notice-board";
+// @use "pages/events";
+// @use "pages/settings";
+// @use "pages/blog";
+// @use "pages/dashboard";
+// @use "pages/login";
+// @use "pages/error";
+// @use "pages/invoice";
+// @use "pages/student-dashboard";
+// @use "pages/parent-dashboard";
+// @use "pages/teacher-dashboard";
+// @use "pages/themes";
+
+
+// /******* Vendors ******/
+// @use "vendors/select2";
+// @use "vendors/datatables";
+// @use "vendors/rangepicker-plugin";
+
+
+
+
+/****** Utils ******/
+@use "utils/variables" as *;
+@use "utils/mixins" as *;
+
+/******* Base *******/
+@use "base/base" as *;
+@use "base/background" as *;
+
+/****** Layout ******/
+@use "layout/common" as *;
+@use "layout/content" as *;
+@use "layout/header" as *;
+@use "layout/sidebar" as *;
+@use "layout/notification" as *;
+@use "layout/theme-settings" as *;
+
+/******* Components ******/
+@use "components/avatar" as *;
+@use "components/boostrap" as *;
+@use "components/button" as *;
+@use "components/badge" as *;
+@use "components/border" as *;
+@use "components/calendar" as *;
+@use "components/chart" as *;
+@use "components/call" as *;
+@use "components/chat" as *;
+@use "components/dropdown" as *;
+@use "components/email" as *;
+@use "components/file-manager" as *;
+@use "components/file-upload" as *;
+@use "components/icons" as *;
+@use "components/progress" as *;
+@use "components/pagination" as *;
+@use "components/font" as *;
+@use "components/typography" as *;
+@use "components/alerts" as *;
+@use "components/popovers" as *;
+@use "components/forms" as *;
+@use "components/notes" as *;
+@use "components/todo" as *;
+@use "components/tables" as *;
+@use "components/accordion" as *;
+@use "components/breadcrumb" as *;
+@use "components/cards" as *;
+@use "components/tooltips" as *;
+@use "components/navs-tabs" as *;
+@use "components/ribbon" as *;
+@use "components/popup" as *;
+@use "components/grid" as *;
+@use "components/timeline" as *;
+@use "components/sweetalert" as *;
+
+/******* Pages ******/
+@use "pages/student" as *;
+@use "pages/student-details" as *;
+@use "pages/notice-board" as *;
+@use "pages/events" as *;
+@use "pages/settings" as *;
+@use "pages/blog" as *;
+@use "pages/dashboard" as *;
+@use "pages/login" as *;
+@use "pages/error" as *;
+@use "pages/invoice" as *;
+@use "pages/student-dashboard" as *;
+@use "pages/parent-dashboard" as *;
+@use "pages/teacher-dashboard" as *;
+@use "pages/themes" as *;
+
+/******* Vendors ******/
+@use "vendors/select2" as *;
+@use "vendors/datatables" as *;
+@use "vendors/rangepicker-plugin" as *;
+
