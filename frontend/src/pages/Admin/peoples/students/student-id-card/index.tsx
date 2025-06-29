@@ -25,6 +25,7 @@ const StudentIdCardGenerator: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -66,11 +67,7 @@ const StudentIdCardGenerator: React.FC = () => {
       const res = await downloadStudentIdCard(selectedStudentId);
       const blob = new Blob([res.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${selectedStudentId}_id_card.pdf`;
-      link.click();
-      window.URL.revokeObjectURL(url);
+      setPreviewUrl(url);
     } catch (err) {
       console.error(err);
       alert("Failed to generate ID card");
@@ -149,6 +146,29 @@ const StudentIdCardGenerator: React.FC = () => {
             <button className="btn btn-primary mt-3" onClick={handleGenerate} disabled={loading || !selectedStudentId}>
               {loading ? "Generating..." : "Generate"}
             </button>
+            {previewUrl && (
+              <div className="mt-4">
+                <iframe
+                  title="ID Card Preview"
+                  src={previewUrl}
+                  style={{ width: '100%', height: '500px', border: '1px solid #ccc' }}
+                ></iframe>
+                <div className="mt-2">
+                  <a href={previewUrl} download={`${selectedStudentId}_id_card.pdf`} className="btn btn-success me-2">
+                    Download
+                  </a>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      const win = window.open(previewUrl);
+                      win?.print();
+                    }}
+                  >
+                    Print
+                  </button>
+                </div>
+              </div>
+            )}
             <ToastContainer />
           </div>
         </div>
