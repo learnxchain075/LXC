@@ -12,7 +12,7 @@ docker run --rm \
   -v "$(pwd)/certbot/www:/var/www/certbot" \
   certbot/certbot certonly --webroot -w /var/www/certbot \
   --email contact@learnxchain.io --agree-tos --no-eff-email \
-  -d teenzskin.com -d www.teenzskin.com -d api.teenzskin.com
+  -d learnxchain.io -d www.learnxchain.io -d api.learnxchain.io
 
 # Reminder
 echo "✅ If successful, uncomment HTTPS blocks in nginx/default.conf and restart NGINX."
