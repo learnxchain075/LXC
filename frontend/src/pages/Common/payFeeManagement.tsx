@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Modal, Button } from "react-bootstrap";
 import { getClassByschoolId, getAllStudentsInAclass } from "../../services/teacher/classServices";
 import { toast, ToastContainer } from "react-toastify";
 import BaseApi from "../../services/BaseApi";
@@ -73,6 +74,34 @@ export const PayFeeManagement = () => {
   const dispatch = useDispatch();
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [razorpayKey, setRazorpayKey] = useState<string>("rzp_test_EJh0TkmUgkZNyG");
+  const [receiptPreview, setReceiptPreview] = useState<{ userUrl: string; officeUrl?: string } | null>(null);
+
+  const fetchReceiptBlob = async (paymentId: string, copy: 'user' | 'office') => {
+    const res = await BaseApi.getRequest(`/school/fee/receipt/${paymentId}?copy=${copy}`, { responseType: 'blob' });
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    return window.URL.createObjectURL(blob);
+  };
+
+  const openReceiptPreview = async (paymentId: string) => {
+    try {
+      const userBlob = await fetchReceiptBlob(paymentId, 'user');
+      let officeBlob: string | undefined;
+      try {
+        officeBlob = await fetchReceiptBlob(paymentId, 'office');
+      } catch (_) {}
+      setReceiptPreview({ userUrl: userBlob, officeUrl: officeBlob });
+    } catch (err) {
+      toast.error("Failed to load receipt preview");
+    }
+  };
+
+  const closeReceiptPreview = () => {
+    if (receiptPreview) {
+      URL.revokeObjectURL(receiptPreview.userUrl);
+      if (receiptPreview.officeUrl) URL.revokeObjectURL(receiptPreview.officeUrl);
+    }
+    setReceiptPreview(null);
+  };
 
   // Fetch payment settings on component mount
   const fetchPaymentSettings = async (schoolId?: string) => {
@@ -360,15 +389,8 @@ export const PayFeeManagement = () => {
               } else {
                 await fetchStudentFee(formData.studentId);
               }
-              if (verifyRes.data.receipt) {
-                if (verifyRes.data.receipt.userUrl) {
-                  await downloadUrl(verifyRes.data.receipt.userUrl, `receipt_user_${verifyRes.data.paymentId}.pdf`);
-                }
-                if (verifyRes.data.receipt.officeUrl) {
-                  await downloadUrl(verifyRes.data.receipt.officeUrl, `receipt_office_${verifyRes.data.paymentId}.pdf`);
-                }
-              } else if (verifyRes.data.paymentId) {
-                await handleDownloadReceipt(verifyRes.data.paymentId);
+              if (verifyRes.data.paymentId) {
+                await openReceiptPreview(verifyRes.data.paymentId);
               }
               resetForm();
             } else {
@@ -426,30 +448,13 @@ export const PayFeeManagement = () => {
     handlePayment();
   };
 
-  const downloadUrl = async (url: string, filename: string) => {
+  const handleDownloadReceipt = async (paymentId: string, copy: 'user' | 'office' = 'user') => {
     try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      toast.error('Failed to download receipt');
-    }
-  };
-
-  const handleDownloadReceipt = async (paymentId: string) => {
-    try {
-      const res = await BaseApi.getRequest(`/school/fee/invoice/${paymentId}`, { responseType: 'blob' });
+      const res = await BaseApi.getRequest(`/school/fee/receipt/${paymentId}?copy=${copy}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `receipt_${paymentId}.pdf`;
+      link.download = `${copy}_receipt_${paymentId}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
@@ -631,6 +636,37 @@ export const PayFeeManagement = () => {
     <>
       <div className={isAdminOrSuperadmin ? "page-wrapper min-vh-100" : "p-4 min-vh-100"}>
         <ToastContainer position="top-center" autoClose={3000} />
+
+        {/* Receipt Preview Modal */}
+        <Modal show={!!receiptPreview} onHide={closeReceiptPreview} size="lg" centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Fee Receipt</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {receiptPreview && (
+              <iframe
+                title="Fee Receipt"
+                src={receiptPreview.userUrl}
+                style={{ width: '100%', height: '500px', border: '1px solid #ccc' }}
+              ></iframe>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            {receiptPreview?.userUrl && (
+              <a href={receiptPreview.userUrl} download={`receipt_user.pdf`} className="btn btn-primary">
+                Download User Copy
+              </a>
+            )}
+            {receiptPreview?.officeUrl && (
+              <a href={receiptPreview.officeUrl} download={`receipt_office.pdf`} className="btn btn-secondary">
+                Download Office Copy
+              </a>
+            )}
+            <Button variant="secondary" onClick={() => { const win = window.open(receiptPreview?.userUrl || ''); win?.print(); }}>
+              Print
+            </Button>
+          </Modal.Footer>
+        </Modal>
         
         {/* Payment Processing Overlay */}
         {paymentProcessing && (
