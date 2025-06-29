@@ -239,6 +239,7 @@ import ClassesRegister from "../pages/Admin/ClassesRegister";
 import AddBusStop from "../pages/SuperAdmin/management/transport/addBusStop";
 import RefundPolicyPage from "../lxc-home/pages/RefundPolicyPage";
 import AddSectionModal from "../pages/Admin/AddSectionModal";
+import StudentIdCardGenerator from "../pages/Admin/peoples/students/student-id-card";
 
 
 const routes = all_routes;
@@ -324,6 +325,12 @@ export const publicRoutes = [
   {
     path: routes.requestFeatures,
     element: <AdminRequestFetauresPage />,
+    route: Route,
+    role: ["admin"]
+  },
+  {
+    path: routes.studentIdCard,
+    element: <StudentIdCardGenerator />,
     route: Route,
     role: ["admin"]
   },
