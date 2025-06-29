@@ -33,6 +33,7 @@
     "aws-sdk": "^2.1692.0",
     "axios": "^1.9.0",
     "bcryptjs": "^2.4.3",
+    "bwip-js": "^2.1.2",
     "canvas": "^3.1.2",
     "chalk": "^5.4.1",
     "chart.js": "^4.5.0",
@@ -56,7 +57,6 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
     "pdfkit": "^0.17.1",
-    "bwip-js": "^2.1.2",
     "puppeteer": "^24.10.2",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.5",
@@ -75,6 +75,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/bwip-js": "^3.2.3",
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",
     "@types/date-fns": "^2.5.3",
