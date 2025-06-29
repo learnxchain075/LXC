@@ -56,6 +56,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.0",
     "pdfkit": "^0.17.1",
+    "bwip-js": "^2.1.2",
     "puppeteer": "^24.10.2",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.5",
