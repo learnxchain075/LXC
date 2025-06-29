@@ -8,8 +8,8 @@ import { TableData } from "../../../../../core/data/interface";
 import CommonSelect from '../../../../../core/common/commonSelect';
 
 import { status, promotion, academicYear, allSection } from '../../../../../core/common/selectoption/selectoption';
-
-
+import { getClasses } from '../../../../services/teacher/classServices';
+import { getSections } from '../../../../services/teacher/sectionServices';
 
 import PredefinedDateRanges from '../../../../../core/common/datePicker';
 import TooltipOption from '../../../../../core/common/tooltipOption';
@@ -67,6 +67,7 @@ const StudentPromotion = () => {
     }
   }, [form.toClassId]);
 
+
   // useEffect(() => {
   //   if (form.toClassId) {
   //     getSections(form.toClassId)
@@ -88,6 +89,7 @@ const StudentPromotion = () => {
         academicYear: "2024-2025",
         toSession: "2025-2026",
       });
+
 
 
       console.log("Promotion request sent");
