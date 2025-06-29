@@ -7,9 +7,10 @@ export const generateStudentIdCard = async (
 ): Promise<Buffer> => {
   const doc = new PDFDocument({ size: [350, 220], margin: 5 });
   const buffers: Buffer[] = [];
-  doc.on('data', d => buffers.push(d));
 
-  // Theme colors
+  doc.on('data', d => buffers.push(d));
+  doc.on('end', () => {});
+
   const primary = '#0d47a1';
   const accent = '#42a5f5';
   const bg = '#ffffff';
@@ -24,7 +25,7 @@ export const generateStudentIdCard = async (
     try {
       doc.image(student.school.schoolLogo, 10, 5, { width: 30, height: 30 });
     } catch (err) {
-      /* ignore image errors */
+      console.warn('Failed to load school logo');
     }
   }
   doc.fillColor('#fff').fontSize(16).text(student.school.schoolName, 50, 12, {
@@ -39,30 +40,33 @@ export const generateStudentIdCard = async (
   // Student photo
   if (student.user.profilePic) {
     try {
-      doc
-        .rect(20, 60, 70, 80)
-        .lineWidth(1)
-        .stroke(accent);
-      doc.image(student.user.profilePic, 20, 60, { width: 70, height: 80, align: 'center' });
+      doc.image(student.user.profilePic, 20, 60, { width: 70, height: 80 });
+      doc.rect(20, 60, 70, 80).lineWidth(1).stroke(accent);
     } catch (err) {
-      /* ignore image errors */
+      console.warn('Failed to load student photo');
     }
   }
 
   // Student information
   const textX = 110;
   const startY = 60;
+
   doc.fillColor(primary)
-    .fontSize(12)
+    .fontSize(11)
     .text(`Name:`, textX, startY)
     .text(`Admission No:`, textX, startY + 18)
     .text(`Class:`, textX, startY + 36)
-    .text(`Roll No:`, textX, startY + 54);
+    .text(`Roll No:`, textX, startY + 54)
+    .text(`Blood Group:`, textX, startY + 72)
+    .text(`Contact:`, textX, startY + 90);
+
   doc.fillColor('#000')
     .text(student.user.name, textX + 80, startY)
     .text(student.admissionNo, textX + 80, startY + 18)
     .text(student.class.name, textX + 80, startY + 36)
-    .text(student.rollNo, textX + 80, startY + 54);
+    .text(student.rollNo, textX + 80, startY + 54)
+    .text(student.user.bloodType || '-', textX + 80, startY + 72)
+    .text(student.user.phone || '-', textX + 80, startY + 90);
 
   // Barcode section
   try {
@@ -78,12 +82,12 @@ export const generateStudentIdCard = async (
     console.error('Barcode generation failed', err);
   }
 
-  // Footer accent bar
+  // Footer bar
   doc.fillColor(accent).rect(0, 210, 350, 10).fill();
 
   doc.end();
 
-  return await new Promise(resolve => {
+  return new Promise(resolve => {
     doc.on('end', () => resolve(Buffer.concat(buffers)));
   });
 };
