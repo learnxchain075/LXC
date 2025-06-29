@@ -74,34 +74,37 @@ export const PayFeeManagement = () => {
   const dispatch = useDispatch();
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [razorpayKey, setRazorpayKey] = useState<string>("rzp_test_EJh0TkmUgkZNyG");
-  const [receiptPreview, setReceiptPreview] = useState<{ userUrl: string; officeUrl?: string } | null>(null);
+const [receiptPreview, setReceiptPreview] = useState<{ userUrl: string; officeUrl?: string } | null>(null);
 
-  const fetchReceiptBlob = async (paymentId: string, copy: 'user' | 'office') => {
-    const res = await BaseApi.getRequest(`/school/fee/receipt/${paymentId}?copy=${copy}`, { responseType: 'blob' });
-    const blob = new Blob([res.data], { type: 'application/pdf' });
-    return window.URL.createObjectURL(blob);
-  };
+const fetchReceiptBlob = async (paymentId: string, copy: 'user' | 'office') => {
+  const res = await BaseApi.getRequest(`/school/fee/receipt/${paymentId}?copy=${copy}`, { responseType: 'blob' });
+  const blob = new Blob([res.data], { type: 'application/pdf' });
+  return window.URL.createObjectURL(blob);
+};
 
-  const openReceiptPreview = async (paymentId: string) => {
+const openReceiptPreview = async (paymentId: string) => {
+  try {
+    const userBlob = await fetchReceiptBlob(paymentId, 'user');
+    let officeBlob: string | undefined;
     try {
-      const userBlob = await fetchReceiptBlob(paymentId, 'user');
-      let officeBlob: string | undefined;
-      try {
-        officeBlob = await fetchReceiptBlob(paymentId, 'office');
-      } catch (_) {}
-      setReceiptPreview({ userUrl: userBlob, officeUrl: officeBlob });
-    } catch (err) {
-      toast.error("Failed to load receipt preview");
+      officeBlob = await fetchReceiptBlob(paymentId, 'office');
+    } catch (_) {
+      // Office copy might not exist — silently continue
     }
-  };
+    setReceiptPreview({ userUrl: userBlob, officeUrl: officeBlob });
+  } catch (err) {
+    toast.error("Failed to load receipt preview");
+  }
+};
 
-  const closeReceiptPreview = () => {
-    if (receiptPreview) {
-      URL.revokeObjectURL(receiptPreview.userUrl);
-      if (receiptPreview.officeUrl) URL.revokeObjectURL(receiptPreview.officeUrl);
-    }
-    setReceiptPreview(null);
-  };
+const closeReceiptPreview = () => {
+  if (receiptPreview) {
+    URL.revokeObjectURL(receiptPreview.userUrl);
+    if (receiptPreview.officeUrl) URL.revokeObjectURL(receiptPreview.officeUrl);
+  }
+  setReceiptPreview(null);
+};
+
 
   // Fetch payment settings on component mount
   const fetchPaymentSettings = async (schoolId?: string) => {
@@ -389,8 +392,10 @@ export const PayFeeManagement = () => {
               } else {
                 await fetchStudentFee(formData.studentId);
               }
+
               if (verifyRes.data.paymentId) {
                 await openReceiptPreview(verifyRes.data.paymentId);
+
               }
               resetForm();
             } else {
@@ -638,7 +643,9 @@ export const PayFeeManagement = () => {
         <ToastContainer position="top-center" autoClose={3000} />
 
         {/* Receipt Preview Modal */}
+
         <Modal show={!!receiptPreview} onHide={closeReceiptPreview} size="lg" centered>
+
           <Modal.Header closeButton>
             <Modal.Title>Fee Receipt</Modal.Title>
           </Modal.Header>
@@ -653,12 +660,16 @@ export const PayFeeManagement = () => {
           </Modal.Body>
           <Modal.Footer>
             {receiptPreview?.userUrl && (
+
               <a href={receiptPreview.userUrl} download={`receipt_user.pdf`} className="btn btn-primary">
+
                 Download User Copy
               </a>
             )}
             {receiptPreview?.officeUrl && (
+
               <a href={receiptPreview.officeUrl} download={`receipt_office.pdf`} className="btn btn-secondary">
+
                 Download Office Copy
               </a>
             )}
