@@ -4,6 +4,7 @@
 ***StartDocker***
 docker-compose up --build -d
 
+docker compose down && docker system prune -af && docker compose build --no-cache && docker compose up -d
 
 Open a shell inside the backend container:
 

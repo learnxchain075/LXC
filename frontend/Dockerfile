@@ -15,7 +15,8 @@ COPY . .
 RUN npm run build
 
 # Serve the frontend with a simple web server
-CMD ["npx", "serve", "-s", "dist"]
+CMD ["npx", "serve", "-s", "build"]
 
 # Expose frontend port
 EXPOSE 3000
+
