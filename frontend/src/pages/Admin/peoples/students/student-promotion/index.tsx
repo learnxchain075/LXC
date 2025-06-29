@@ -8,8 +8,7 @@ import { TableData } from "../../../../../core/data/interface";
 import CommonSelect from '../../../../../core/common/commonSelect';
 
 import { status, promotion, academicYear, allSection } from '../../../../../core/common/selectoption/selectoption';
-import { getClasses } from '../../../../services/teacher/classServices';
-import { getSections } from '../../../../services/teacher/sectionServices';
+
 
 import PredefinedDateRanges from '../../../../../core/common/datePicker';
 import TooltipOption from '../../../../../core/common/tooltipOption';

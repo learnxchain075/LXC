@@ -178,9 +178,9 @@ export const PayFeeManagement = () => {
           schoolId: firstFee?.schoolId || localStorage.getItem("schoolId") || "",
         }));
         const categories = Array.from(new Set(feeDataArray.map((f: any) => f.category)));
-        setAvailableCategories(categories);
+        setAvailableCategories(categories as string[]);
         if (categories.length > 0) {
-          setFormData(prev => ({ ...prev, category: categories[0] }));
+          setFormData(prev => ({ ...prev, category: String(categories[0]) }));
         } else {
           setFormData(prev => ({ ...prev, category: "" }));
         }
