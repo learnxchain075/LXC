@@ -97,3 +97,34 @@ export const markFaceAttendance = async (req: Request, res: Response) :Promise<a
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getAllTeacherFaceDataBySchool = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const { schoolId } = req.params;
+    const data = await prisma.teacherFaceData.findMany({
+      where: { teacher: { schoolId } },
+      include: { teacher: { include: { user: true } } },
+    });
+    res.json({ data });
+  } catch (err) {
+    console.error("getAllTeacherFaceDataBySchool", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const deleteTeacherFaceData = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const { teacherId } = req.params;
+    await prisma.teacherFaceData.delete({ where: { teacherId } });
+    res.json({ message: "Face data deleted" });
+  } catch (err) {
+    console.error("deleteTeacherFaceData", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

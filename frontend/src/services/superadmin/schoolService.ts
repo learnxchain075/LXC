@@ -77,34 +77,38 @@ export const getSchoolLocation = async (schoolId: string): Promise<AxiosResponse
 
 export const updateSchool = async (
     schoolId: string,
-    schoolName: string,
-    name: string,
-    email: string,
-    phone: string,
-    address: string,
-    city: string,
-    state: string,
-    country: string,
-    pincode: string,
-    profilePic: string,
+    schoolName?: string,
+    name?: string,
+    email?: string,
+    phone?: string,
+    address?: string,
+    city?: string,
+    state?: string,
+    country?: string,
+    pincode?: string,
+    profilePic?: string,
     latitude?: number,
     longitude?: number,
 ): Promise<AxiosResponse<IRegisterSchool>> => {
-    const response = await BaseApi.putRequest(`/administrator/schools/update/${schoolId}`, {
-        schoolName,
-        name,
-        email,
-        phone,
-        address,
-        city,
-        state,
-        country,
-        pincode,
-        
-        profilePic,
-        latitude,
-        longitude,
-      });
+    const data: Record<string, string | number | undefined> = {};
+
+    if (schoolName) data.schoolName = schoolName;
+    if (name) data.name = name;
+    if (email) data.email = email;
+    if (phone) data.phone = phone;
+    if (address) data.address = address;
+    if (city) data.city = city;
+    if (state) data.state = state;
+    if (country) data.country = country;
+    if (pincode) data.pincode = pincode;
+    if (profilePic) data.profilePic = profilePic;
+    if (latitude !== undefined) data.latitude = latitude;
+    if (longitude !== undefined) data.longitude = longitude;
+
+    const response = await BaseApi.putRequest(
+        `/administrator/schools/update/${schoolId}`,
+        data
+    );
 
     return response;
 }
