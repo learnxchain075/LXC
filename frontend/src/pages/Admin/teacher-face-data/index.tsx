@@ -27,7 +27,7 @@ const TeacherFaceDataPage: React.FC = () => {
     const schoolId = localStorage.getItem('schoolId');
     if (!schoolId) return;
 
-    axios.get(`/api/school/${schoolId}/teacher`).then((res) => {
+    axios.get(`https://api.learnxchain.io/api/v1/school/${schoolId}/teacher`).then((res) => {
       const list = res.data.map((t: any) => ({
         id: t.id,
         name: t.user?.name || 'Unnamed',
@@ -36,7 +36,7 @@ const TeacherFaceDataPage: React.FC = () => {
     });
 
     axios
-      .get(`/api/admin/teacher-face/school/${schoolId}`)
+      .get(`https://api.learnxchain.io/api/v1/admin/teacher-face/school/${schoolId}`)
       .then((res) => setRecords(res.data.data || []));
   }, []);
 
@@ -47,7 +47,7 @@ const TeacherFaceDataPage: React.FC = () => {
 
   const removeFaceData = async (tid: string) => {
     try {
-      await axios.delete(`/api/admin/teacher-face/${tid}`);
+      await axios.delete(`https://api.learnxchain.io/api/v1/admin/teacher-face/${tid}`);
       setRecords((prev) => prev.filter((r) => r.teacherId !== tid));
     } catch {
       // ignore errors
@@ -65,13 +65,13 @@ const TeacherFaceDataPage: React.FC = () => {
       const form = new FormData();
       form.append('image', blob, 'selfie.png');
       form.append('teacherId', teacherId);
-      await axios.post('/api/admin/teacher-face/register', form);
+      await axios.post('https://api.learnxchain.io/api/v1/admin/teacher-face/register', form);
       setMessage('✅ Face registered successfully!');
       setCaptured(null);
       setTeacherId('');
       const schoolId = localStorage.getItem('schoolId');
       if (schoolId) {
-        const res = await axios.get(`/api/admin/teacher-face/school/${schoolId}`);
+        const res = await axios.get(`https://api.learnxchain.io/api/v1/admin/teacher-face/school/${schoolId}`);
         setRecords(res.data.data || []);
       }
     } catch (err) {
@@ -207,10 +207,6 @@ const TeacherFaceDataPage: React.FC = () => {
 };
 
 export default TeacherFaceDataPage;
-
-
-
-
 
 
 
