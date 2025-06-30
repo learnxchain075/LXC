@@ -21,7 +21,7 @@ export const registerSchool = async (req: Request, res: Response, next: NextFunc
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.errors });
     }
 
-    const { name, email, phone, address, city, state, country, pincode, bloodType, sex, schoolName, password } =
+    const { name, email, phone, address, city, state, country, pincode, bloodType, sex, schoolName, password, latitude, longitude } =
       parsed.data;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
@@ -89,17 +89,19 @@ export const registerSchool = async (req: Request, res: Response, next: NextFunc
 
     res.status(200).json({ message: "School Admin registered successfully", user });
 
-    const school = await prisma.school.create({
-      data: {
-        schoolName,
-        schoolLogo: schoolLogoUpload.url,
-        user: {
-          connect: {
-            id: user.id,
+      const school = await prisma.school.create({
+        data: {
+          schoolName,
+          schoolLogo: schoolLogoUpload.url,
+          latitude: latitude ?? 0,
+          longitude: longitude ?? 0,
+          user: {
+            connect: {
+              id: user.id,
+            },
           },
         },
-      },
-    });
+      });
 
     // Step 3: Update User with the School ID
     await prisma.user.update({
@@ -125,7 +127,7 @@ export const updateSchool = async (req: Request, res: Response, next: NextFuncti
     }
 
     const { id } = params.data;
-    const { schoolName, name, phone, address, city, state, country, pincode } = body.data;
+    const { schoolName, name, phone, address, city, state, country, pincode, latitude, longitude } = body.data;
     const profilePicFile = req.file;
 
     // Check if school exists
@@ -159,7 +161,11 @@ export const updateSchool = async (req: Request, res: Response, next: NextFuncti
     // Update School
     const updatedSchool = await prisma.school.update({
       where: { id },
-      data: { schoolName },
+      data: {
+        schoolName,
+        latitude: latitude ?? school.latitude ?? 0,
+        longitude: longitude ?? school.longitude ?? 0,
+      },
     });
 
     res.status(200).json({ message: "School updated successfully", school: updatedSchool });
@@ -249,5 +255,28 @@ export const getSchoolById = async (req: Request, res: Response): Promise<any> =
   } catch (error) {
     console.error("Error fetching school:", error);
     res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+export const getSchoolLocation = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const params = schoolIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ message: "Invalid id", errors: params.error.errors });
+    }
+
+    const school = await prisma.school.findUnique({
+      where: { id: params.data.id },
+      select: { id: true, latitude: true, longitude: true },
+    });
+
+    if (!school) {
+      return res.status(404).json({ message: "School not found" });
+    }
+
+    res.json(school);
+  } catch (err) {
+    console.error("getSchoolLocation", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

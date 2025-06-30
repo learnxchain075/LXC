@@ -256,6 +256,15 @@ const GetSchools = () => {
                   Delete
                 </Link>
               </li>
+              <li>
+                <Link
+                  to={routes.setSchoolLocation.replace(":schoolId", record.key)}
+                  className="dropdown-item rounded-1"
+                >
+                  <i className="ti ti-world-pin me-2" />
+                  Set Location
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

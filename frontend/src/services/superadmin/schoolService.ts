@@ -21,7 +21,8 @@ export const registerSchool = async (
     bloodType: string,
     sex: string,
     schoolLogo: File,
-
+    latitude?: number,
+    longitude?: number,
 ): Promise<AxiosResponse<IRegisterSchool>> => {
     const response = await BaseApi.postRequest(`/administrator/schools/register`, {
         schoolName,
@@ -37,6 +38,8 @@ export const registerSchool = async (
         schoolLogo,
         bloodType,
         sex,
+        latitude,
+        longitude,
     },
     {
         headers: {
@@ -65,6 +68,10 @@ export const getSchoolById = async (schoolId: string): Promise<AxiosResponse<IRe
     return response;
 }
 
+export const getSchoolLocation = async (schoolId: string): Promise<AxiosResponse<any>> => {
+    return BaseApi.getRequest(`/administrator/schools/location/${schoolId}`);
+}
+
 // Update School
 
 
@@ -80,6 +87,8 @@ export const updateSchool = async (
     country: string,
     pincode: string,
     profilePic: string,
+    latitude?: number,
+    longitude?: number,
 ): Promise<AxiosResponse<IRegisterSchool>> => {
     const response = await BaseApi.putRequest(`/administrator/schools/update/${schoolId}`, {
         schoolName,
@@ -93,7 +102,9 @@ export const updateSchool = async (
         pincode,
         
         profilePic,
-    });
+        latitude,
+        longitude,
+      });
 
     return response;
 }

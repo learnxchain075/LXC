@@ -6,6 +6,7 @@ const TeacherFaceDataPage: React.FC = () => {
   const [teacherId, setTeacherId] = useState('');
   const [captured, setCaptured] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const webcamRef = React.useRef<Webcam>(null);
 
   const capture = () => {
@@ -24,10 +25,10 @@ const TeacherFaceDataPage: React.FC = () => {
       form.append('image', blob, 'selfie.png');
       form.append('teacherId', teacherId);
       await axios.post('/api/admin/teacher-face/register', form);
-      alert('Face registered');
+      setMessage('Face registered');
       setCaptured(null);
     } catch (err) {
-      alert('Registration failed');
+      setMessage('Registration failed');
     } finally {
       setLoading(false);
     }
@@ -49,6 +50,8 @@ const TeacherFaceDataPage: React.FC = () => {
           <button onClick={capture}>Capture</button>
         </div>
       )}
+      {loading && <p>Uploading...</p>}
+      {message && <p>{message}</p>}
     </div>
   );
 };
