@@ -1,0 +1,53 @@
+import { z } from "zod";
+
+export const UserSexEnum = z.enum(["MALE", "FEMALE", "OTHERS"]);
+export const MaritalStatusEnum = z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"]);
+export const TeacherStatusEnum = z.enum(["Active", "Inactive", "Suspended"]);
+
+export const registerTeacherSchema = z.object({
+  name: z.string().min(1),
+  sex: UserSexEnum,
+  email: z.string().email(),
+  phone: z.string().min(1),
+  bloodType: z.string().min(1),
+
+  teacherSchoolId: z.string().min(1),
+  dateofJoin: z.string().min(1),
+  fatherName: z.string().min(1),
+  motherName: z.string().min(1),
+  dateOfBirth: z.string().min(1),
+  maritalStatus: MaritalStatusEnum,
+  languagesKnown: z.string().min(1),
+  qualification: z.string().min(1),
+  workExperience: z.string().min(1),
+  previousSchool: z.string().min(1),
+  previousSchoolAddress: z.string().min(1),
+  previousSchoolPhone: z.string().min(1),
+  panNumber: z.string().min(5).optional(),
+  status: TeacherStatusEnum.optional(),
+  salary: z.preprocess((v) => Number(v), z.number()),
+  contractType: z.string().min(1).optional(),
+  dateOfPayment: z.string().optional(),
+  medicalLeave: z.string().optional(),
+  casualLeave: z.string().optional(),
+  maternityLeave: z.string().optional(),
+  sickLeave: z.string().optional(),
+  accountNumber: z.string().min(1),
+  bankName: z.string().min(1),
+  ifscCode: z.string().min(1),
+  branchName: z.string().min(1),
+  route: z.string().optional(),
+  hostelName: z.string().optional(),
+  roomNumber: z.string().optional(),
+  facebook: z.string().url().optional(),
+  twitter: z.string().url().optional(),
+  linkedin: z.string().url().optional(),
+  instagram: z.string().url().optional(),
+  youtube: z.string().url().optional(),
+  schoolId: z.string().min(1),
+  address: z.string().min(1),
+  city: z.string().min(1),
+  state: z.string().min(1),
+  country: z.string().min(1),
+  pincode: z.string().min(1),
+});
