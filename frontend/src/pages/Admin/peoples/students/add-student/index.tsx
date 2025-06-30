@@ -35,72 +35,9 @@ import { getPickupPointsBySchool } from "../../../../../services/transport/busPi
 import { getBusbyID } from "../../../../../services/transport/busServices";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { validateForm, ValidationRules } from "../../../../Common/validation";
 import ErrorBoundary from "../../../../../components/ErrorBoundary";
 import CustomLoader from "../../../../../components/Loader";
-
-function validateRequiredFields(data: any) {
-  const requiredFields = [
-    "email",
-    "phone",
-    "academicYear",
-    "admissionNo",
-    "admissionDate",
-    "rollNo",
-    "name",
-    "section",
-    "sex",
-    "dateOfBirth",
-    "bloodType",
-    "Religion",
-    "category",
-    "primaryContact",
-    "caste",
-    "motherTongue",
-    "languagesKnown",
-    "fatherName",
-    "fatherPhone",
-    "fatherOccupation",
-    "motherName",
-    "motherOccupation",
-    "motherPhone",
-    "guardianName",
-    "guardianRelation",
-    "guardianEmail",
-    "guardianPhone",
-    "guardianOccupation",
-    "guardianAddress",
-    "areSiblingStudying",
-    "siblingName",
-    "siblingClass",
-    "siblingRollNo",
-    "siblingAdmissionNo",
-    "currentAddress",
-    "permanentAddress",
-    "city",
-    "state",
-    "country",
-    "pincode",
-    "vehicleNumber",
-    "pickUpPoint",
-    "hostelName",
-    "roomNumber",
-    "medicalCondition",
-    "allergies",
-    "medicationName",
-    "schoolName",
-    "schoolId",
-    "classId",
-    "address",
-  ];
-  const errors: Record<string, string> = {};
-  requiredFields.forEach((field) => {
-    if (!data[field] || (typeof data[field] === "string" && data[field].trim() === "")) {
-      errors[field] = `${field} is required`;
-    }
-  });
-  return errors;
-}
+import { registerStudentSchema } from "../../../../../validation/student";
 enum ActiveStatus {
   ACTIVE = "ACTIVE",
   INACTIVE = "INACTIVE",
@@ -336,160 +273,6 @@ const AddStudent = () => {
     }));
   };
 
-  const validationRules: ValidationRules = {
-    email: {
-      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      type: "string",
-    },
-    phone: {
-      pattern: /^[0-9]{10}$/,
-      type: "string",
-    },
-    academicYear: {
-      type: "string",
-    },
-    admissionNo: {
-      type: "string",
-    },
-    rollNo: {
-      type: "string",
-    },
-    // status: {
-    //   validValues: ["ACTIVE", "INACTIVE"],
-    // },
-    name: {
-      type: "string",
-    },
-    section: {
-      type: "string",
-    },
-    sex: {
-      validValues: ["MALE", "FEMALE", "OTHERS"],
-    },
-    bloodType: {
-      type: "string",
-      validValues: ["A+", "B+", "O+", "AB+", "A-", "B-", "O-", "AB-"],
-    },
-    house: {
-      type: "string",
-    },
-    Religion: {
-      type: "string",
-    },
-    category: {
-      type: "string",
-    },
-    primaryContact: {
-      pattern: /^[0-9]{10}$/,
-      type: "string",
-    },
-    caste: {
-      type: "string",
-    },
-    motherTongue: {
-      type: "string",
-    },
-    languagesKnown: {
-      type: "string",
-    },
-    fatherName: {
-      type: "string",
-    },
-    fatheremail: {
-      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      type: "string",
-    },
-    fatherPhone: {
-      pattern: /^[0-9]{10}$/,
-      type: "string",
-    },
-    fatherOccupation: {
-      type: "string",
-    },
-    motherName: {
-      type: "string",
-    },
-    motherEmail: {
-      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      type: "string",
-    },
-    motherPhone: {
-      pattern: /^[0-9]{10}$/,
-      type: "string",
-    },
-    motherOccupation: {
-      type: "string",
-    },
-    guardianName: {
-      type: "string",
-    },
-    guardianRelation: {
-      type: "string",
-    },
-    guardianEmail: {
-      type: "string",
-    },
-    guardianPhone: {
-      type: "string",
-    },
-    guardianOccupation: {
-      type: "string",
-    },
-    guardianAddress: {
-      type: "string",
-    },
-    areSiblingStudying: {
-      validValues: ["yes", "no"],
-    },
-    siblingName: {
-      type: "string",
-    },
-    siblingClass: {
-      type: "string",
-    },
-    siblingRollNo: {
-      type: "string",
-    },
-    siblingAdmissionNo: {
-      type: "string",
-    },
-    currentAddress: {
-      type: "string",
-    },
-    permanentAddress: {
-      type: "string",
-    },
-    vehicleNumber: {
-      type: "string",
-    },
-    pickUpPoint: {
-      type: "string",
-    },
-    hostelName: {
-      type: "string",
-    },
-    roomNumber: {
-      type: "string",
-    },
-    medicalCondition: {
-      validValues: ["good", "bad", "others"],
-    },
-    allergies: {
-      type: "string",
-    },
-    medicationName: {
-      type: "string",
-    },
-    schoolName: {
-      type: "string",
-    },
-    address: {
-      type: "string",
-    },
-    classId: {
-      type: "string",
-    },
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -502,15 +285,21 @@ const AddStudent = () => {
     try {
       setIsSubmitting(true);
 
-      // Validate form data
-      const requiredErrors = validateRequiredFields(formData);
-      const ruleErrors = validateForm(formData, validationRules);
-      const errors = { ...requiredErrors, ...ruleErrors };
-      if (Object.keys(errors).length > 0) {
-        setErrors(errors);
-        Object.values(errors).forEach((error) => {
-          toast.error(error);
-        });
+      // Validate form data using zod schema
+      const validationData = {
+        ...formData,
+        admissionDate: dayjs(formData.admissionDate).toISOString(),
+        dateOfBirth: dayjs(formData.dateOfBirth).toISOString(),
+      };
+      const parsed = registerStudentSchema.safeParse(validationData);
+      if (!parsed.success) {
+        const fieldErrors: Record<string, string> = {};
+        for (const key in parsed.error.flatten().fieldErrors) {
+          const err = parsed.error.flatten().fieldErrors[key];
+          if (err && err.length) fieldErrors[key] = err[0];
+        }
+        setErrors(fieldErrors);
+        Object.values(fieldErrors).forEach((error) => toast.error(error));
         return;
       }
 
@@ -630,7 +419,14 @@ const AddStudent = () => {
       }
     } catch (error: any) {
       console.error('Error submitting form:', error);
-      if (error.response?.data?.message) {
+      if (error.response?.data?.errors) {
+        const fieldErrors: Record<string, string> = {};
+        Object.entries(error.response.data.errors).forEach(([k, v]) => {
+          if (Array.isArray(v) && v.length) fieldErrors[k] = v[0] as string;
+        });
+        setErrors(fieldErrors);
+        Object.values(fieldErrors).forEach((err) => toast.error(err));
+      } else if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else if (error.message) {
         toast.error(error.message);
