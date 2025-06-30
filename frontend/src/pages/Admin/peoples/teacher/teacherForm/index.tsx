@@ -10,7 +10,6 @@ import { jwtDecode } from "jwt-decode";
 import { ToastContainer, toast } from 'react-toastify';
 import AppConfig from "../../../../../config/config";
 import { ValidationRules } from "../../../../Common/validation";
-import { registerTeacherSchema } from "../../../../../validation/teacher";
 
 
 
@@ -18,7 +17,6 @@ const TeacherForm = () => {
   const routes = all_routes;
  
   const [loading, setLoading] = useState<boolean>(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
  
   const schoolID=localStorage.getItem("schoolId") || "" ;
   // console.log("schlid",token);
@@ -312,7 +310,23 @@ const TeacherForm = () => {
     },
   };
 
-  const validateFiles = () => {
+  const validateForm = () => {
+    // Required fields as per backend schema
+    const requiredFields = [
+      'name', 'sex', 'email', 'phone', 'bloodType', 'teacherSchoolId', 'dateofJoin',
+      'fatherName', 'motherName', 'dateOfBirth', 'maritalStatus', 'languagesKnown',
+      'qualification', 'workExperience', 'previousSchool', 'previousSchoolAddress',
+      'previousSchoolPhone', 'address', 'salary', 'accountNumber', 'bankName',
+      'ifscCode', 'branchName', 'schoolId', 'city', 'state', 'country', 'pincode'
+    ];
+    for (const field of requiredFields) {
+      // @ts-expect-error: dynamic key access for validation
+      const value = formData[field];
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
+        return `Field '${field}' is required.`;
+      }
+    }
+    // Required files
     if (!formData.profilePic) return 'Profile picture is required.';
     if (!formData.Resume) return 'Resume is required.';
     if (!formData.joiningLetter) return 'Joining letter is required.';
@@ -321,31 +335,15 @@ const TeacherForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
     setLoading(true);
-
-    const validationData = {
-      ...formData,
-      dateofJoin: formData.dateofJoin ? dayjs(formData.dateofJoin).toISOString() : "",
-      dateOfBirth: formData.dateOfBirth ? dayjs(formData.dateOfBirth).toISOString() : "",
-      dateOfPayment: formData.dateOfPayment ? dayjs(formData.dateOfPayment as any).toISOString() : undefined,
-    };
-    const parsed = registerTeacherSchema.safeParse(validationData);
-    if (!parsed.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const key in parsed.error.flatten().fieldErrors) {
-        const err = parsed.error.flatten().fieldErrors[key];
-        if (err && err.length) fieldErrors[key] = err[0];
-      }
-      setErrors(fieldErrors);
-      Object.values(fieldErrors).forEach((error) => toast.error(error));
+    const validationError = validateForm();
+    if (validationError) {
+      toast.error(validationError);
       setLoading(false);
       return;
     }
-
-    const fileError = validateFiles();
-    if (fileError) {
-      toast.error(fileError);
+    if (!formData.profilePic || !formData.Resume || !formData.joiningLetter) {
+      toast.error("All required documents (Profile Pic, Resume, Joining Letter) must be uploaded.");
       setLoading(false);
       return;
     }
@@ -563,7 +561,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.teacherSchoolId && <span className="text-danger">{errors.teacherSchoolId}</span>}
                       </div>
                     </div>
                     <div className="col-xxl col-xl-3 col-md-6">
@@ -577,7 +574,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.name && <span className="text-danger">{errors.name}</span>}
                       </div>
                     </div>
 
@@ -596,7 +592,6 @@ const TeacherForm = () => {
                           <option value="FEMALE">Female</option>
                           <option value="OTHERS">Others</option>
                         </select>
-                        {errors.sex && <span className="text-danger">{errors.sex}</span>}
                       </div>
                     </div>
 
@@ -611,7 +606,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.email && <span className="text-danger">{errors.email}</span>}
                       </div>
                     </div>
 
@@ -626,7 +620,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.phone && <span className="text-danger">{errors.phone}</span>}
                       </div>
                     </div>
 
@@ -651,7 +644,6 @@ const TeacherForm = () => {
                           <option value="O-">O-</option>
                           <option value="AB-">AB-</option>
                         </select>
-                        {errors.bloodType && <span className="text-danger">{errors.bloodType}</span>}
 
                       </div>
                     </div>
@@ -670,7 +662,6 @@ const TeacherForm = () => {
                             onChange={(date) => handleDateChange("dateofJoin", date)}
                           />
                         </div>
-                        {errors.dateofJoin && <span className="text-danger">{errors.dateofJoin}</span>}
                       </div>
                     </div>
 
@@ -684,7 +675,6 @@ const TeacherForm = () => {
                           value={formData.fatherName}
                           onChange={handleInputChange}
                         />
-                        {errors.fatherName && <span className="text-danger">{errors.fatherName}</span>}
                       </div>
                     </div>
 
@@ -698,7 +688,6 @@ const TeacherForm = () => {
                           value={formData.motherName}
                           onChange={handleInputChange}
                         />
-                        {errors.motherName && <span className="text-danger">{errors.motherName}</span>}
                       </div>
                     </div>
 
@@ -716,7 +705,6 @@ const TeacherForm = () => {
                             <i className="ti ti-calendar" />
                           </span>
                         </div>
-                        {errors.dateOfBirth && <span className="text-danger">{errors.dateOfBirth}</span>}
                       </div>
                     </div>
 
@@ -734,7 +722,6 @@ const TeacherForm = () => {
                           <option value="UNMARRIED">Unmarried</option>
                           <option value="DIVORCED">Divorced</option>
                         </select>
-                        {errors.maritalStatus && <span className="text-danger">{errors.maritalStatus}</span>}
                       </div>
                     </div>
 
@@ -749,7 +736,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           placeholder="English, Hindi, etc."
                         />
-                        {errors.languagesKnown && <span className="text-danger">{errors.languagesKnown}</span>}
                       </div>
                     </div>
 
@@ -763,7 +749,6 @@ const TeacherForm = () => {
                           value={formData.qualification}
                           onChange={handleInputChange}
                         />
-                        {errors.qualification && <span className="text-danger">{errors.qualification}</span>}
                       </div>
                     </div>
 
@@ -778,7 +763,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           placeholder="3 years"
                         />
-                        {errors.workExperience && <span className="text-danger">{errors.workExperience}</span>}
                       </div>
                     </div>
 
@@ -792,7 +776,6 @@ const TeacherForm = () => {
                           value={formData.previousSchool}
                           onChange={handleInputChange}
                         />
-                        {errors.previousSchool && <span className="text-danger">{errors.previousSchool}</span>}
                       </div>
                     </div>
 
@@ -807,7 +790,6 @@ const TeacherForm = () => {
                           value={formData.previousSchoolAddress}
                           onChange={handleInputChange}
                         />
-                        {errors.previousSchoolAddress && <span className="text-danger">{errors.previousSchoolAddress}</span>}
                       </div>
                     </div>
 
@@ -821,7 +803,6 @@ const TeacherForm = () => {
                           value={formData.previousSchoolPhone}
                           onChange={handleInputChange}
                         />
-                        {errors.previousSchoolPhone && <span className="text-danger">{errors.previousSchoolPhone}</span>}
                       </div>
                     </div>
 
@@ -836,7 +817,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.address && <span className="text-danger">{errors.address}</span>}
                       </div>
                     </div>
 
@@ -851,7 +831,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.city && <span className="text-danger">{errors.city}</span>}
                       </div>
                     </div>
 
@@ -866,7 +845,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.state && <span className="text-danger">{errors.state}</span>}
                       </div>
                     </div>
 
@@ -881,7 +859,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.country && <span className="text-danger">{errors.country}</span>}
                       </div>
                     </div>
 
@@ -896,7 +873,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.pincode && <span className="text-danger">{errors.pincode}</span>}
                       </div>
                     </div>
 
@@ -942,7 +918,6 @@ const TeacherForm = () => {
                           onChange={handleInputChange}
                           required
                         />
-                        {errors.salary && <span className="text-danger">{errors.salary}</span>}
                       </div>
                     </div>
 
@@ -961,7 +936,6 @@ const TeacherForm = () => {
                           <option value="Contract">Contract</option>
                           <option value="Temporary">Temporary</option>
                         </select>
-                        {errors.contractType && <span className="text-danger">{errors.contractType}</span>}
                       </div>
                     </div>
                     <div className="col-xxl col-xl-3 col-md-6">
@@ -978,7 +952,6 @@ const TeacherForm = () => {
                             <i className="ti ti-calendar" />
                           </span>
                         </div>
-                        {errors.dateOfPayment && <span className="text-danger">{errors.dateOfPayment}</span>}
                       </div>
                     </div>
                   </div>
@@ -1074,7 +1047,6 @@ const TeacherForm = () => {
                           value={formData.bankName}
                           onChange={handleInputChange}
                         />
-                        {errors.bankName && <span className="text-danger">{errors.bankName}</span>}
                       </div>
                     </div>
 
@@ -1088,7 +1060,6 @@ const TeacherForm = () => {
                           value={formData.accountNumber}
                           onChange={handleInputChange}
                         />
-                        {errors.accountNumber && <span className="text-danger">{errors.accountNumber}</span>}
                       </div>
                     </div>
 
@@ -1102,7 +1073,6 @@ const TeacherForm = () => {
                           value={formData.ifscCode}
                           onChange={handleInputChange}
                         />
-                        {errors.ifscCode && <span className="text-danger">{errors.ifscCode}</span>}
                       </div>
                     </div>
 
@@ -1116,7 +1086,6 @@ const TeacherForm = () => {
                           value={formData.branchName}
                           onChange={handleInputChange}
                         />
-                        {errors.branchName && <span className="text-danger">{errors.branchName}</span>}
                       </div>
                     </div>
                   </div>

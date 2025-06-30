@@ -18,32 +18,33 @@ const Team = () => {
             </ScrollAnimate>
           </div>
         </div>
-        <div className="row">
+        <div className="row justify-content-center">
           {Data?.map((member, index) => (
-            <div key={index} className="col-xl-3 col-lg-4 col-md-6 col-sm-6">
+            <div key={index} className="col-xl-3 col-lg-4 col-md-6 col-sm-6 mb-4">
               <ScrollAnimate delay={member.delay}>
-              <div className="team-card">
-                <div className="team-card-img">
-                  <img src={member.avatar} alt={`team-img-${index}`} />
+                <div className="team-card p-4">
+                  <div className="team-card-img">
+                    <img src={member.avatar} alt={`team-img-${index}`} />
+                  </div>
+                  <div className="team-card-info">
+                    <h5>{member.name}</h5>
+                    <p>{member.designation}</p>
+                  </div>
+                  <ul className="team-social-link">
+                    {member.socialLinks?.map((item, i) => (
+                      <li key={i}>
+                        <a href={item.url}>
+                          <img src={item.icon} alt="social-icon" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="team-card-info">
-                  <h5>{member.name}</h5>
-                  <p>{member.designation}</p>
-                </div>
-                <ul className="team-social-link">
-                  {member.socialLinks?.map((item, i) => (
-                    <li key={i}>
-                      <a href={item.url}>
-                        <img src={item.icon} alt="social-icon" />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
               </ScrollAnimate>
             </div>
           ))}
         </div>
+
       </div>
     </TeamStyleWrapper>
   );

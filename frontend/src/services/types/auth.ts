@@ -21,6 +21,9 @@ export enum MaritalStatus {
  * Active status enum matching backend
  */
 export enum ActiveStatus {
+    ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  SUSPENDED = "SUSPENDED"
   
 }
 export enum ActiveStatusstudent {
