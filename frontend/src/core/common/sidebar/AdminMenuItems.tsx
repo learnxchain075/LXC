@@ -455,6 +455,7 @@ const AdminMenuItems = () => {
             { "name": "Student Attendance", "route": all_routes.studentAttendance, "icon": "ti ti-user-check" },
             { "name": "Teacher Attendance", "route": all_routes.teacherAttendance, "icon": "ti ti-user-check" },
             //{ "name": "Staff Attendance", "route": all_routes.staffAttendance, "icon": "ti ti-user-check" }
+             { "name": "Teacher Face Data", "route": all_routes.teacherFaceData, "icon": "ti ti-user-check" }
           ]
         },
         {
