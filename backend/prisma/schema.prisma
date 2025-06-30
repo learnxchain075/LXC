@@ -1772,6 +1772,19 @@ model TeacherAttendance {
   matched    Boolean  @default(false) @map("face_matched")
   createdAt  DateTime @default(now()) @map("created_at")
   type    AttendanceType @default(FULL_DAY) @map("attendance_type")
+  attendanceDate DateTime @default(now()) @map("attendance_date")
+  attendanceTime DateTime @default(now()) @map("attendance_time")
+  status AttendanceStatus @default(PRESENT) @map("status")
+  selfieImageUrl String? @map("selfie_image_url")
+}
+
+model TeacherFaceData {
+  id           String   @id @default(cuid())
+  teacherId    String   @unique @map("teacher_id")
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  faceImageUrl String   @map("face_image_url")
+  faceEmbedding Json    @map("face_embedding")
+  createdAt    DateTime @default(now()) @map("created_at")
 }
 
 model InvoiceCounter {
@@ -2020,6 +2033,11 @@ enum AttendanceStatus {
 enum AttendanceType {
   FULL_DAY
   HALF_DAY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
 }
 
 // government Exams  --> UPSC , SSC , Bank PO , Railway , Defence --> Link this module with eduni hub project 

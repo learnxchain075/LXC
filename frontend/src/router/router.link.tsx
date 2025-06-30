@@ -96,6 +96,8 @@ import Testimonials from "../pages/SuperAdmin/content/testimonials";
 import StaffAttendance from "../pages/SuperAdmin/hrm/attendance/staff-attendance";
 import StudentAttendance from "../pages/SuperAdmin/hrm/attendance/student-attendance";
 import TeacherAttendance from "../pages/SuperAdmin/hrm/attendance/teacher-attendance";
+import TeacherFaceDataPage from "../pages/Admin/teacher-face-data";
+import MarkFaceAttendance from "../pages/Teacher/mark-face-attendance";
 import Departments from "../pages/SuperAdmin/hrm/departments";
 import Designation from "../pages/SuperAdmin/hrm/designation";
 import Holiday from "../pages/SuperAdmin/hrm/holidays";
@@ -1453,6 +1455,18 @@ export const publicRoutes = [
     element: <TeacherAttendance />,
     route: Route,
     role: ["admin", "teacher", "accounts"],
+  },
+  {
+    path: routes.teacherFaceData,
+    element: <TeacherFaceDataPage />,
+    route: Route,
+    role: ["admin"],
+  },
+  {
+    path: routes.markFaceAttendance,
+    element: <MarkFaceAttendance />,
+    route: Route,
+    role: ["teacher"],
   },
 
   {

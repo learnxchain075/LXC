@@ -41,6 +41,7 @@ export const all_routes = {
 
   // ************************************  Teacher Routes *********************************************************
   teacherDashboard: "/teacher-dashboard",
+  markFaceAttendance: "/teacher/mark-face-attendance",
   addExam: "/teacher/addexam",
   uplaodPyq: "/teacher/pyqUpload",
   assignment: "/teacher/assignment",
@@ -320,6 +321,7 @@ addsection:"/student/add-section",
   approveRequest: "/hrm/approve-request",
   studentAttendance: "/hrm/student-attendance",
   teacherAttendance: "/hrm/teacher-attendance",
+  teacherFaceData: "/admin/teacher-face-data",
   staffAttendance: "/hrm/staff-attendance",
   addStaff: "/hrm/add-staff",
   editStaff: "/hrm/edit-staff",
