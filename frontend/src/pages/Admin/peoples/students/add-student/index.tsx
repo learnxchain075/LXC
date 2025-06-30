@@ -37,6 +37,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { validateForm, ValidationRules } from "../../../../Common/validation";
 import ErrorBoundary from "../../../../../components/ErrorBoundary";
+import CustomLoader from "../../../../../components/Loader";
 
 function validateRequiredFields(data: any) {
   const requiredFields = [
@@ -502,10 +503,12 @@ const AddStudent = () => {
       setIsSubmitting(true);
 
       // Validate form data
-      const errors = validateForm(formData, validationRules);
+      const requiredErrors = validateRequiredFields(formData);
+      const ruleErrors = validateForm(formData, validationRules);
+      const errors = { ...requiredErrors, ...ruleErrors };
       if (Object.keys(errors).length > 0) {
         setErrors(errors);
-        Object.values(errors).forEach(error => {
+        Object.values(errors).forEach((error) => {
           toast.error(error);
         });
         return;
@@ -666,7 +669,10 @@ const AddStudent = () => {
   }, [location.pathname]);
 
   return (
-    <div className="page-wrapper">
+    <div className="page-wrapper position-relative">
+      {isSubmitting && (
+        <CustomLoader variant="dots" color="#3067e3" size={80} />
+      )}
       <ToastContainer position="top-center" autoClose={3000} />
       <div className="content content-two">
         <div className="d-md-flex d-block align-items-center justify-content-between mb-3">
@@ -1770,8 +1776,15 @@ const AddStudent = () => {
                 <button type="button" className="btn btn-light me-3" onClick={() => navigate(routes.studentList)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {isEdit ? "Update" : "Add"} Student
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      {isEdit ? "Updating" : "Adding"}...
+                    </>
+                  ) : (
+                    <>{isEdit ? "Update" : "Add"} Student</>
+                  )}
                 </button>
               </div>
             </form>
