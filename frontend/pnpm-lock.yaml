@@ -281,6 +281,9 @@ importers:
       yet-another-react-lightbox:
         specifier: ^3.21.8
         version: 3.21.8(@types/react-dom@19.0.4(@types/react@19.0.12))(@types/react@19.0.12)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.67
     devDependencies:
       '@emotion/babel-plugin':
         specifier: ^11.13.5
@@ -3617,6 +3620,9 @@ packages:
       '@types/react-dom':
         optional: true
 
+  zod@3.25.67:
+    resolution: {integrity: sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==}
+
 snapshots:
 
   '@adobe/css-tools@4.4.2': {}
@@ -6944,3 +6950,5 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.0.12
       '@types/react-dom': 19.0.4(@types/react@19.0.12)
+
+  zod@3.25.67: {}

@@ -3,31 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import { all_routes } from "../../../../../router/all_routes";
-import {
-  AdmissionNo,
-  Hostel,
-  PickupPoint,
-  VehicleNumber,
-  academicYear,
-  allClass,
-  allSection,
-  bloodGroup,
-  cast,
-  gender,
-  house,
-  mothertongue,
-  names,
-  religion,
-  rollno,
-  roomNO,
-  route,
-  status,
-} from "../../../../../core/common/selectoption/selectoption";
+
 import { TagsInput } from "react-tag-input-component";
-import CommonSelect from "../../../../../core/common/commonSelect";
+
 import { useLocation } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
-import AppConfig from "../../../../../config/config";
+
 import { registerStudent } from "../../../../../services/admin/studentRegister";
 import { ActiveStatusstudent, IStudentForm, UserSex } from "../../../../../services/types/auth";
 import { getClassByschoolId } from "../../../../../services/teacher/classServices";
