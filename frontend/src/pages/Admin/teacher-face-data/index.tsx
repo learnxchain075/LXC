@@ -1,22 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import axios from 'axios';
 
+interface TeacherOption {
+  id: string;
+  name: string;
+}
+
+interface FaceRecord {
+  id: string;
+  teacherId: string;
+  faceImageUrl: string;
+  teacher: { user: { name: string } };
+}
+
 const TeacherFaceDataPage: React.FC = () => {
   const [teacherId, setTeacherId] = useState('');
+  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [records, setRecords] = useState<FaceRecord[]>([]);
   const [captured, setCaptured] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const webcamRef = React.useRef<Webcam>(null);
+
+  useEffect(() => {
+    const schoolId = localStorage.getItem('schoolId');
+    if (!schoolId) return;
+
+    axios.get(`/api/school/${schoolId}/teacher`).then((res) => {
+      const list = res.data.map((t: any) => ({
+        id: t.id,
+        name: t.user?.name || 'Unnamed',
+      }));
+      setTeachers(list);
+    });
+
+    axios
+      .get(`/api/admin/teacher-face/school/${schoolId}`)
+      .then((res) => setRecords(res.data.data || []));
+  }, []);
 
   const capture = () => {
     const img = webcamRef.current?.getScreenshot();
     if (img) setCaptured(img);
   };
 
+  const removeFaceData = async (tid: string) => {
+    try {
+      await axios.delete(`/api/admin/teacher-face/${tid}`);
+      setRecords((prev) => prev.filter((r) => r.teacherId !== tid));
+    } catch {
+      // ignore errors
+    }
+  };
+
   const register = async () => {
     if (!captured || !teacherId) {
-      setMessage("❗ Please enter Teacher ID and capture image first.");
+      setMessage('❗ Please select teacher and capture image first.');
       return;
     }
     setLoading(true);
@@ -29,6 +69,11 @@ const TeacherFaceDataPage: React.FC = () => {
       setMessage('✅ Face registered successfully!');
       setCaptured(null);
       setTeacherId('');
+      const schoolId = localStorage.getItem('schoolId');
+      if (schoolId) {
+        const res = await axios.get(`/api/admin/teacher-face/school/${schoolId}`);
+        setRecords(res.data.data || []);
+      }
     } catch (err) {
       setMessage('❌ Registration failed. Please try again.');
     } finally {
@@ -84,14 +129,19 @@ const TeacherFaceDataPage: React.FC = () => {
         <h3 className="text-center text-primary mb-4">🎓 Register Teacher Face</h3>
 
         <div className="mb-3">
-          <label className="form-label">Teacher ID</label>
-          <input
-            type="text"
+          <label className="form-label">Teacher</label>
+          <select
             className="form-control"
-            placeholder="Enter Teacher ID"
             value={teacherId}
-            onChange={e => setTeacherId(e.target.value)}
-          />
+            onChange={(e) => setTeacherId(e.target.value)}
+          >
+            <option value="">Select Teacher</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {captured ? (
@@ -124,6 +174,32 @@ const TeacherFaceDataPage: React.FC = () => {
           <p className={`status-message text-center ${message.includes('successfully') ? 'success' : 'error'}`}>
             {message}
           </p>
+        )}
+
+        {records.length > 0 && (
+          <>
+            <hr />
+            <h5 className="text-center mt-3">Registered Faces</h5>
+            <div className="row">
+              {records.map((rec) => (
+                <div className="col-md-4 text-center mb-4" key={rec.id}>
+                  <img
+                    src={rec.faceImageUrl}
+                    alt={rec.teacher.user.name}
+                    className="img-thumbnail mb-2"
+                    width={120}
+                  />
+                  <p>{rec.teacher.user.name}</p>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => removeFaceData(rec.teacherId)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
