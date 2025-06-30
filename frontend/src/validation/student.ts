@@ -20,7 +20,7 @@ export const registerStudentSchema = z.object({
   category: z.string().min(1),
   caste: z.string().min(1),
   motherTongue: z.string().min(1),
-languagesKnown: z.array(z.string().min(1)).min(1, { message: "Please add at least one language" }),
+  languagesKnown: z.string().min(1),
 
   fatherName: z.string().min(1),
   fatheremail: z.string().optional(),
@@ -54,8 +54,8 @@ languagesKnown: z.array(z.string().min(1)).min(1, { message: "Please add at leas
   roomNumber: z.string().optional(),
 
   medicalCondition: z.string().min(1),
-  allergies: z.array(z.string().min(1)).optional(),
-  medicationName: z.array(z.string().min(1)).optional(),
+  allergies: z.string().min(1),
+  medicationName: z.string().min(1),
 
   schoolName: z.string().optional(),
   schoolId: z.string().min(1),
