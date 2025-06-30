@@ -583,6 +583,8 @@ model Teacher {
   salaryPayment SalaryPayment[]
 
   TeacherAttendance TeacherAttendance[]
+
+  TeacherFaceData TeacherFaceData[]
 }
 
 model Grade {
@@ -2035,10 +2037,10 @@ enum AttendanceType {
   HALF_DAY
 }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-}
+// enum AttendanceStatus {
+//   PRESENT
+//   ABSENT
+// }
 
 // government Exams  --> UPSC , SSC , Bank PO , Railway , Defence --> Link this module with eduni hub project 
 

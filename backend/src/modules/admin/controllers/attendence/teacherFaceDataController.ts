@@ -3,7 +3,7 @@ import { prisma } from "../../../../db/prisma";
 import { uploadFile } from "../../../../config/upload";
 import { getFaceEmbedding, matchEmbedding } from "../../../../config/faceMatcher";
 
-export const registerTeacherFace = async (req: Request, res: Response) => {
+export const registerTeacherFace = async (req: Request, res: Response) :Promise<any> => {
   try {
     const { teacherId } = req.body as { teacherId: string };
     const file = req.file;
@@ -35,7 +35,7 @@ export const registerTeacherFace = async (req: Request, res: Response) => {
   }
 };
 
-export const getTeacherFaceData = async (req: Request, res: Response) => {
+export const getTeacherFaceData = async (req: Request, res: Response) :Promise<any> => {
   try {
     const { teacherId } = req.params;
     const data = await prisma.teacherFaceData.findUnique({ where: { teacherId } });
@@ -47,7 +47,7 @@ export const getTeacherFaceData = async (req: Request, res: Response) => {
   }
 };
 
-export const markFaceAttendance = async (req: Request, res: Response) => {
+export const markFaceAttendance = async (req: Request, res: Response) :Promise<any> => {
   try {
     const user = req.user;
     const file = req.file;
