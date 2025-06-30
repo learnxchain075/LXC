@@ -30,8 +30,9 @@ const TeacherFaceDataPage: React.FC = () => {
       setMessage("✅ Face registered successfully!");
       setCaptured(null);
       setTeacherId("");
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Registration failed. Please try again.";
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.message || err.message || "Registration failed. Please try again.";
       setMessage(`❌ ${errorMessage}`);
     } finally {
       setLoading(false);
