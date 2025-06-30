@@ -1,81 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import Webcam from 'react-webcam';
-import axios from 'axios';
-
-interface TeacherOption {
-  id: string;
-  name: string;
-}
-
-interface FaceRecord {
-  id: string;
-  teacherId: string;
-  faceImageUrl: string;
-  teacher: { user: { name: string } };
-}
+import React, { useState } from "react";
+import Webcam from "react-webcam";
+import { useTeacherFaceData } from "../../../hooks/useTeacherFaceData";
 
 const TeacherFaceDataPage: React.FC = () => {
-  const [teacherId, setTeacherId] = useState('');
-  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
-  const [records, setRecords] = useState<FaceRecord[]>([]);
+  const schoolId = localStorage.getItem("schoolId");
+  const { teachers, records, registerFace, removeFaceData } = useTeacherFaceData(
+    schoolId
+  );
+  const [teacherId, setTeacherId] = useState("");
   const [captured, setCaptured] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const webcamRef = React.useRef<Webcam>(null);
-
-  useEffect(() => {
-    const schoolId = localStorage.getItem('schoolId');
-    if (!schoolId) return;
-
-    axios.get(`https://api.learnxchain.io/api/v1/school/${schoolId}/teacher`).then((res) => {
-      const list = res.data.map((t: any) => ({
-        id: t.id,
-        name: t.user?.name || 'Unnamed',
-      }));
-      setTeachers(list);
-    });
-
-    axios
-      .get(`https://api.learnxchain.io/api/v1/admin/teacher-face/school/${schoolId}`)
-      .then((res) => setRecords(res.data.data || []));
-  }, []);
 
   const capture = () => {
     const img = webcamRef.current?.getScreenshot();
     if (img) setCaptured(img);
   };
 
-  const removeFaceData = async (tid: string) => {
-    try {
-      await axios.delete(`https://api.learnxchain.io/api/v1/admin/teacher-face/${tid}`);
-      setRecords((prev) => prev.filter((r) => r.teacherId !== tid));
-    } catch {
-      // ignore errors
-    }
-  };
-
   const register = async () => {
     if (!captured || !teacherId) {
-      setMessage('❗ Please select teacher and capture image first.');
+      setMessage("❗ Please select teacher and capture image first.");
       return;
     }
     setLoading(true);
     try {
       const blob = await (await fetch(captured)).blob();
-      const form = new FormData();
-      form.append('image', blob, 'selfie.png');
-      form.append('teacherId', teacherId);
-      await axios.post('https://api.learnxchain.io/api/v1/admin/teacher-face/register', form);
-      setMessage('✅ Face registered successfully!');
+      await registerFace(teacherId, blob);
+      setMessage("✅ Face registered successfully!");
       setCaptured(null);
-      setTeacherId('');
-      const schoolId = localStorage.getItem('schoolId');
-      if (schoolId) {
-        const res = await axios.get(`https://api.learnxchain.io/api/v1/admin/teacher-face/school/${schoolId}`);
-        setRecords(res.data.data || []);
-      }
-    } catch (err) {
-      setMessage('❌ Registration failed. Please try again.');
+      setTeacherId("");
+    } catch {
+      setMessage("❌ Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -148,7 +104,7 @@ const TeacherFaceDataPage: React.FC = () => {
           <div className="preview-wrapper">
             <img src={captured} alt="selfie" width={200} className="img-thumbnail mb-3" />
             <button className="btn btn-success btn-custom" disabled={loading} onClick={register}>
-              {loading ? 'Uploading...' : '📤 Upload'}
+              {loading ? "Uploading..." : "📤 Upload"}
             </button>
             <button className="btn btn-secondary btn-custom" onClick={() => setCaptured(null)}>
               🔁 Retake
@@ -161,7 +117,7 @@ const TeacherFaceDataPage: React.FC = () => {
               ref={webcamRef}
               screenshotFormat="image/png"
               width={300}
-              videoConstraints={{ facingMode: 'user' }}
+              videoConstraints={{ facingMode: "user" }}
               className="border rounded"
             />
             <button className="btn btn-primary btn-custom" onClick={capture}>
@@ -171,7 +127,7 @@ const TeacherFaceDataPage: React.FC = () => {
         )}
 
         {message && (
-          <p className={`status-message text-center ${message.includes('successfully') ? 'success' : 'error'}`}>
+          <p className={`status-message text-center ${message.includes("successfully") ? "success" : "error"}`}>
             {message}
           </p>
         )}
@@ -207,83 +163,3 @@ const TeacherFaceDataPage: React.FC = () => {
 };
 
 export default TeacherFaceDataPage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState } from 'react';
-// import Webcam from 'react-webcam';
-// import axios from 'axios';
-
-// const TeacherFaceDataPage: React.FC = () => {
-//   const [teacherId, setTeacherId] = useState('');
-//   const [captured, setCaptured] = useState<string | null>(null);
-//   const [loading, setLoading] = useState(false);
-//   const [message, setMessage] = useState('');
-//   const webcamRef = React.useRef<Webcam>(null);
-
-//   const capture = () => {
-//     const img = webcamRef.current?.getScreenshot();
-//     if (img) {
-//       setCaptured(img);
-//     }
-//   };
-
-//   const register = async () => {
-//     if (!captured) return;
-//     setLoading(true);
-//     try {
-//       const blob = await (await fetch(captured)).blob();
-//       const form = new FormData();
-//       form.append('image', blob, 'selfie.png');
-//       form.append('teacherId', teacherId);
-//       await axios.post('/api/admin/teacher-face/register', form);
-//       setMessage('Face registered');
-//       setCaptured(null);
-//     } catch (err) {
-//       setMessage('Registration failed');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className='page-wrapper'>
-//       <h3>Register Teacher Face</h3>
-//       <input value={teacherId} onChange={e => setTeacherId(e.target.value)} placeholder="Teacher ID" />
-//       {captured ? (
-//         <div>
-//           <img src={captured} alt="selfie" width={200} />
-//           <button disabled={loading} onClick={register}>Upload</button>
-//           <button onClick={() => setCaptured(null)}>Retake</button>
-//         </div>
-//       ) : (
-//         <div>
-//           <Webcam audio={false} ref={webcamRef} screenshotFormat="image/png" />
-//           <button onClick={capture}>Capture</button>
-//         </div>
-//       )}
-//       {loading && <p>Uploading...</p>}
-//       {message && <p>{message}</p>}
-//     </div>
-//   );
-// };
-
-// export default TeacherFaceDataPage;
