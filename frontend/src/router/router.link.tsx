@@ -56,6 +56,7 @@ import StudentGrid from "../pages/Admin/peoples/students/student-grid";
 import StudentList from "../pages/Admin/peoples/students/student-list";
 import StudentPromotion from "../pages/Admin/peoples/students/student-promotion";
 import GetSchools from "../pages/SuperAdmin/super-admin/getSchools";
+import SetSchoolLocation from "../pages/SuperAdmin/super-admin/set-school-location";
 import RegisterSchool from "../pages/SuperAdmin/super-admin/registerSchools";
 import TeacherDetails from "../pages/Admin/peoples/teacher/teacher-details/teacherDetails";
 import TeacherLeave from "../pages/Admin/peoples/teacher/teacher-details/teacherLeave";
@@ -281,6 +282,12 @@ export const publicRoutes = [
   {
     path: routes.getSchools,
     element: <GetSchools />,
+    route: Route,
+    role: ["superadmin"]
+  },
+  {
+    path: routes.setSchoolLocation,
+    element: <SetSchoolLocation />,
     route: Route,
     role: ["superadmin"]
   },

@@ -14,6 +14,8 @@ export const registerSchoolSchema = z.object({
   sex: z.nativeEnum(UserSex),
   schoolName: z.string().min(1, "School name is required"),
   password: z.string().optional(),
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
 });
 
 export const updateSchoolSchema = z.object({
@@ -25,6 +27,8 @@ export const updateSchoolSchema = z.object({
   state: z.string().min(1).optional(),
   country: z.string().min(1).optional(),
   pincode: z.string().min(1).optional(),
+  latitude: z.coerce.number().optional(),
+  longitude: z.coerce.number().optional(),
 });
 
 export const schoolIdParamSchema = z.object({

@@ -17,6 +17,7 @@ export const all_routes = {
 
   addSchools: "/super-admin/add-schools",
   getSchools: "/super-admin/get-schools",
+  setSchoolLocation: "/super-admin/set-school-location/:schoolId",
   featuresRequestList: "/super-admin/features-request-list",
   schoolProfile: "/superadmin/school/:schoolId",
   logs: "/super-admin/logs",

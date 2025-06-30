@@ -63,13 +63,25 @@ export const markFaceAttendance = async (req: Request, res: Response) :Promise<a
     const { url } = await uploadFile(file.buffer, "teacher_attendance", "image", file.originalname);
     const matched = await matchEmbedding(url, faceData.faceEmbedding);
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const already = await prisma.teacherAttendance.findFirst({
+      where: {
+        teacherId: teacher.id,
+        attendanceDate: today,
+      },
+    });
+    if (already) {
+      return res.status(400).json({ message: "Attendance already marked" });
+    }
+
     const record = await prisma.teacherAttendance.create({
       data: {
         teacherId: teacher.id,
         latitude: latitude ? Number(latitude) : 0,
         longitude: longitude ? Number(longitude) : 0,
         matched,
-        attendanceDate: new Date(),
+        attendanceDate: today,
         attendanceTime: new Date(),
         status: matched ? "PRESENT" : "ABSENT",
         selfieImageUrl: url,
