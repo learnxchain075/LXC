@@ -692,7 +692,12 @@ const TeacherDashboard = () => {
                 <SkeletonPlaceholder className="w-100" style={{ height: '50px' }} />
               </div>
             ) : (
-              <TeacherBreadcrumb />
+              <>
+                <TeacherBreadcrumb />
+                <div className="mb-2">
+                  <Link to={all_routes.markFaceAttendance} className="btn btn-sm btn-primary">Mark Face Attendance</Link>
+                </div>
+              </>
             )}
             {/* Teacher Information */}
             {loading ? (

@@ -478,6 +478,7 @@ export const SidebarData: SidebarItem[] = [
         submenuItems: [
           { label: "Student Attendance", link: routes.studentAttendance },
           { label: "Teacher Attendance", link: routes.teacherAttendance },
+          { label: "Teacher Face Data", link: routes.teacherFaceData },
           { label: "Staff Attendance", link: routes.staffAttendance },
         ],
       },
