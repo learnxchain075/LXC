@@ -224,6 +224,7 @@ const GetSchools = () => {
               className="btn btn-white btn-icon btn-sm d-flex align-items-center justify-content-center rounded-circle p-0"
               data-bs-toggle="dropdown"
               aria-expanded="false"
+              onClick={(e) => e.stopPropagation()}
             >
               <i className="ti ti-dots-vertical fs-14" />
             </Link>
@@ -236,7 +237,10 @@ const GetSchools = () => {
                   data-bs-toggle="modal"
                   data-bs-target="#modal-lg"
                   data-school-key={record.key}
-                  onClick={() => setSelectedUserId(record.userId)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedUserId(record.userId);
+                  }}
                 >
                   <i className="ti ti-edit-circle me-2" />
                   Update Permission
@@ -250,6 +254,7 @@ const GetSchools = () => {
                   data-bs-target="#delete-modal"
                   onClick={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     setSchoolToDelete(record.key);
                   }}
                 >
@@ -261,6 +266,7 @@ const GetSchools = () => {
                 <Link
                   to={routes.setSchoolLocation.replace(":schoolId", record.key)}
                   className="dropdown-item rounded-1"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <i className="ti ti-world-pin me-2" />
                   Set Location
