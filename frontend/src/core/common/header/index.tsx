@@ -174,7 +174,7 @@ const Header = () => {
             {/* Added direct logout button for cases where dropdown fails */}
          
             {/* <div className="dropdown btn btn-outline-light bg-white btn-icon me-2  "> */}
-            <a className="dropdown-toggle -ml-2 align-items-center" data-bs-toggle="dropdown">
+            {/* <a className="dropdown-toggle -ml-2 align-items-center" data-bs-toggle="dropdown">
               {imgSrc ? (
                 <span className="avatar avatar-sm me-2 online avatar-rounded">
                   <img src={imgSrc as string} alt="img" />
@@ -184,7 +184,7 @@ const Header = () => {
                   {getInitials(user?.name || "User")}
                 </span>
               )}
-            </a>
+            </a> */}
 
    <Link to={routes.login} onClick={handleLogout} className="btn btn-outline-light bg-white btn-icon me-1">
               <i className="ti ti-login" />
