@@ -190,6 +190,8 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   };
 
   return (
+
+    <div className="page-wrapper">
     <div className="container-fluid p-0">
       <div className={ismobile ? "page-wrapper" : role === "admin" ? "page-wrapper" : "pt-4"}>
        <ToastContainer position="top-center" autoClose={3000} />
@@ -589,6 +591,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };
