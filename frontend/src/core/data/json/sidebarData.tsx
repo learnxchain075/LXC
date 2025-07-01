@@ -149,6 +149,13 @@ export const SidebarData: SidebarItem[] = [
         icon: "ti ti-page-break",
         roles: ["admin"],
       },
+      {
+        label: "Feedback",
+        link: routes.adminFeedback,
+        showSubRoute: false,
+        icon: "ti ti-message",
+        roles: ["admin"],
+      },
 
     ],
   },
