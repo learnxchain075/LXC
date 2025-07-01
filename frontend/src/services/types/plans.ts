@@ -42,4 +42,4 @@ export interface ICreatePlan {
 /**
  * Update plan input interface
  */
-export type IUpdatePlan = Partial<Omit<IPlan, 'id' | 'createdAt' | 'updatedAt'>>
+export type IUpdatePlan = Partial<Omit<IPlan, 'id' | 'createdAt' | 'updatedAt'>>;
