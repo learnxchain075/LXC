@@ -5,7 +5,6 @@ import {
   ImageData as NodeImageData,
   loadImage,
 } from 'canvas';
-import fetch from 'node-fetch';
 import path from 'path';
 
 let initialized = false;
@@ -27,6 +26,7 @@ async function init(modelsPath?: string): Promise<void> {
 }
 
 async function loadImageFromUrl(url: string): Promise<NodeImage> {
+  const { default: fetch } = await import('node-fetch');
   const res = await fetch(url);
   const buffer = await res.arrayBuffer();
   return await loadImage(Buffer.from(buffer));
