@@ -14,7 +14,10 @@ const PlanTransactionService = {
     return response.data.data;
   },
   downloadInvoice: async (subscriptionId: string) => {
-    return await BaseApi.getRequest(`/school/plan/invoice/${subscriptionId}`, { responseType: 'blob' });
+    return await BaseApi.getRequest(`/school/plan/invoice/${subscriptionId}`, {
+      responseType: "arraybuffer",
+      headers: { Accept: "application/pdf" },
+    });
   },
 };
 

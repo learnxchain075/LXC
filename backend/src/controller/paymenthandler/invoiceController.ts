@@ -69,14 +69,24 @@ export const downloadPlanInvoice: RequestHandler = async (req, res) => {
       lang: (req.query.lang as "HI" | "EN") || "EN",
     });
 
-    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
-    const pdfBuffer = (await page.pdf({ format: "A4" })) as Buffer;
-    await browser.close();
-
+    let pdfBuffer: Buffer;
     let invoiceUrl = paymentRecord.invoiceUrl;
-    if (!invoiceUrl) {
+
+    if (invoiceUrl) {
+      const fileRes = await axios.get<ArrayBuffer>(invoiceUrl, {
+        responseType: "arraybuffer",
+      });
+      pdfBuffer = Buffer.from(fileRes.data);
+    } else {
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      });
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: "networkidle0" });
+      pdfBuffer = (await page.pdf({ format: "A4" })) as Buffer;
+      await browser.close();
+
       const upload = await uploadFile(
         pdfBuffer,
         "invoices",
