@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { all_routes } from "../../../../router/all_routes";
 import { Link } from "react-router-dom";
 import PredefinedDateRanges from "../../../../core/common/datePicker";
@@ -13,11 +13,24 @@ import Table from "../../../../core/common/dataTable/index";
 // import { feesData } from "../../../core/data/json/feesData";
 import FeesModal from "./feesModal";
 import TooltipOption from "../../../../core/common/tooltipOption";
+import { getFeeGroups } from "../../../../services/admin/feeGroupApi";
 
 const FeesGroup = () => {
   const routes = all_routes;
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
-  // const data = feesData;
+  const [groups, setGroups] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const res = await getFeeGroups();
+        setGroups(res.data || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchGroups();
+  }, []);
   const handleApplyClick = () => {
     if (dropdownMenuRef.current) {
       dropdownMenuRef.current.classList.remove("show");
@@ -36,35 +49,14 @@ const FeesGroup = () => {
     },
     {
       title: "Fees Group",
-      dataIndex: "feesGroup",
-      sorter: (a: TableData, b: TableData) =>
-        a.feesGroup.length - b.feesGroup.length,
+      dataIndex: "name",
+      sorter: (a: TableData, b: TableData) => a.name.length - b.name.length,
     },
     {
       title: "Description",
       dataIndex: "description",
       sorter: (a: TableData, b: TableData) =>
         a.description.length - b.description.length,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (text: string) => (
-        <>
-          {text === "Active" ? (
-            <span className="badge badge-soft-success d-inline-flex align-items-center">
-              <i className="ti ti-circle-filled fs-5 me-1"></i>
-              {text}
-            </span>
-          ) : (
-            <span className="badge badge-soft-danger d-inline-flex align-items-center">
-              <i className="ti ti-circle-filled fs-5 me-1"></i>
-              {text}
-            </span>
-          )}
-        </>
-      ),
-      sorter: (a: TableData, b: TableData) => a.status.length - b.status.length,
     },
     {
       title: "Action",
@@ -260,9 +252,7 @@ const FeesGroup = () => {
               </div>
             </div>
             <div className="card-body p-0 py-3">
-              {/* Student List */}
-              {/* <Table dataSource={data} columns={columns} Selection={true} /> */}
-              {/* /Student List */}
+              <Table dataSource={groups} columns={columns} Selection={true} />
             </div>
           </div>
           {/* /Students List */}
