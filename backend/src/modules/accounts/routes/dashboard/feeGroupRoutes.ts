@@ -3,9 +3,9 @@ import { createFeeGroup, getFeeGroups, updateFeeGroup, deleteFeeGroup } from "..
 
 const router = Router();
 
-router.post("/fee-group", createFeeGroup);
-router.get("/fee-group", getFeeGroups);
-router.put("/fee-group/:id", updateFeeGroup);
-router.delete("/fee-group/:id", deleteFeeGroup);
+router.post("/school/fee-group", createFeeGroup);
+router.get("/school/fee-group", getFeeGroups);
+router.put("/school/fee-group/:id", updateFeeGroup);
+router.delete("/school/fee-group/:id", deleteFeeGroup);
 
 export default router;

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../../../db/prisma";
 import { handlePrismaError } from "../../../../utils/prismaErrorHandler";
 
-export async function createFeeGroup(req: Request, res: Response, next: NextFunction) {
+export async function createFeeGroup(req: Request, res: Response, next: NextFunction):Promise<any> {
   try {
     const { name, description, schoolId } = req.body;
     if (!name || !schoolId) {
