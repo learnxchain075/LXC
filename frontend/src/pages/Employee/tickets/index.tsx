@@ -14,7 +14,7 @@ interface Ticket {
 const EmployeeTickets = () => {
   const user = useSelector((state: any) => state.auth.userObj);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [activeTab, setActiveTab] = useState<"open" | "closed">("open");
+  const [activeTab, setActiveTab] = useState<"open" | "completed">("open");
 
   const fetchTickets = async () => {
     if (!user?.id) return;
@@ -36,7 +36,9 @@ const EmployeeTickets = () => {
   const filtered = Object.entries(grouped).map(([cat, list]) => ({
     category: cat,
     items: list.filter(l =>
-      activeTab === "open" ? l.status.toLowerCase() !== "closed" : l.status.toLowerCase() === "closed"
+      activeTab === "open"
+        ? l.status.toLowerCase() !== "closed"
+        : l.status.toLowerCase() === "closed"
     ),
   }));
 
@@ -48,7 +50,12 @@ const EmployeeTickets = () => {
           <button className={`nav-link ${activeTab === "open" ? "active" : ""}`} onClick={() => setActiveTab("open")}>Open</button>
         </li>
         <li className="nav-item">
-          <button className={`nav-link ${activeTab === "closed" ? "active" : ""}`} onClick={() => setActiveTab("closed")}>Closed</button>
+          <button
+            className={`nav-link ${activeTab === "completed" ? "active" : ""}`}
+            onClick={() => setActiveTab("completed")}
+          >
+            Completed
+          </button>
         </li>
       </ul>
       {filtered.map(({ category, items }) => (
