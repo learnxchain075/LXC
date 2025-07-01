@@ -160,6 +160,7 @@ import Prefixes from "../pages/SuperAdmin/settings/websiteSettings/prefixes";
 import Socialauthentication from "../pages/SuperAdmin/settings/websiteSettings/socialAuthentication";
 import ContactMessages from "../pages/SuperAdmin/support/contactMessages";
 import TicketDetails from "../pages/SuperAdmin/support/ticket-details";
+import TicketDetail from "../pages/SuperAdmin/support/ticket-detail";
 import TicketGrid from "../pages/SuperAdmin/support/ticket-grid";
 import Tickets from "../pages/SuperAdmin/support/tickets";
 import DeleteRequest from "../pages/SuperAdmin/userManagement/deleteRequest";
@@ -1725,6 +1726,11 @@ export const publicRoutes = [
   {
     path: routes.ticketDetails,
     element: <TicketDetails />,
+    role: []
+  },
+  {
+    path: `${routes.ticketDetail}/:id`,
+    element: <TicketDetail />,
     role: []
   },
   {

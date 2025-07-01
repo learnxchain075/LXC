@@ -1,5 +1,5 @@
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../router/all_routes";
 import CommonSelect from "../../../core/common/commonSelect";
 import {
@@ -44,6 +44,7 @@ interface TicketForm {
 
 const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   const route = all_routes;
+  const navigate = useNavigate();
   const user = useSelector((state: any) => state.auth.userObj);
   const role = user.role;
   const ismobile = useMobileDetection();
@@ -134,6 +135,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
           schoolId: schoolID,
           userId: localStorage.getItem("userId") || teacherdata?.userId || "",
         });
+        navigate(`${route.ticketDetail}/${res.data.id}`);
       }
     } catch (error) {
       toast.error("Failed to create ticket");
@@ -414,7 +416,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                           </div>
                           <div className="flex-grow-1 ms-3">
                             <h5 className="mb-1">
-                              <Link to={`${route.ticketDetails}/${ticket.id}`} className="text-body">
+                              <Link to={`${route.ticketDetail}/${ticket.id}`} className="text-body">
                                 {ticket.title}
                               </Link>
                             </h5>

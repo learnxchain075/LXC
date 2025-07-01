@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../router/all_routes";
 import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 import CommonSelect from "../../../core/common/commonSelect";
@@ -76,6 +76,7 @@ const getStatusClass = (status: string) => {
 
 const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
   const route = all_routes;
+  const navigate = useNavigate();
   const user = useSelector((state: any) => state.auth.userObj);
   const role = user.role;
   
@@ -160,6 +161,7 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
         closeModal("add_ticket");
         fetchTickets();
         handleCancel();
+        navigate(`${route.ticketDetail}/${res.data.id}`);
       }
     } catch (error) {
       console.error("Error creating ticket:", error);
@@ -457,7 +459,7 @@ const ismobile=useMobileDetection();
                                 </span>
                                 <div className="d-flex align-items-center mb-2">
                                   <h5 className="fw-semibold me-2">
-                                    <Link to={`${route.ticketDetails}/${ticket.id}`}>
+                                    <Link to={`${route.ticketDetail}/${ticket.id}`}>
                                       {ticket.title}
                                     </Link>
                                   </h5>
