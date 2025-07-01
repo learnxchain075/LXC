@@ -16,6 +16,8 @@ import { useSelector } from "react-redux";
 const ContactMessages = () => {
   const [data, setData] = useState<IContactMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<IContactMessage | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [contactMessagesData, setContactMessagesData] = useState<IContactMessage>({
     userId: localStorage.getItem("userId") || "",
     name: "",
@@ -159,8 +161,22 @@ const ContactMessages = () => {
     {
       title: "Message",
       dataIndex: "message",
-      sorter: (a: TableData, b: TableData) =>
-        a.message.length - b.message.length,
+      render: (_: any, record: IContactMessage) => {
+        const preview = record.message.length > 30 ? `${record.message.slice(0, 30)}...` : record.message;
+        return (
+          <Link
+            to="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedMessage(record);
+              setViewModalOpen(true);
+            }}
+          >
+            {preview}
+          </Link>
+        );
+      },
+      sorter: (a: TableData, b: TableData) => a.message.length - b.message.length,
     },
     {
       title: "Date",
@@ -518,6 +534,30 @@ const ContactMessages = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      </div>
+      {/* View Message Modal */}
+      <div className={`modal fade ${viewModalOpen ? "show d-block" : ""}`} id="view_message" tabIndex={-1} aria-hidden={!viewModalOpen}>
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h4 className="modal-title">Message Details</h4>
+              <button type="button" className="btn-close custom-btn-close" onClick={() => setViewModalOpen(false)} aria-label="Close">
+                <i className="ti ti-x" />
+              </button>
+            </div>
+            <div className="modal-body">
+              {selectedMessage && (
+                <div>
+                  <p><strong>Name:</strong> {selectedMessage.name}</p>
+                  <p><strong>Email:</strong> {selectedMessage.email}</p>
+                  <p><strong>Phone:</strong> {selectedMessage.phone}</p>
+                  <p><strong>Message:</strong> {selectedMessage.message}</p>
+                  <p><strong>Date:</strong> {dayjs(selectedMessage.date).format('DD MMM YYYY')}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

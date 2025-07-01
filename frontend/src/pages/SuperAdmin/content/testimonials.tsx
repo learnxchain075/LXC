@@ -63,14 +63,8 @@ const Testimonials: React.FC = () => {
     content: "",
   });
   const [selectedTestimonialId, setSelectedTestimonialId] = useState<string | null>(null);
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
-
-  const toggleDescription = (id: string) => {
-    setExpandedDescriptions(prev => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
+  const [selectedFeedback, setSelectedFeedback] = useState<TestimonialData | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
 
 
   // Fetch all testimonials on component mount
@@ -264,29 +258,20 @@ const Testimonials: React.FC = () => {
       title: "Description",
       dataIndex: "description",
       render: (_: any, record: TestimonialData) => {
-        const isExpanded = expandedDescriptions[record.id];
         const words = record.description.trim().split(" ");
         const preview = words.slice(0, 5).join(" ");
-        const hasMore = words.length > 5;
-
+        const truncated = words.length > 5;
         return (
-          <div>
-            <span>
-              {isExpanded || !hasMore ? record.description : `${preview}...`}
-            </span>{" "}
-            {hasMore && (
-              <Link
-                to="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  toggleDescription(record.id);
-                }}
-                className="text-primary"
-              >
-                {isExpanded ? "Read less" : "Read more"}
-              </Link>
-            )}
-          </div>
+          <Link
+            to="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedFeedback(record);
+              setViewModalOpen(true);
+            }}
+          >
+            {truncated ? `${preview}...` : record.description}
+          </Link>
         );
       },
     },
@@ -491,6 +476,33 @@ const Testimonials: React.FC = () => {
         </div>
       </div>
       {/* /Page Wrapper */}
+
+      {/* View Feedback Modal */}
+      <div className={`modal fade ${viewModalOpen ? "show d-block" : ""}`} id="view_feedback" tabIndex={-1} aria-hidden={!viewModalOpen}>
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h4 className="modal-title">Feedback Details</h4>
+              <button type="button" className="btn-close custom-btn-close" onClick={() => setViewModalOpen(false)} aria-label="Close">
+                <i className="ti ti-x" />
+              </button>
+            </div>
+            <div className="modal-body">
+              {selectedFeedback && (
+                <div>
+                  <p><strong>School:</strong> {selectedFeedback.author}</p>
+                  <p><strong>Title:</strong> {selectedFeedback.title}</p>
+                  <p><strong>Description:</strong> {selectedFeedback.description}</p>
+                  <p><strong>Status:</strong> {selectedFeedback.status}</p>
+                  {selectedFeedback.dateAdded && (
+                    <p><strong>Date:</strong> {moment(selectedFeedback.dateAdded).format('DD MMM YYYY')}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Add Testimonials Modal */}
       <div className="modal fade" id="add_testimonials">
