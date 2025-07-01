@@ -47,7 +47,7 @@ const GetSchools = () => {
       const response = await getAllSchools();
       // console.log("school all ", response.data);
       const data = response.data;
-     
+
       if (data && typeof data === "object" && Array.isArray(data.schools)) {
         const transformedSchools = data.schools.map((school: IRegisterSchool) => ({
           key: school.id.toString(),
@@ -80,7 +80,8 @@ const GetSchools = () => {
 
   // Set up event listeners for the update permission modal
   useEffect(() => {
-    const modal = document.getElementById("update-permission-modal");
+    // const modal = document.getElementById("update-permission-modal");
+    const modal = document.getElementById("modal-lg");
     if (modal) {
       modal.addEventListener("show.bs.modal", (event: Event) => {
         const button = (event as any).relatedTarget;
@@ -136,21 +137,21 @@ const GetSchools = () => {
     try {
       setLoading(true);
       // console.log("school id ", schoolToDelete);
-      const response =await deleteSchool(schoolToDelete);
-      if(response.status===200){
-      setSchools(prev => prev.filter(school => school.key !== schoolToDelete));
+      const response = await deleteSchool(schoolToDelete);
+      if (response.status === 200) {
+        setSchools(prev => prev.filter(school => school.key !== schoolToDelete));
 
       }
 
       toast.success("School deleted successfully");
     } catch (error: any) {
       console.error("deletion error:"
-      //    {
-      //   error: error.response?.data || error.message,
-      //   status: error.response?.status,
-      //   config: error.config
-      // }
-    );
+        //    {
+        //   error: error.response?.data || error.message,
+        //   status: error.response?.status,
+        //   config: error.config
+        // }
+      );
 
       // More specific error message
       const errorMessage = error.response?.data?.message ||
@@ -302,7 +303,7 @@ const GetSchools = () => {
                 <Link
                   to={routes.addSchools}
                   className="btn btn-primary d-flex align-items-center"
-                  
+
                 >
                   <i className="ti ti-square-rounded-plus me-2" />
                   Add School
@@ -406,7 +407,7 @@ const GetSchools = () => {
             </div>
             <div className="card-body p-0 py-3">
               {loading ? (
-                <CustomLoader variant="dots" color="#3067e3"  />
+                <CustomLoader variant="dots" color="#3067e3" />
               ) : (
                 <Table dataSource={schools} columns={columns} Selection={true} />
               )}
@@ -453,8 +454,8 @@ const GetSchools = () => {
                     className="btn btn-danger"
                     data-bs-dismiss="modal"
                     //to call api to delte the school
-                    onClick={handleDeleteSchool} 
-                    >
+                    onClick={handleDeleteSchool}
+                  >
                     Yes, Delete
                   </Link>
                   {/* <button type="submit" className="btn btn-danger"

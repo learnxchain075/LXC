@@ -258,8 +258,13 @@ model User {
 
   Ticket Ticket[]
 
+  // Opposite relation for TicketAssignment
+  assignedTickets Ticket[] @relation("TicketAssignment")
+
   NewspaperSubmission NewspaperSubmission[]
   invoiceLogs InvoiceLog[]
+
+  // Ticket Ticket[] @relation("TicketAssignment")
 }
 
 model PasswordResetToken {
