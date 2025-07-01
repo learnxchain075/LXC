@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../../../db/prisma";
 import { uploadFile } from "../../../../config/upload";
 import { getFaceEmbedding, matchEmbedding } from "../../../../config/faceMatcher";
+import path from "path";
 
 export const registerTeacherFace = async (req: Request, res: Response) :Promise<any> => {
   try {
@@ -16,7 +17,9 @@ export const registerTeacherFace = async (req: Request, res: Response) :Promise<
       return res.status(404).json({ message: "Teacher not found" });
     }
 
-    const { url } = await uploadFile(file.buffer, "teacher_faces", "image", file.originalname);
+    const ext = path.extname(file.originalname || "");
+    const uniqueName = `${teacherId}_${Date.now()}${ext || ".png"}`;
+    const { url } = await uploadFile(file.buffer, "teacher_faces", "image", uniqueName);
     const embedding = await getFaceEmbedding(url);
     if (!embedding) {
       return res.status(500).json({ message: "Unable to extract face embedding" });
@@ -60,7 +63,9 @@ export const markFaceAttendance = async (req: Request, res: Response) :Promise<a
     const faceData = await prisma.teacherFaceData.findUnique({ where: { teacherId: teacher.id } });
     if (!faceData) return res.status(404).json({ message: "No face data registered" });
 
-    const { url } = await uploadFile(file.buffer, "teacher_attendance", "image", file.originalname);
+    const attendExt = path.extname(file.originalname || "");
+    const attendName = `${teacher.id}_${Date.now()}${attendExt || ".png"}`;
+    const { url } = await uploadFile(file.buffer, "teacher_attendance", "image", attendName);
     const matched = await matchEmbedding(url, faceData.faceEmbedding);
 
     const today = new Date();
