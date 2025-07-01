@@ -328,6 +328,7 @@ addsection:"/student/add-section",
   addStaff: "/hrm/add-staff",
   editStaff: "/hrm/edit-staff",
   staffsAttendance: "/hrm/staffs-attendance",
+  employeeTickets: "/employee/tickets",
 
   layoutDefault: "/layout-default",
   layoutMini: "/layout-mini",

@@ -9,6 +9,7 @@ export const ticketSchema = z.object({
   status: z.string().min(1, "Status is required"),
   schoolId: z.string().cuid("Invalid School ID").optional(),
   userId: z.string().cuid("Invalid User ID"),
+  assignedToId: z.string().cuid("Invalid User ID").optional(),
 });
 
 
@@ -20,6 +21,7 @@ export const ticketUpdateSchema = ticketSchema.partial(
         category: true,
         priority: true,
         status: true,
+        assignedToId: true,
     },
 );
 

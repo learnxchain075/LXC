@@ -104,7 +104,7 @@ export const updateTicket = async (req: Request, res: Response, next: NextFuncti
     }
 
     const { ticketId } = params.data;
-    const { title, description, priority, status, category } = body.data;
+    const { title, description, priority, status, category, assignedToId } = body.data;
 
     const updatedTicket = await prisma.ticket.update({
       where: { id: ticketId },
@@ -114,6 +114,7 @@ export const updateTicket = async (req: Request, res: Response, next: NextFuncti
         priority,
         status,
         category,
+        assignedToId,
       },
     });
 
@@ -157,6 +158,30 @@ export const getTicketsByUser = async (req: Request, res: Response, next: NextFu
 
     const tickets = await prisma.ticket.findMany({
       where: { userId },
+    });
+
+    res.status(200).json(tickets);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+// Get all Tickets assigned to a specific employee
+export const getTicketsByAssignee = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = userIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ message: "Invalid user id", errors: params.error.errors });
+    }
+
+    const { userId } = params.data;
+
+    const tickets = await prisma.ticket.findMany({
+      where: { assignedToId: userId },
     });
 
     res.status(200).json(tickets);

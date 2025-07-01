@@ -112,6 +112,7 @@ import StaffDetails from "../pages/SuperAdmin/hrm/staff-list/staff-details.tsx";
 import StaffLeave from "../pages/SuperAdmin/hrm/staff-list/staff-leave";
 import StaffPayRoll from "../pages/SuperAdmin/hrm/staff-list/staff-payroll.tsx";
 import StaffsAttendance from "../pages/SuperAdmin/hrm/staff-list/staffs-attendance";
+import EmployeeTickets from "../pages/Employee/tickets";
 
 import CollectFees from "../pages/SuperAdmin/management/feescollection/collectFees";
 
@@ -1488,6 +1489,12 @@ export const publicRoutes = [
     element: <StaffsAttendance />,
     route: Route,
     role: ["admin", "teacher", "accounts"],
+  },
+  {
+    path: routes.employeeTickets,
+    element: <EmployeeTickets />,
+    route: Route,
+    role: ["employee"],
   },
   {
     path: routes.addStaff,

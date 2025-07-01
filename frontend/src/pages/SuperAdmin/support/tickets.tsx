@@ -3,12 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../router/all_routes";
 import CommonSelect from "../../../core/common/commonSelect";
 import {
-  assigned,
   markAs,
   staffName,
   state,
   ticketDate,
 } from "../../../core/common/selectoption/selectoption";
+import { getEmployeesBySchool } from "../../../services/admin/employeeService";
 import PredefinedDateRanges from "../../../core/common/datePicker";
 import TicketsSidebar from "./tickets-sidebar";
 import TooltipOption from "../../../core/common/tooltipOption";
@@ -59,6 +59,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [priorities, setPriorities] = useState<{ value: string; label: string }[]>([]);
   const [statuses, setStatuses] = useState<{ value: string; label: string }[]>([]);
+  const [assignees, setAssignees] = useState<{ value: string; label: string }[]>([]);
 
   const [TicketData, setTicketData] = useState<TicketForm>({
     title: "",
@@ -68,6 +69,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
     category: "",
     priority: "",
     status: "pending",
+    assignedTo: "",
   });
 
   const [schoolTickets, setSchoolTickets] = useState<TicketForm[]>([]);
@@ -81,6 +83,12 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
       setCategories(c.map((v: string) => ({ value: v, label: v })));
       setPriorities(p.map((v: string) => ({ value: v, label: v })));
       setStatuses(s.map((v: string) => ({ value: v, label: v })));
+      if (schoolID) {
+        const empRes = await getEmployeesBySchool(schoolID);
+        setAssignees(
+          (empRes.data.staff || []).map((e: any) => ({ value: e.id, label: e.name }))
+        );
+      }
     } catch (error) {
       console.error("Failed to load ticket metadata", error);
     }
@@ -160,7 +168,10 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   const handleUpdateSubmit = async () => {
     if (!selectedTicket) return;
     try {
-      await updateTicket(selectedTicket.id!, selectedTicket);
+      await updateTicket(selectedTicket.id!, {
+        ...selectedTicket,
+        assignedToId: selectedTicket.assignedTo,
+      } as any);
       toast.success("Ticket successfully updated");
       fetchTickets();
       setSelectedTicket(null);
@@ -609,9 +620,9 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                   <label className="form-label">Assigned To</label>
                   <CommonSelect
                     className="select"
-                    options={assigned}
+                    options={assignees}
                     onChange={(option) => setSelectedTicket({ ...selectedTicket, assignedTo: option?.value || '' })}
-                    defaultValue={assigned.find(opt => opt.value === selectedTicket.assignedTo)}
+                    defaultValue={assignees.find(opt => opt.value === selectedTicket.assignedTo)}
                   />
                 </div>
               </div>

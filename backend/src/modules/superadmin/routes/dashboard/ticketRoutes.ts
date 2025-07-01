@@ -6,6 +6,7 @@ import {
   getTicketById,
   getTicketsBySchool,
   getTicketsByUser,
+  getTicketsByAssignee,
   updateTicket,
 } from "../../controllers/createTicketController";
 import { getTicketMetadata } from "../../controllers/ticketMetadataController";
@@ -25,5 +26,6 @@ router.get("/ticket-metadata", getTicketMetadata);
 // Get Ticket by User ID
 
 router.get("/user-tickets/:userId",getTicketsByUser );
+router.get("/assignee-tickets/:userId", getTicketsByAssignee);
 
 export default router;
