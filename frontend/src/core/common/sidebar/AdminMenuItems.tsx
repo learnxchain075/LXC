@@ -485,8 +485,8 @@ const AdminMenuItems = () => {
       ]
     },
     {
-      "key": "HRMModule", //module required
-      "displayName": "visitor",
+      "key": "VisitorModule", // module for managing visitors
+      "displayName": "Visitor",
       "subItems": [
         // { "name": "ADD STAFF", "route": all_routes.addStaff, "icon": "ti ti-users" },
         { "name": "Add Visitor", "route": all_routes.vistor, "icon": "ti ti-building" },
