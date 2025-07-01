@@ -163,14 +163,14 @@ const Header = () => {
                 <i className={dataTheme === "default_data_theme" ? "ti ti-moon" : "ti ti-brightness-up"} />
               </Link>
             )}
-            <Link onClick={toggleNotification} to="#" className="btn btn-outline-light bg-white btn-icon position-relative me-1">
+            {/* <Link onClick={toggleNotification} to="#" className="btn btn-outline-light bg-white btn-icon position-relative me-1">
               <i className="ti ti-bell" />
               <span className="notification-status-dot" />
             </Link>
             <Link to={routes.chat} className="btn btn-outline-light bg-white btn-icon position-relative me-1">
               <i className="ti ti-brand-hipchat" />
               <span className="chat-status-dot" />
-            </Link>
+            </Link> */}
             {/* Added direct logout button for cases where dropdown fails */}
             <Link to={routes.login} onClick={handleLogout} className="btn btn-outline-light bg-white btn-icon me-1">
               <i className="ti ti-login" />
