@@ -11,13 +11,14 @@ import TooltipOption from "../../../core/common/tooltipOption";
 import PlanTransactionService from "../../../services/paymentHandler/planTransaction";
 
 interface PlanTransaction {
+  subscriptionId: string;
   providerName: string;
   planType: string;
   transactionDate: string;
   amount: number;
   paymentMethod: string;
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
   status: string;
 }
 
@@ -57,6 +58,22 @@ const MembershipTransaction = () => {
       console.error("Error fetching transactions", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = async (subscriptionId: string) => {
+    try {
+      const res = await PlanTransactionService.downloadInvoice(subscriptionId);
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice_${subscriptionId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download invoice', err);
     }
   };
 
@@ -101,12 +118,12 @@ const MembershipTransaction = () => {
     {
       title: "Start Date",
       dataIndex: "startDate",
-      render: (text: string) => formatDate(text),
+      render: (text: string | null) => (text ? formatDate(text) : "N/A"),
     },
     {
       title: "End Date",
       dataIndex: "endDate",
-      render: (text: string) => formatDate(text),
+      render: (text: string | null) => (text ? formatDate(text) : "N/A"),
     },
     {
       title: "Status",
@@ -122,6 +139,19 @@ const MembershipTransaction = () => {
           </span>
         );
       },
+    },
+    {
+      title: "Invoice",
+      dataIndex: "subscriptionId",
+      render: (_: any, record: PlanTransaction) => (
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-primary"
+          onClick={() => handleDownloadInvoice(record.subscriptionId)}
+        >
+          <i className="ti ti-download me-1" />Download
+        </button>
+      ),
     },
   ];
 
