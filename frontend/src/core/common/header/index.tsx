@@ -172,9 +172,7 @@ const Header = () => {
               <span className="chat-status-dot" />
             </Link> */}
             {/* Added direct logout button for cases where dropdown fails */}
-            <Link to={routes.login} onClick={handleLogout} className="btn btn-outline-light bg-white btn-icon me-1">
-              <i className="ti ti-login" />
-            </Link>
+         
             {/* <div className="dropdown btn btn-outline-light bg-white btn-icon me-2  "> */}
             <a className="dropdown-toggle -ml-2 align-items-center" data-bs-toggle="dropdown">
               {imgSrc ? (
@@ -188,7 +186,9 @@ const Header = () => {
               )}
             </a>
 
-
+   <Link to={routes.login} onClick={handleLogout} className="btn btn-outline-light bg-white btn-icon me-1">
+              <i className="ti ti-login" />
+            </Link>
 
 
 
