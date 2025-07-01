@@ -1,5 +1,10 @@
 import * as faceapi from '@vladmandic/face-api';
-import { Canvas, Image, ImageData, loadImage } from 'canvas';
+import {
+  Canvas as NodeCanvas,
+  Image as NodeImage,
+  ImageData as NodeImageData,
+  loadImage,
+} from 'canvas';
 import fetch from 'node-fetch';
 import path from 'path';
 
@@ -8,7 +13,11 @@ let initialized = false;
 async function init(modelsPath?: string): Promise<void> {
   if (initialized) return;
   const modelPath = modelsPath || path.join(__dirname, '../../models');
-  faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+  (faceapi.env as any).monkeyPatch({
+    Canvas: NodeCanvas as unknown as typeof HTMLCanvasElement,
+    Image: NodeImage as unknown as typeof HTMLImageElement,
+    ImageData: NodeImageData as unknown as typeof ImageData,
+  });
   await Promise.all([
     faceapi.nets.ssdMobilenetv1.loadFromDisk(modelPath),
     faceapi.nets.faceLandmark68Net.loadFromDisk(modelPath),
@@ -17,13 +26,13 @@ async function init(modelsPath?: string): Promise<void> {
   initialized = true;
 }
 
-async function loadImageFromUrl(url: string): Promise<Canvas> {
+async function loadImageFromUrl(url: string): Promise<NodeCanvas> {
   const res = await fetch(url);
   const buffer = await res.arrayBuffer();
   return await loadImage(Buffer.from(buffer));
 }
 
-async function loadImageFromBase64(data: string): Promise<Canvas> {
+async function loadImageFromBase64(data: string): Promise<NodeCanvas> {
   const cleaned = data.replace(/^data:image\/\w+;base64,/, '');
   const buffer = Buffer.from(cleaned, 'base64');
   return await loadImage(buffer);
@@ -40,11 +49,11 @@ export async function matchFaceLocal(
     loadImageFromUrl(storedImageUrl),
   ]);
   const selfie = await faceapi
-    .detectSingleFace(selfieCanvas)
+    .detectSingleFace(selfieCanvas as unknown as HTMLCanvasElement)
     .withFaceLandmarks()
     .withFaceDescriptor();
   const stored = await faceapi
-    .detectSingleFace(storedCanvas)
+    .detectSingleFace(storedCanvas as unknown as HTMLCanvasElement)
     .withFaceLandmarks()
     .withFaceDescriptor();
   if (!selfie || !stored) return false;
@@ -62,7 +71,7 @@ export async function getFaceEmbeddingLocal(
   await init(modelsPath);
   const canvas = await loadImageFromUrl(imageUrl);
   const detection = await faceapi
-    .detectSingleFace(canvas)
+    .detectSingleFace(canvas as unknown as HTMLCanvasElement)
     .withFaceLandmarks()
     .withFaceDescriptor();
   if (!detection) return null;
@@ -77,7 +86,7 @@ export async function matchEmbeddingLocal(
   await init(modelsPath);
   const canvas = await loadImageFromBase64(selfieBase64);
   const detection = await faceapi
-    .detectSingleFace(canvas)
+    .detectSingleFace(canvas as unknown as HTMLCanvasElement)
     .withFaceLandmarks()
     .withFaceDescriptor();
   if (!detection) return false;
