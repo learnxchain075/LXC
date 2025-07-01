@@ -8,25 +8,52 @@ export const getTicketMetadata = async (
   next: NextFunction
 ) => {
   try {
-    const categories = await prisma.ticket.findMany({
+    const categoriesData = await prisma.ticket.findMany({
       where: { category: { not: null } },
       distinct: ["category"],
       select: { category: true },
     });
-    const statuses = await prisma.ticket.findMany({
+    const statusesData = await prisma.ticket.findMany({
       distinct: ["status"],
       select: { status: true },
     });
-    const priorities = await prisma.ticket.findMany({
+    const prioritiesData = await prisma.ticket.findMany({
       distinct: ["priority"],
       select: { priority: true },
     });
 
-    res.json({
-      categories: categories.map((c) => c.category),
-      statuses: statuses.map((s) => s.status),
-      priorities: priorities.map((p) => p.priority),
-    });
+    const defaultCategories = [
+      "Internet Issue",
+      "Redistribute",
+      "Computer",
+      "Complaint",
+    ];
+
+    const defaultPriorities = ["Low", "Medium", "High"];
+
+    const defaultStatuses = [
+      "Closed",
+      "Open",
+      "Pending",
+      "Resolved",
+      "Reopened",
+      "Inprogress",
+    ];
+
+    const categories =
+      categoriesData.length > 0
+        ? categoriesData.map((c) => c.category)
+        : defaultCategories;
+    const statuses =
+      statusesData.length > 0
+        ? statusesData.map((s) => s.status)
+        : defaultStatuses;
+    const priorities =
+      prioritiesData.length > 0
+        ? prioritiesData.map((p) => p.priority)
+        : defaultPriorities;
+
+    res.json({ categories, statuses, priorities });
   } catch (error) {
     next(handlePrismaError(error));
   }
