@@ -109,6 +109,10 @@ const Header = () => {
           <Link className="dropdown-item" to={routes.login} onClick={handleLogout}>Logout</Link>
         </div>
       </div>
+      {/* Direct logout button for fallback when dropdown fails */}
+      <Link to={routes.login} onClick={handleLogout} className="btn btn-outline-light bg-white btn-icon ms-2">
+        <i className="ti ti-login" />
+      </Link>
     </div>
   );
 
@@ -166,6 +170,10 @@ const Header = () => {
             <Link to={routes.chat} className="btn btn-outline-light bg-white btn-icon position-relative me-1">
               <i className="ti ti-brand-hipchat" />
               <span className="chat-status-dot" />
+            </Link>
+            {/* Added direct logout button for cases where dropdown fails */}
+            <Link to={routes.login} onClick={handleLogout} className="btn btn-outline-light bg-white btn-icon me-1">
+              <i className="ti ti-login" />
             </Link>
             {/* <div className="dropdown btn btn-outline-light bg-white btn-icon me-2  "> */}
             <a className="dropdown-toggle -ml-2 align-items-center" data-bs-toggle="dropdown">
