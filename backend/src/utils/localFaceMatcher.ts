@@ -20,13 +20,13 @@ async function init(modelsPath?: string): Promise<void> {
 async function loadImageFromUrl(url: string): Promise<Canvas> {
   const res = await fetch(url);
   const buffer = await res.arrayBuffer();
-  return faceapi.createCanvasFromMedia(await loadImage(Buffer.from(buffer)));
+  return await loadImage(Buffer.from(buffer));
 }
 
 async function loadImageFromBase64(data: string): Promise<Canvas> {
   const cleaned = data.replace(/^data:image\/\w+;base64,/, '');
   const buffer = Buffer.from(cleaned, 'base64');
-  return faceapi.createCanvasFromMedia(await loadImage(buffer));
+  return await loadImage(buffer);
 }
 
 export async function matchFaceLocal(
