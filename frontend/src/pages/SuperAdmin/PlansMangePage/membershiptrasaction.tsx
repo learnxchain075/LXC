@@ -64,16 +64,18 @@ const MembershipTransaction = () => {
   const handleDownloadInvoice = async (subscriptionId: string) => {
     try {
       const res = await PlanTransactionService.downloadInvoice(subscriptionId);
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
       link.href = url;
       link.download = `invoice_${subscriptionId}.pdf`;
+      link.target = "_blank";
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to download invoice', err);
+      console.error("Failed to download invoice", err);
     }
   };
 

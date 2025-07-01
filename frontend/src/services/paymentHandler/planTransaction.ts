@@ -8,7 +8,9 @@ const PlanTransactionService = {
   getAllTransactions: async (
     filters: any = {}
   ): Promise<PlanTransactionResponse[]> => {
-    const response = await BaseApi.getRequest("/membership-transactions/plans", filters);
+    const response = await BaseApi.getRequest("/membership-transactions/plans", {
+      params: filters,
+    });
     return response.data.data;
   },
   downloadInvoice: async (subscriptionId: string) => {
