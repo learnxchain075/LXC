@@ -230,6 +230,7 @@ addbustopadmin: "/add-bus-stop-admin",
   tickets: "/support/tickets",
   ticketGrid: "/support/ticket-grid",
   ticketDetails: "/support/ticket-details",
+  ticketDetail: "/support/ticket-detail",
   demoRequest: "/demo-requests",
 
 
