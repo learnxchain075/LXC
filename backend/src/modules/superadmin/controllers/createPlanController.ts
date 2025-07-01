@@ -99,7 +99,7 @@ export const updatePlan = async (req: Request, res: Response): Promise<any> => {
       });
     }
 
-    const { name, price, discountedPrice, durationDays } = parseResult.data;
+    const { name, price, discountedPrice, durationDays, userLimit } = parseResult.data;
 
     if (!name || !price || !durationDays) {
       return res.status(400).json({ message: "All fields are required" });
@@ -112,6 +112,7 @@ export const updatePlan = async (req: Request, res: Response): Promise<any> => {
         price,
         discountedPrice: discountedPrice ?? null,
         durationDays,
+        userLimit,
       },
     });
 

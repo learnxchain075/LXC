@@ -11,12 +11,13 @@ interface ICreatePlans {
   name: string;
   price: number;
   durationDays: number;
+  userLimit: number;
 }
 
 const MembershipPlan = () => {
   const [plans, setPlans] = useState<ICreatePlans[]>([]);
   const [formData, setFormData] = useState(
-    { name: "", price: "", durationDays: "" });
+    { name: "", price: "", durationDays: "", userLimit: "" });
   const [selectedPlan, setSelectedPlan] = useState<ICreatePlans | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +33,7 @@ const MembershipPlan = () => {
   useEffect(() => {
     const modalElement = document.getElementById("modaldemo8");
     const handleHide = () => {
-      setFormData({ name: "", price: "", durationDays: "" });
+      setFormData({ name: "", price: "", durationDays: "", userLimit: "" });
       setSelectedPlan(null);
       setIsEditMode(false);
     };
@@ -74,14 +75,16 @@ const MembershipPlan = () => {
     try {
       const price = parseInt(formData.price);
       const durationDays = parseInt(formData.durationDays, 10);
-      if (isNaN(price) || isNaN(durationDays)) {
-        throw new Error("Please enter a valid price and duration");
+      const userLimit = parseInt(formData.userLimit, 10);
+      if (isNaN(price) || isNaN(durationDays) || isNaN(userLimit)) {
+        throw new Error("Please enter a valid price, duration and user limit");
       }
 
       const planData = {
         name: formData.name,
         price,
         durationDays,
+        userLimit,
       };
 
       if (isEditMode && selectedPlan) {
@@ -122,6 +125,7 @@ const MembershipPlan = () => {
       name: plan.name,
       price: plan.price.toString(),
       durationDays: plan.durationDays.toString(),
+      userLimit: plan.userLimit.toString(),
     });
   };
 
@@ -172,6 +176,7 @@ const MembershipPlan = () => {
                     <th>Sr.</th>
                     <th>Name</th>
                     <th>Price</th>
+                    <th>User Limit</th>
                     <th>Duration (Days)</th>
                     <th>Actions</th>
                   </tr>
@@ -182,6 +187,7 @@ const MembershipPlan = () => {
                       <td>{index + 1}</td>
                       <td>{plan.name}</td>
                       <td>₹{plan.price}</td>
+                      <td>{plan.userLimit}</td>
                       <td>{plan.durationDays}</td>
                       <td>
                         <button
@@ -249,6 +255,18 @@ const MembershipPlan = () => {
                       value={formData.price}
                       onChange={handleChange}
                       min="0"
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">User Limit</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="userLimit"
+                      value={formData.userLimit}
+                      onChange={handleChange}
+                      min="3"
                       required
                     />
                   </div>
