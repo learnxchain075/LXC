@@ -26,13 +26,13 @@ async function init(modelsPath?: string): Promise<void> {
   initialized = true;
 }
 
-async function loadImageFromUrl(url: string): Promise<NodeCanvas> {
+async function loadImageFromUrl(url: string): Promise<NodeImage> {
   const res = await fetch(url);
   const buffer = await res.arrayBuffer();
   return await loadImage(Buffer.from(buffer));
 }
 
-async function loadImageFromBase64(data: string): Promise<NodeCanvas> {
+async function loadImageFromBase64(data: string): Promise<NodeImage> {
   const cleaned = data.replace(/^data:image\/\w+;base64,/, '');
   const buffer = Buffer.from(cleaned, 'base64');
   return await loadImage(buffer);
@@ -44,12 +44,12 @@ export async function matchFaceLocal(
   modelsPath?: string,
 ): Promise<boolean> {
   await init(modelsPath);
-  const [selfieCanvas, storedCanvas] = await Promise.all([
+  const [selfieImage, storedCanvas] = await Promise.all([
     loadImageFromBase64(selfieBase64),
     loadImageFromUrl(storedImageUrl),
   ]);
   const selfie = await faceapi
-    .detectSingleFace(selfieCanvas as unknown as HTMLCanvasElement)
+    .detectSingleFace(selfieImage as unknown as HTMLCanvasElement)
     .withFaceLandmarks()
     .withFaceDescriptor();
   const stored = await faceapi
@@ -84,9 +84,9 @@ export async function matchEmbeddingLocal(
   modelsPath?: string,
 ): Promise<boolean> {
   await init(modelsPath);
-  const canvas = await loadImageFromBase64(selfieBase64);
+  const image = await loadImageFromBase64(selfieBase64);
   const detection = await faceapi
-    .detectSingleFace(canvas as unknown as HTMLCanvasElement)
+    .detectSingleFace(image as unknown as HTMLCanvasElement)
     .withFaceLandmarks()
     .withFaceDescriptor();
   if (!detection) return false;

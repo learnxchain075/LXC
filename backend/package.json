@@ -27,6 +27,7 @@
     "@aws-sdk/client-ses": "^3.750.0",
     "@prisma/client": "^6.8.2",
     "@stream-io/video-react-sdk": "^1.18.4",
+    "@tensorflow/tfjs-node": "^4.22.0",
     "@types/bcrypt": "^5.0.2",
     "@types/morgan": "^1.9.9",
     "@types/puppeteer": "^5.4.7",
