@@ -472,7 +472,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                       </div>
                     </div>
                     <div className="flex-grow-1 ms-3">
-                      <h6 className="mb-0">Hella</h6>
+                      <h6 className="mb-0">Rit</h6>
                     </div>
                     <div>
                       <span className="badge bg-danger me-1">2</span>
