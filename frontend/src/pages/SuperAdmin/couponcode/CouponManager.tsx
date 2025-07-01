@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form } from 'react-bootstrap';
-import axios from 'axios';
 import BaseApi from '../../../services/BaseApi';
 
 const defaultCoupon = {
   code: '',
-  discountType: 'PERCENTAGE', // or 'FIXED'
+  discountType: 'PERCENTAGE',
   discountValue: 0,
   expiryDate: '',
   maxUsage: 1,
+  planId: '',
 };
 
 type Coupon = {
@@ -19,6 +19,8 @@ type Coupon = {
   expiryDate: string;
   maxUsage: number;
   usedCount: number;
+  planName?: string;
+  planId?: string;
 };
 
 const CouponManager = () => {
@@ -26,9 +28,12 @@ const CouponManager = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [form, setForm] = useState(defaultCoupon);
+  const [plans, setPlans] = useState<{ id: string; name: string }[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchCoupons();
+    fetchPlans();
   }, []);
 
   const fetchCoupons = async () => {
@@ -44,21 +49,36 @@ const CouponManager = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  const fetchPlans = async () => {
+    try {
+      const res = await BaseApi.getRequest('/super/plans');
+      if (Array.isArray(res.data)) {
+        setPlans(res.data);
+      }
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+    }
   };
 
-  const handleSubmit = async () => {
-    // const [year, month, day] = form.expiryDate.split("-").map(Number);
-    //   const expiryDateISO = new Date(Date.UTC(year, month - 1, day)).toISOString();
-      
-      // const submitData = {
-      //   ...form,
-      //   expiryDate: expiryDateISO,
-      //   discountValue: parseFloat(form.discountValue.toString()),
-      //   maxUsage: parseInt(form.maxUsage.toString(), 10),
-      // };
+const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const { name, value } = e.target;
+  setForm((prev) => ({ ...prev, [name]: value }));
+  setErrors((prev) => ({ ...prev, [name]: '' }));
+};
+
+const handleSubmit = async () => {
+    const validationErrors: Record<string, string> = {};
+    if (!form.code.trim()) validationErrors.code = 'Required';
+    if (!form.planId) validationErrors.planId = 'Required';
+    if (!form.discountValue || Number(form.discountValue) <= 0) validationErrors.discountValue = 'Invalid value';
+    if (!form.expiryDate) validationErrors.expiryDate = 'Required';
+    if (!form.maxUsage || Number(form.maxUsage) <= 0) validationErrors.maxUsage = 'Invalid value';
+
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      return;
+    }
+
     try {
       if (editingCoupon) {
         await BaseApi.putRequest(`/superadmin/update-coupon/${editingCoupon.id}`, {
@@ -73,7 +93,7 @@ const CouponManager = () => {
           maxUsage: parseInt(form.maxUsage.toString(), 10),
         });
       }
-  
+
       fetchCoupons();
       resetForm();
     } catch (error) {
@@ -82,20 +102,22 @@ const CouponManager = () => {
   };
   
 
-  const resetForm = () => {
-    setShowModal(false);
-    setEditingCoupon(null);
-    setForm(defaultCoupon);
-  };
+const resetForm = () => {
+  setShowModal(false);
+  setEditingCoupon(null);
+  setForm(defaultCoupon);
+  setErrors({});
+};
 
-  const handleEdit = (coupon: Coupon) => {
-    setEditingCoupon(coupon);
-    setForm({
-      ...coupon,
-      expiryDate: coupon.expiryDate.split('T')[0],
-    });
-    setShowModal(true);
-  };
+const handleEdit = (coupon: Coupon) => {
+  setEditingCoupon(coupon);
+  setForm({
+    ...coupon,
+    expiryDate: coupon.expiryDate.split('T')[0],
+    planId: coupon.planId || '',
+  });
+  setShowModal(true);
+};
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this coupon?')) return;
@@ -119,6 +141,7 @@ const CouponManager = () => {
           <thead>
             <tr>
               <th>Code</th>
+              <th>Plan</th>
               <th>Type</th>
               <th>Value</th>
               <th>Expiry</th>
@@ -136,6 +159,7 @@ const CouponManager = () => {
               coupons.map((coupon) => (
                 <tr key={coupon.id}>
                   <td>{coupon.code}</td>
+                  <td>{coupon.planName || '-'}</td>
                   <td>{coupon.discountType}</td>
                   <td>{coupon.discountValue}</td>
                   <td>{new Date(coupon.expiryDate).toLocaleDateString()}</td>
@@ -165,7 +189,30 @@ const CouponManager = () => {
                   name="code"
                   value={form.code}
                   onChange={handleChange}
+                  isInvalid={!!errors.code}
                 />
+                {errors.code && (
+                  <Form.Control.Feedback type="invalid">
+                    {errors.code}
+                  </Form.Control.Feedback>
+                )}
+              </Form.Group>
+
+              <Form.Group className="mb-3">
+                <Form.Label>Plan</Form.Label>
+                <Form.Select name="planId" value={form.planId} onChange={handleChange} isInvalid={!!errors.planId}>
+                  <option value="">Select Plan</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </Form.Select>
+                {errors.planId && (
+                  <Form.Control.Feedback type="invalid">
+                    {errors.planId}
+                  </Form.Control.Feedback>
+                )}
               </Form.Group>
 
               <Form.Group className="mb-3">
@@ -183,7 +230,13 @@ const CouponManager = () => {
                   name="discountValue"
                   value={form.discountValue}
                   onChange={handleChange}
+                  isInvalid={!!errors.discountValue}
                 />
+                {errors.discountValue && (
+                  <Form.Control.Feedback type="invalid">
+                    {errors.discountValue}
+                  </Form.Control.Feedback>
+                )}
               </Form.Group>
 
               <Form.Group className="mb-3">
@@ -193,7 +246,13 @@ const CouponManager = () => {
                   name="expiryDate"
                   value={form.expiryDate}
                   onChange={handleChange}
+                  isInvalid={!!errors.expiryDate}
                 />
+                {errors.expiryDate && (
+                  <Form.Control.Feedback type="invalid">
+                    {errors.expiryDate}
+                  </Form.Control.Feedback>
+                )}
               </Form.Group>
 
               <Form.Group className="mb-3">
@@ -203,7 +262,13 @@ const CouponManager = () => {
                   name="maxUsage"
                   value={form.maxUsage}
                   onChange={handleChange}
+                  isInvalid={!!errors.maxUsage}
                 />
+                {errors.maxUsage && (
+                  <Form.Control.Feedback type="invalid">
+                    {errors.maxUsage}
+                  </Form.Control.Feedback>
+                )}
               </Form.Group>
             </Form>
           </Modal.Body>

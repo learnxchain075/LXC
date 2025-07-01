@@ -52,8 +52,16 @@ export const createCoupon = async (req: Request, res: Response): Promise<any> =>
 // Get all coupons
 export const getAllCoupons = async (req: Request, res: Response) => {
   try {
-    const coupons = await prisma.coupon.findMany();
-    res.status(200).json(coupons);
+    const coupons = await prisma.coupon.findMany({
+      include: { plan: { select: { name: true } } },
+    });
+
+    const result = coupons.map((c) => ({
+      ...c,
+      planName: c.plan.name,
+    }));
+
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: "Error fetching coupons" });
   }
