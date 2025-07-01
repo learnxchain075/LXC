@@ -142,7 +142,7 @@ export const getTeacherAssignmentsBySchoolId = async (
 
 /**
  * ✅ Get All Students in a Class
- * Sends a GET request to fetch all students in a class
+ * Sends a GET request to fetch all students in a classes
  * @param classId - Class ID
  */
 export const getAllStudentsInAclass = async (
