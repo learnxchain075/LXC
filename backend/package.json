@@ -10,8 +10,10 @@
     "clean": "rimraf dist",
     "tsc": "tsc",
     "prepare": "husky install",
-    "test": "jest"
+    "test": "jest",
+    "download-models": "bash ./scripts/download-face-models.sh"
   },
+  "postinstall": "npm run download-models",
   "keywords": [],
   "repository": {
     "type": "git",
