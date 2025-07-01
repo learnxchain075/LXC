@@ -558,11 +558,12 @@ const AdminMenuItems = () => {
       "key": "SupportModule",
       "displayName": "Support",
    "subItems": [
+  { "name": "Feedback", "route": all_routes.adminFeedback, "icon": "ti ti-message" },
   { "name": "Feature Request", "route": all_routes.requestFeatures, "icon": "ti ti-stars" },
   { "name": "Membership Plans", "route": all_routes.membershipcard, "icon": "ti ti-id-badge" },
   { "name": "Contact Messages", "route": all_routes.contactMessages, "icon": "ti ti-mail" },
   { "name": "Tickets", "route": all_routes.tickets, "icon": "ti ti-ticket" }
-]
+ ]
 
     }
 
