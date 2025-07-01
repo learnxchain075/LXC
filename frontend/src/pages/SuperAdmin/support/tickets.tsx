@@ -32,6 +32,7 @@ interface TicketForm {
   schoolId: string;
   userId: string;
   description: string;
+  category: string;
   priority: string;
   status: string;
   createdAt?: string;
@@ -62,6 +63,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
     schoolId: schoolID,
     userId: localStorage.getItem("userId") || teacherdata?.userId || "",
     description: "",
+    category: "",
     priority: "",
     status: "pending",
   });
@@ -98,7 +100,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   }, [role, schoolID]);
 
   const handleAddTicket = async () => {
-    if (!TicketData.title || !TicketData.description || !TicketData.priority) {
+    if (!TicketData.title || !TicketData.description || !TicketData.priority || !TicketData.category) {
       toast.error("Please fill all required fields");
       return;
     }
@@ -114,6 +116,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
           description: "",
           status: "pending",
           priority: "",
+          category: "",
           schoolId: schoolID,
           userId: localStorage.getItem("userId") || teacherdata?.userId || "",
         });
@@ -156,7 +159,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
     return tickets
       .filter(ticket => {
         const matchesStatus = filterStatus === "all" || ticket.status === filterStatus;
-        const matchesSearch = searchTerm === "" || 
+        const matchesSearch = searchTerm === "" ||
           ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           ticket.description.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesStatus && matchesSearch;
@@ -169,6 +172,21 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
         }
       });
   }, [role, allTickets, schoolTickets, filterStatus, sortOrder, searchTerm]);
+
+  const categoryStats = useMemo(() => {
+    const tickets = role === "superadmin" ? allTickets : schoolTickets;
+    const stats: Record<string, { open: number; closed: number }> = {};
+    tickets.forEach(t => {
+      const cat = t.category || "Uncategorized";
+      if (!stats[cat]) stats[cat] = { open: 0, closed: 0 };
+      if ((t.status || "").toLowerCase() === "closed") {
+        stats[cat].closed += 1;
+      } else {
+        stats[cat].open += 1;
+      }
+    });
+    return stats;
+  }, [role, allTickets, schoolTickets]);
 
   const getPriorityClass = (priority: string) => {
     switch (priority.toLowerCase()) {
@@ -330,6 +348,11 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                               <span className={`badge ${getStatusClass(ticket.status)}`}>
                                 {ticket.status}
                               </span>
+                              {ticket.category && (
+                                <span className="badge bg-info">
+                                  {ticket.category}
+                                </span>
+                              )}
                               <span className="badge bg-secondary">
                                 #{ticket.id?.slice(0, 6)}
                               </span>
@@ -420,39 +443,19 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                 </div>
                 <div className="card-body">
                   <div className="d-flex flex-column gap-3">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span>Internet Issue</span>
-                      <div>
-                        <span className="badge bg-danger me-1">2</span>
-                        <span className="badge bg-success">0</span>
+                    {Object.entries(categoryStats).map(([cat, count]) => (
+                      <div key={cat} className="d-flex justify-content-between align-items-center">
+                        <span>{cat}</span>
+                        <div>
+                          {count.open > 0 && (
+                            <span className="badge bg-danger me-1">{count.open}</span>
+                          )}
+                          {count.closed > 0 && (
+                            <span className="badge bg-success">{count.closed}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span>Computer</span>
-                      <div>
-                        <span className="badge bg-danger me-1">2</span>
-                        <span className="badge bg-success">1</span>
-                      </div>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span>Redistribute</span>
-                      <div>
-                        <span className="badge bg-success">1</span>
-                      </div>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span>Payment</span>
-                      <div>
-                        <span className="badge bg-danger">2</span>
-                      </div>
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span>Complaint</span>
-                      <div>
-                        <span className="badge bg-danger me-1">3</span>
-                        <span className="badge bg-success">1</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -513,6 +516,15 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                 ></textarea>
               </div>
               <div className="mb-3">
+                <label className="form-label">Category <span className="text-danger">*</span></label>
+                <CommonSelect
+                  className="select"
+                  options={internetCategory}
+                  onChange={(option) => setTicketData({ ...TicketData, category: option?.value || '' })}
+                  defaultValue={internetCategory.find(opt => opt.value === TicketData.category)}
+                />
+              </div>
+              <div className="mb-3">
                 <label className="form-label">Priority <span className="text-danger">*</span></label>
                 <CommonSelect
                   className="select"
@@ -524,7 +536,14 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" className="btn btn-primary" onClick={handleAddTicket}>Add Ticket</button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAddTicket}
+                disabled={!TicketData.title || !TicketData.description || !TicketData.priority || !TicketData.category}
+              >
+                Add Ticket
+              </button>
             </div>
           </div>
         </div>
@@ -562,6 +581,15 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                     options={priorityList}
                     onChange={(option) => setSelectedTicket({ ...selectedTicket, priority: option?.value || '' })}
                     defaultValue={priorityList.find(opt => opt.value === selectedTicket.priority)}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Category</label>
+                  <CommonSelect
+                    className="select"
+                    options={internetCategory}
+                    onChange={(option) => setSelectedTicket({ ...selectedTicket, category: option?.value || '' })}
+                    defaultValue={internetCategory.find(opt => opt.value === selectedTicket.category)}
                   />
                 </div>
                 <div className="mb-3">
