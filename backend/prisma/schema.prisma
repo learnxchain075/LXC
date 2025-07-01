@@ -391,6 +391,9 @@ model Ticket {
 
   userId String @map("user_id")
   User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  assignedToId String? @map("assigned_to_id")
+  assignedTo   User?   @relation("TicketAssignment", fields: [assignedToId], references: [id], onDelete: SetNull)
 }
 
 model Feedback {

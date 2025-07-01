@@ -34,6 +34,12 @@ export const getTicketsByuserid = async (
   return await BaseApi.getRequest(`/user-tickets/${userId}`);
 };
 
+export const getTicketsByAssignee = async (
+  userId: string
+): Promise<AxiosResponse<any>> => {
+  return await BaseApi.getRequest(`/assignee-tickets/${userId}`);
+};
+
 // 🔸 Update a ticket by ID
 export const updateTicket = async (
   ticketId: string,
