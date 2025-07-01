@@ -22,12 +22,28 @@ export const getTicketMetadata = async (
       select: { priority: true },
     });
 
-    const defaultCategories = [
-      "Internet Issue",
-      "Redistribute",
-      "Computer",
-      "Complaint",
-    ];
+   const defaultCategories = [
+  "Login / Access Issue",
+  "Payment / Subscription",
+  "Student Registration",
+  "Teacher Onboarding",
+  "Attendance Issues",
+  "Face Recognition / Webcam",
+  "Exam / Result Module",
+  "Fee / Invoice Error",
+  "Performance / Speed",
+  "Report / Export Problem",
+  "SMS / Email Delivery",
+  "Mobile App Issue",
+  "Plan Upgrade / Downgrade",
+  "Data Sync / Integration",
+  "Incorrect Data / Record",
+  "UI / UX Suggestion",
+  "Bug / Error Report",
+  "Feature Request",
+  "General Complaint",
+];
+
 
     const defaultPriorities = ["Low", "Medium", "High"];
 
