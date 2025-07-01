@@ -4,12 +4,9 @@ import { all_routes } from "../../../router/all_routes";
 import CommonSelect from "../../../core/common/commonSelect";
 import {
   assigned,
-  internetCategory,
   markAs,
-  priorityList,
   staffName,
   state,
-  statusOption,
   ticketDate,
 } from "../../../core/common/selectoption/selectoption";
 import PredefinedDateRanges from "../../../core/common/datePicker";
@@ -18,7 +15,7 @@ import TooltipOption from "../../../core/common/tooltipOption";
 import { useEffect, useState, useMemo } from "react";
 import AppConfig from "../../../config/config";
 import { jwtDecode } from "jwt-decode";
-import { createTicket, deleteTicket, getAllTickets, getTicketsBySchool, getTicketsByuserid, updateTicket } from "../../../services/superadmin/ticketApi";
+import { createTicket, deleteTicket, getAllTickets, getTicketsBySchool, getTicketsByuserid, updateTicket, getTicketMetadata } from "../../../services/superadmin/ticketApi";
 import useMobileDetection from "../../../core/common/mobileDetection";
 import { useSelector } from "react-redux";
 import { closeModal } from "../../Common/modalclose";
@@ -58,6 +55,10 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchTerm, setSearchTerm] = useState("");
 
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
+  const [priorities, setPriorities] = useState<{ value: string; label: string }[]>([]);
+  const [statuses, setStatuses] = useState<{ value: string; label: string }[]>([]);
+
   const [TicketData, setTicketData] = useState<TicketForm>({
     title: "",
     schoolId: schoolID,
@@ -71,6 +72,18 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   const [schoolTickets, setSchoolTickets] = useState<TicketForm[]>([]);
   const [allTickets, setAllTickets] = useState<TicketForm[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<TicketForm | null>(null);
+
+  const fetchMetadata = async () => {
+    try {
+      const res = await getTicketMetadata();
+      const { categories: c = [], priorities: p = [], statuses: s = [] } = res.data || {};
+      setCategories(c.map((v: string) => ({ value: v, label: v })));
+      setPriorities(p.map((v: string) => ({ value: v, label: v })));
+      setStatuses(s.map((v: string) => ({ value: v, label: v })));
+    } catch (error) {
+      console.error("Failed to load ticket metadata", error);
+    }
+  };
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -97,6 +110,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
 
   useEffect(() => {
     fetchTickets();
+    fetchMetadata();
   }, [role, schoolID]);
 
   const handleAddTicket = async () => {
@@ -287,10 +301,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                 <div className="col-12 col-sm-6 col-md-3">
                   <CommonSelect
                     className="select"
-                    options={[
-                      { value: 'all', label: 'All Status' },
-                      ...statusOption
-                    ]}
+                    options={[{ value: 'all', label: 'All Status' }, ...statuses]}
                     onChange={(option) => setFilterStatus(option?.value || 'all')}
                     defaultValue={{ value: 'all', label: 'All Status' }}
                   />
@@ -519,18 +530,18 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                 <label className="form-label">Category <span className="text-danger">*</span></label>
                 <CommonSelect
                   className="select"
-                  options={internetCategory}
+                  options={categories}
                   onChange={(option) => setTicketData({ ...TicketData, category: option?.value || '' })}
-                  defaultValue={internetCategory.find(opt => opt.value === TicketData.category)}
+                  defaultValue={categories.find(opt => opt.value === TicketData.category)}
                 />
               </div>
               <div className="mb-3">
                 <label className="form-label">Priority <span className="text-danger">*</span></label>
                 <CommonSelect
                   className="select"
-                  options={priorityList}
+                  options={priorities}
                   onChange={(option) => setTicketData({ ...TicketData, priority: option?.value || '' })}
-                  defaultValue={priorityList.find(opt => opt.value === TicketData.priority)}
+                  defaultValue={priorities.find(opt => opt.value === TicketData.priority)}
                 />
               </div>
             </div>
@@ -569,27 +580,27 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                   <label className="form-label">Status</label>
                   <CommonSelect
                     className="select"
-                    options={statusOption}
+                    options={statuses}
                     onChange={(option) => setSelectedTicket({ ...selectedTicket, status: option?.value || '' })}
-                    defaultValue={statusOption.find(opt => opt.value === selectedTicket.status)}
+                    defaultValue={statuses.find(opt => opt.value === selectedTicket.status)}
                   />
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Priority</label>
                   <CommonSelect
                     className="select"
-                    options={priorityList}
+                    options={priorities}
                     onChange={(option) => setSelectedTicket({ ...selectedTicket, priority: option?.value || '' })}
-                    defaultValue={priorityList.find(opt => opt.value === selectedTicket.priority)}
+                    defaultValue={priorities.find(opt => opt.value === selectedTicket.priority)}
                   />
                 </div>
                 <div className="mb-3">
                   <label className="form-label">Category</label>
                   <CommonSelect
                     className="select"
-                    options={internetCategory}
+                    options={categories}
                     onChange={(option) => setSelectedTicket({ ...selectedTicket, category: option?.value || '' })}
-                    defaultValue={internetCategory.find(opt => opt.value === selectedTicket.category)}
+                    defaultValue={categories.find(opt => opt.value === selectedTicket.category)}
                   />
                 </div>
                 <div className="mb-3">

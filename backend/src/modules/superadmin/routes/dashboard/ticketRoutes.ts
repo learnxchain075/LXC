@@ -8,6 +8,7 @@ import {
   getTicketsByUser,
   updateTicket,
 } from "../../controllers/createTicketController";
+import { getTicketMetadata } from "../../controllers/ticketMetadataController";
 
 const router = express.Router();
 
@@ -17,6 +18,9 @@ router.get("/user/get-ticket/:ticketId", getTicketById);
 router.get("/user/schooltickets/:schoolId", getTicketsBySchool);
 router.put("/user/update-ticket/:ticketId", updateTicket);
 router.delete("/user/delete-ticket/:ticketId", deleteTicket);
+
+// Ticket metadata for dropdowns
+router.get("/ticket-metadata", getTicketMetadata);
 
 // Get Ticket by User ID
 

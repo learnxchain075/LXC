@@ -48,3 +48,8 @@ export const deleteTicket = async (
 ): Promise<AxiosResponse<any>> => {
   return await BaseApi.deleteRequest(`/delete-ticket/${ticketId}`);
 };
+
+// 🔸 Fetch ticket metadata (categories, statuses, priorities)
+export const getTicketMetadata = async (): Promise<AxiosResponse<any>> => {
+  return await BaseApi.getRequest("/ticket-metadata");
+};

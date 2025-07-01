@@ -4,18 +4,15 @@ import ImageWithBasePath from "../../../core/common/imageWithBasePath";
 import CommonSelect from "../../../core/common/commonSelect";
 import {
   assigned,
-  internetCategory,
   markAs,
-  priorityList,
   staffName,
-  statusOption,
   ticketDate,
 } from "../../../core/common/selectoption/selectoption";
 import PredefinedDateRanges from "../../../core/common/datePicker";
 import TicketsSidebar from "./tickets-sidebar";
 import TooltipOption from "../../../core/common/tooltipOption";
 import { useEffect, useState } from "react";
-import { createTicket, deleteTicket, getAllTickets, getTicketsBySchool, getTicketsByuserid, updateTicket } from "../../../services/superadmin/ticketApi";
+import { createTicket, deleteTicket, getAllTickets, getTicketsBySchool, getTicketsByuserid, updateTicket, getTicketMetadata } from "../../../services/superadmin/ticketApi";
 import { useSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 
@@ -112,6 +109,9 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
   const [schoolTickets, setSchoolTickets] = useState<TicketForm[]>([]);
   const [allTickets, setAllTickets] = useState<TicketForm[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<TicketForm | null>(null);
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
+  const [priorities, setPriorities] = useState<{ value: string; label: string }[]>([]);
+  const [statuses, setStatuses] = useState<{ value: string; label: string }[]>([]);
 
   const fetchTickets = async () => {
     try {
@@ -131,8 +131,21 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
     }
   };
 
+  const fetchMetadata = async () => {
+    try {
+      const res = await getTicketMetadata();
+      const { categories: c = [], priorities: p = [], statuses: s = [] } = res.data || {};
+      setCategories(c.map((v: string) => ({ value: v, label: v })));
+      setPriorities(p.map((v: string) => ({ value: v, label: v })));
+      setStatuses(s.map((v: string) => ({ value: v, label: v })));
+    } catch (err) {
+      console.error('Failed to load ticket metadata', err);
+    }
+  };
+
   useEffect(() => {
     fetchTickets();
+    fetchMetadata();
   }, [role, schoolID, userId]);
 
   const handleAddTicket = async () => {
@@ -336,7 +349,7 @@ const ismobile=useMobileDetection();
                             <label className="form-label">Status</label>
                             <CommonSelect
                               className="select"
-                              options={priorityList}
+                              options={statuses}
                               defaultValue={undefined}
                             />
                           </div>
@@ -597,7 +610,7 @@ const ismobile=useMobileDetection();
                       <label className="form-label">Category</label>
                       <CommonSelect
                         className="select"
-                        options={internetCategory}
+                        options={categories}
                         onChange={(option: any) =>
                           setTicketData({
                             ...ticketData,
@@ -611,7 +624,7 @@ const ismobile=useMobileDetection();
                       <label className="form-label">Priority</label>
                       <CommonSelect
                         className="select"
-                        options={priorityList}
+                        options={priorities}
                         onChange={(option: any) =>
                           setTicketData({
                             ...ticketData,
@@ -672,8 +685,8 @@ const ismobile=useMobileDetection();
                         <label className="form-label">Status</label>
                         <CommonSelect
                           className="select"
-                          options={statusOption}
-                          defaultValue={statusOption.find(
+                          options={statuses}
+                          defaultValue={statuses.find(
                             (opt) => opt.value === selectedTicket.status
                           )}
                           onChange={(option: any) =>
@@ -685,8 +698,8 @@ const ismobile=useMobileDetection();
                         <label className="form-label">Priority</label>
                         <CommonSelect
                           className="select"
-                          options={priorityList}
-                          defaultValue={priorityList.find((opt) => opt.value === selectedTicket.priority)}
+                          options={priorities}
+                          defaultValue={priorities.find((opt) => opt.value === selectedTicket.priority)}
                           onChange={(option: any) =>
                             setSelectedTicket({ ...selectedTicket, priority: option.value })
                           }
@@ -696,8 +709,8 @@ const ismobile=useMobileDetection();
                         <label className="form-label">Category</label>
                         <CommonSelect
                           className="select"
-                          options={internetCategory}
-                          defaultValue={internetCategory.find((opt) => opt.value === selectedTicket.category)}
+                          options={categories}
+                          defaultValue={categories.find((opt) => opt.value === selectedTicket.category)}
                           onChange={(option: any) =>
                             setSelectedTicket({ ...selectedTicket, category: option.value })
                           }
