@@ -706,6 +706,23 @@ const AdminMenuItems = () => {
         ) : null}
       </ul>
 
+      <ul>
+        <li className="submenu">
+          <Link
+            to={all_routes.profile}
+            onClick={() =>
+              handleClick("Profile", undefined, getLayoutClass("Profile"))
+            }
+            className={`${subOpen === "Profile" ? "subdrop" : ""} ${
+              all_routes.profile === location.pathname ? "active" : ""
+            }`}
+          >
+            <i className="ti ti-user"></i>
+            <span>Advanced Profile</span>
+          </Link>
+        </li>
+      </ul>
+
 
 
 
