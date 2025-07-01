@@ -1,12 +1,9 @@
 import { Link } from "react-router-dom";
 import {
-  internetCategory,
   markAs,
   names,
   priority,
-  priorityList,
   staffName,
-  statusOption,
   ticketStatus,
 } from "../../../core/common/selectoption/selectoption";
 import { all_routes } from "../../../router/all_routes";
@@ -17,7 +14,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { getAllTickets, getTicketsBySchool, getTicketsByuserid, createTicket } from "../../../services/superadmin/ticketApi";
+import { getAllTickets, getTicketsBySchool, getTicketsByuserid, createTicket, getTicketMetadata } from "../../../services/superadmin/ticketApi";
 import LoadingSkeleton from "../../../components/LoadingSkeleton";
 
 const TicketDetails = () => {
@@ -30,6 +27,9 @@ const TicketDetails = () => {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
+  const [priorities, setPriorities] = useState<{ value: string; label: string }[]>([]);
+  const [statuses, setStatuses] = useState<{ value: string; label: string }[]>([]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -52,8 +52,21 @@ const TicketDetails = () => {
     }
   };
 
+  const fetchMetadata = async () => {
+    try {
+      const res = await getTicketMetadata();
+      const { categories: c = [], priorities: p = [], statuses: s = [] } = res.data || {};
+      setCategories(c.map((v: string) => ({ value: v, label: v })));
+      setPriorities(p.map((v: string) => ({ value: v, label: v })));
+      setStatuses(s.map((v: string) => ({ value: v, label: v })));
+    } catch (err) {
+      console.error('Failed to load ticket metadata', err);
+    }
+  };
+
   useEffect(() => {
     fetchTickets();
+    fetchMetadata();
   }, [role]);
 
   const handleTicketCreation = async (ticketData: any) => {
@@ -283,7 +296,7 @@ const TicketDetails = () => {
                       <label className="col-form-label">Event Category</label>
                       <CommonSelect
                         className="select"
-                        options={internetCategory}
+                        options={categories}
                         defaultValue={undefined}
                       />
                     </div>
@@ -317,7 +330,7 @@ const TicketDetails = () => {
                       <label className="col-form-label">Priority</label>
                       <CommonSelect
                         className="select"
-                        options={priorityList}
+                        options={priorities}
                         defaultValue={undefined}
                       />
                     </div>
@@ -325,7 +338,7 @@ const TicketDetails = () => {
                       <label className="col-form-label">Status</label>
                       <CommonSelect
                         className="select"
-                        options={statusOption}
+                        options={statuses}
                         defaultValue={undefined}
                       />
                     </div>
