@@ -90,6 +90,11 @@ Academics Pro is an **AI-powered, all-in-one school management system** designed
    ```sh
    npm install
    ```
+   This will automatically download the face recognition models. You can also
+   run the script manually with:
+   ```sh
+   npm run download-models
+   ```
 3. Set up environment variables (`.env` file):
    ```sh
    DATABASE_URL=your_postgresql_connection_string
