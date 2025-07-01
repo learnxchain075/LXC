@@ -7,11 +7,14 @@ import {
 } from 'canvas';
 import path from 'path';
 
+const ENV_MODEL_PATH = process.env.FACE_MODEL_PATH;
+
 let initialized = false;
 
 async function init(modelsPath?: string): Promise<void> {
   if (initialized) return;
-  const modelPath = modelsPath || path.join(__dirname, '../../models');
+  const modelPath =
+    modelsPath || ENV_MODEL_PATH || path.join(__dirname, '../../models');
   (faceapi.env as any).monkeyPatch({
     Canvas: NodeCanvas as unknown as typeof HTMLCanvasElement,
     Image: NodeImage as unknown as typeof HTMLImageElement,
