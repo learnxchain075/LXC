@@ -1151,11 +1151,16 @@ export const markAs = [
   { value: "Mark as Private", label: "Mark as Private" },
 ]
 export const internetCategory = [
-  { value: "Internet Issue", label: "Internet Issue" },
-  { value: "Redistribute", label: "Redistribute" },
-  { value: "Computer", label: "Computer" },
-  { value: "Complaint", label: "Complaint" },
-]
+  { value: "Login Issue", label: "Login Issue" },
+  { value: "Slow Internet / Connectivity", label: "Slow Internet / Connectivity" },
+  { value: "Webcam Not Working", label: "Webcam Not Working" },
+  { value: "Face Recognition Error", label: "Face Recognition Error" },
+  { value: "Computer / Device Problem", label: "Computer / Device Problem" },
+  { value: "Network Down", label: "Network Down" },
+  { value: "Redistribution Request", label: "Redistribution Request" },
+  { value: "General Technical Complaint", label: "General Technical Complaint" },
+];
+
 export const ticketStatus = [
   { value: "Open", label: "Open" },
   { value: "Closed", label: "Closed" },
