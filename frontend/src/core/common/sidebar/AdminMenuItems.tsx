@@ -706,22 +706,55 @@ const AdminMenuItems = () => {
         ) : null}
       </ul>
 
-      <ul>
-        <li className="submenu">
-          <Link
-            to={all_routes.profile}
-            onClick={() =>
-              handleClick("Profile", undefined, getLayoutClass("Profile"))
-            }
-            className={`${subOpen === "Profile" ? "subdrop" : ""} ${
-              all_routes.profile === location.pathname ? "active" : ""
-            }`}
-          >
-            <i className="ti ti-user"></i>
-            <span>Advanced Profile</span>
-          </Link>
-        </li>
-      </ul>
+ <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+  <li
+    className="submenu"
+    style={{
+      marginBottom: "8px",
+      borderRadius: "8px",
+      overflow: "hidden",
+      transition: "all 0.3s ease-in-out",
+    }}
+  >
+    <Link
+      to={all_routes.profile}
+      onClick={() =>
+        handleClick("Profile", undefined, getLayoutClass("Profile"))
+      }
+      className={`${subOpen === "Profile" ? "subdrop" : ""} ${
+        all_routes.profile === location.pathname ? "active" : ""
+      }`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "12px 18px",
+        borderRadius: "8px",
+        color:
+          all_routes.profile === location.pathname ? "#fff" : "#333",
+        backgroundColor:
+          all_routes.profile === location.pathname ? "#2a61d8" : "#f5f5f5",
+        textDecoration: "none",
+        fontWeight: "500",
+        transition: "all 0.3s ease",
+      }}
+      onMouseEnter={(e) => {
+        if (all_routes.profile !== location.pathname)
+          e.currentTarget.style.backgroundColor = "#e0eaff";
+      }}
+      onMouseLeave={(e) => {
+        if (all_routes.profile !== location.pathname)
+          e.currentTarget.style.backgroundColor = "#f5f5f5";
+      }}
+    >
+      <i
+        className="ti ti-user"
+        style={{ fontSize: "20px", marginRight: "12px", minWidth: "20px" }}
+      ></i>
+      <span>Advanced Profile</span>
+    </Link>
+  </li>
+</ul>
+
 
 
 
