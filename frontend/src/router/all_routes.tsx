@@ -34,6 +34,7 @@ export const all_routes = {
 
 
   requestFeatures: "/admin/request-features",
+  adminFeedback: "/admin/feedback",
 
 
 

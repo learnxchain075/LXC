@@ -189,6 +189,7 @@ import SuperAdminFetauresRequestListPage from "../pages/SuperAdmin/SuperAdminFet
 // Admin pages
 
 import AdminRequestFetauresPage from "../pages/Admin/AdminRequestFetauresPage";
+import AdminFeedbackPage from "../pages/Admin/feedback";
 import path from "path";
 import SchoolProfilePage from "../pages/SuperAdmin/SchoolProfilePage";
 import MembershipAddon from "../pages/SuperAdmin/PlansMangePage/membershipaddon";
@@ -337,6 +338,12 @@ export const publicRoutes = [
   {
     path: routes.requestFeatures,
     element: <AdminRequestFetauresPage />,
+    route: Route,
+    role: ["admin"]
+  },
+  {
+    path: routes.adminFeedback,
+    element: <AdminFeedbackPage />,
     route: Route,
     role: ["admin"]
   },
