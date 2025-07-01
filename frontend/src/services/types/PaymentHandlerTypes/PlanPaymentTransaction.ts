@@ -9,7 +9,14 @@ export interface CreatePlanTransactionRequest {
 }
 
 export interface PlanTransactionResponse {
-  success: boolean;
-  message?: string;
-  data?: any;
+  transactionId: string;
+  subscriptionId: string;
+  providerName: string;
+  planType: string;
+  transactionDate: string;
+  amount: number;
+  paymentMethod: string;
+  startDate: string | null;
+  endDate: string | null;
+  status: string;
 }

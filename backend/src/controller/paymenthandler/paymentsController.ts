@@ -86,6 +86,7 @@ export const getAllTransactionsForPlans = async (req: Request, res: Response): P
 
     const formatted = payments.map((payment) => ({
       transactionId: payment.id,
+      subscriptionId: payment.subscription[0]?.id || null,
       providerName: payment.subscription[0]?.school?.schoolName || "N/A",
       planType: payment.subscription[0]?.plan?.name || "N/A",
       transactionDate: payment.createdAt,
