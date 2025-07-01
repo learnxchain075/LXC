@@ -69,15 +69,21 @@ export const downloadPlanInvoice: RequestHandler = async (req, res) => {
       lang: (req.query.lang as "HI" | "EN") || "EN",
     });
 
-    let pdfBuffer: Buffer;
+    let pdfBuffer: Buffer | undefined;
     let invoiceUrl = paymentRecord.invoiceUrl;
 
     if (invoiceUrl) {
-      const fileRes = await axios.get<ArrayBuffer>(invoiceUrl, {
-        responseType: "arraybuffer",
-      });
-      pdfBuffer = Buffer.from(fileRes.data);
-    } else {
+      try {
+        const fileRes = await axios.get<ArrayBuffer>(invoiceUrl, {
+          responseType: "arraybuffer",
+        });
+        pdfBuffer = Buffer.from(fileRes.data);
+      } catch (error) {
+        console.warn("Failed to fetch stored invoice, regenerating", error);
+      }
+    }
+
+    if (!pdfBuffer) {
       const browser = await puppeteer.launch({
         headless: true,
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
