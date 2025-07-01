@@ -95,6 +95,10 @@ Academics Pro is an **AI-powered, all-in-one school management system** designed
    DATABASE_URL=your_postgresql_connection_string
    CLOUDINARY_API_KEY=your_cloudinary_key
    EMAIL_SERVICE=your_google_smtp_config
+   # Optional: path to face-api models for local face matching
+   FACE_MODEL_PATH=./backend/models
+   # Set FACE_SERVICE_URL if using external face matching service
+   #FACE_SERVICE_URL=http://localhost:5001
    ```
 4. Run the development server:
    ```sh

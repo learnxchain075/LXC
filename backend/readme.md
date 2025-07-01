@@ -633,3 +633,12 @@ try {
 ## Routes
 
 For a complete list of Express routes grouped by role, see [docs/routes.md](docs/routes.md).
+
+## Face Matching Setup
+
+The backend can perform face matching using either an external microservice or a local implementation based on [@vladmandic/face-api](https://github.com/vladmandic/face-api).
+
+1. **External Service**: Set `FACE_SERVICE_URL` in `.env` to the service base URL. All face matching requests will be sent to this service.
+2. **Local Matching**: Leave `FACE_SERVICE_URL` empty and provide `FACE_MODEL_PATH` pointing to downloaded model files. The server will load the models at startup and run face matching locally.
+
+Model files can be obtained from the face-api repository and placed inside the path specified by `FACE_MODEL_PATH` (default `./models`).
