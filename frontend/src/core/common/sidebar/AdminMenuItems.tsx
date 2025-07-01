@@ -608,7 +608,7 @@ const AdminMenuItems = () => {
                 <span>Dashboard</span>
               </Link>
             </li>
-            {/* <li className="submenu">
+             <li className="submenu">
               <Link
                 to={all_routes.requestFeatures}
                 onClick={() => handleClick("Feature Request", undefined, getLayoutClass("Feature Request"))}
@@ -619,6 +619,7 @@ const AdminMenuItems = () => {
                 <span>Feature Request</span>
               </Link>
             </li>
+            {/*
             <li className="submenu">
               <Link
                 to={all_routes.membershipcard}
