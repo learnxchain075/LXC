@@ -1842,6 +1842,16 @@ model AssignmentView {
   @@unique([studentId, assignmentId])
 }
 
+model FeeGroup {
+  id          String   @id @default(cuid()) @map("fee_group_id")
+  name        String   @map("name")
+  description String?  @map("description")
+  schoolId    String   @map("school_id")
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+}
+
 
 // <---------------------------------------------------------------- All Enums are defined here  ------------------------------------------------------------------->
 

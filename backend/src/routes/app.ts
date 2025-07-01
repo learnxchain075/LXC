@@ -83,6 +83,7 @@ import feeHandlerRoutes from "./paymenthandler/feeHandlerRoutes";
 import invoiceRoutes from "./paymenthandler/invoiceRoutes";
 
 import feesRoutes from "../modules/accounts/routes/dashboard/feesRoutes";
+import feeGroupRoutes from "../modules/accounts/routes/dashboard/feeGroupRoutes";
 import noticeRoutes from "../modules/admin/routes/dashboard/noticeRoutes";
 import parentRoutes from "../modules/admin/routes/core/parentRoutes";
 import guardianRoutes from "../modules/admin/routes/core/guardianRoutes";
@@ -194,6 +195,7 @@ apiRouter.use(feeHandlerRoutes);
 apiRouter.use(invoiceRoutes);
 
 apiRouter.use(feesRoutes);
+apiRouter.use(feeGroupRoutes);
 apiRouter.use(noticeRoutes);
 apiRouter.use(parentRoutes);
 apiRouter.use(guardianRoutes);
