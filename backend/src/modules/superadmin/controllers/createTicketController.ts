@@ -104,7 +104,7 @@ export const updateTicket = async (req: Request, res: Response, next: NextFuncti
     }
 
     const { ticketId } = params.data;
-    const { title, description, priority, status } = body.data;
+    const { title, description, priority, status, category } = body.data;
 
     const updatedTicket = await prisma.ticket.update({
       where: { id: ticketId },
@@ -113,6 +113,7 @@ export const updateTicket = async (req: Request, res: Response, next: NextFuncti
         description,
         priority,
         status,
+        category,
       },
     });
 

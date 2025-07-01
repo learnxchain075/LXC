@@ -380,6 +380,7 @@ model Ticket {
 
   title       String   @map("ticket_title")
   description String   @map("ticket_description")
+  category    String?  @map("ticket_category")
   status      String   @default("Open") @map("ticket_status")
   priority    String   @default("Low") @map("ticket_priority")
   createdAt   DateTime @default(now()) @map("created_at")

@@ -4,6 +4,7 @@ import { z } from "zod";
 export const ticketSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
+  category: z.string().min(1, "Category is required"),
   priority: z.string().min(1, "Priority is required"),
   status: z.string().min(1, "Status is required"),
   schoolId: z.string().cuid("Invalid School ID").optional(),
@@ -16,10 +17,11 @@ export const ticketUpdateSchema = ticketSchema.partial(
     {
         title: true,
         description: true,
+        category: true,
         priority: true,
         status: true,
     },
-); 
+);
 
 
 export const ticketIdParamSchema = z.object({

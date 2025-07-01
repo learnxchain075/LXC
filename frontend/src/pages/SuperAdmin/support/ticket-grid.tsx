@@ -104,6 +104,7 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
     schoolId: schoolID,
     userId: userId,
     description: "",
+    category: "",
     priority: "",
     status: "pending",
   });
@@ -136,6 +137,10 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
 
   const handleAddTicket = async () => {
     try {
+      if (!ticketData.title || !ticketData.description || !ticketData.priority || !ticketData.category) {
+        toast.error("Please fill all required fields");
+        return;
+      }
       const res = await createTicket(ticketData);
       if (res) {
         toast.success("Ticket successfully added");
@@ -166,6 +171,7 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
       description: "",
       status: "pending",
       priority: "",
+      category: "",
       schoolId: schoolID,
       userId: userId,
     });
@@ -588,6 +594,20 @@ const ismobile=useMobileDetection();
                       />
                     </div>
                     <div className="mb-3">
+                      <label className="form-label">Category</label>
+                      <CommonSelect
+                        className="select"
+                        options={internetCategory}
+                        onChange={(option: any) =>
+                          setTicketData({
+                            ...ticketData,
+                            category: option.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="mb-3">
                       <label className="form-label">Priority</label>
                       <CommonSelect
                         className="select"
@@ -617,7 +637,7 @@ const ismobile=useMobileDetection();
                   type="button"
                   className="btn btn-primary"
                   onClick={handleAddTicket}
-                  disabled={!ticketData.title || !ticketData.description || !ticketData.priority}
+                  disabled={!ticketData.title || !ticketData.description || !ticketData.priority || !ticketData.category}
                 >
                   Add Ticket
                 </button>
@@ -658,6 +678,28 @@ const ismobile=useMobileDetection();
                           )}
                           onChange={(option: any) =>
                             setSelectedTicket({ ...selectedTicket, status: option.value })
+                          }
+                        />
+                      </div>
+                      <div className="mt-3">
+                        <label className="form-label">Priority</label>
+                        <CommonSelect
+                          className="select"
+                          options={priorityList}
+                          defaultValue={priorityList.find((opt) => opt.value === selectedTicket.priority)}
+                          onChange={(option: any) =>
+                            setSelectedTicket({ ...selectedTicket, priority: option.value })
+                          }
+                        />
+                      </div>
+                      <div className="mt-3">
+                        <label className="form-label">Category</label>
+                        <CommonSelect
+                          className="select"
+                          options={internetCategory}
+                          defaultValue={internetCategory.find((opt) => opt.value === selectedTicket.category)}
+                          onChange={(option: any) =>
+                            setSelectedTicket({ ...selectedTicket, category: option.value })
                           }
                         />
                       </div>
