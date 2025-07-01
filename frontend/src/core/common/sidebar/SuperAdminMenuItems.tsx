@@ -207,7 +207,8 @@ const SuperAdminMenuItems = () => {
                   : ""
                 }`}
             >
-              <i className="ti ti-light-bulb"></i>
+              <i className="ti ti-message-plus"></i>
+
               <span>Feature Requests List</span>
             </Link>
           </li>
@@ -307,7 +308,8 @@ const SuperAdminMenuItems = () => {
                 : ""
                 }`}
             >
-              <i className="ti ti-file-coupon"></i>
+              <i className="ti ti-discount-2"></i>
+
               <span>Coupon Code</span>
             </Link>
           </li>
