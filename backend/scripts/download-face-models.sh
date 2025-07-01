@@ -1,6 +1,3 @@
-#!/bin/bash
-# Download face-api models into the directory specified by FACE_MODEL_PATH
-# or ./models by default.
 
 set -e
 
