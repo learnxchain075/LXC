@@ -11,10 +11,12 @@ export const registerStaffSchema = z.object({
   country: z.string().min(1),
   pincode: z.string().min(1),
   bloodType: z.string(),
+
   sex: z.nativeEnum(UserSex),
   employeeType: z.nativeEnum(EmployeeType).optional(),
   company: z.string().optional(),
   schoolId: z.string().cuid("Invalid school id"),
+
 });
 
 export const updateStaffSchema = z.object({
