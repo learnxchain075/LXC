@@ -20,15 +20,26 @@ const AddEmployee = () => {
     employeeType: "",
     company: "",
     profilePic: null as File | null,
-    schoolId: localStorage.getItem("schoolId") || "",
   });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.phone || !formData.profilePic) {
-      toast.error("Please fill all required fields");
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.address ||
+      !formData.city ||
+      !formData.state ||
+      !formData.country ||
+      !formData.pincode ||
+      !formData.bloodType ||
+      !formData.sex ||
+      !formData.profilePic
+    ) {
+      toast.error("Please fill all required fields and upload a profile picture.");
       return;
     }
     try {
@@ -49,7 +60,6 @@ const AddEmployee = () => {
         employeeType: "",
         company: "",
         profilePic: null,
-        schoolId: localStorage.getItem("schoolId") || "",
       });
       setPreviewUrl(null);
     } catch (err: any) {

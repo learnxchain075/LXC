@@ -14,7 +14,7 @@ const upload = multer();
 const router = express.Router();
 
 
-router.post('/school/employee', upload.fields([{ name: 'profilePic', maxCount: 1 }]), registerEmployee);
+router.post('/employee', upload.fields([{ name: 'profilePic', maxCount: 1 }]), registerEmployee);
 router.get('/employees', getAllEmployees);
 router.get('/employee/:id', getEmployee);
 router.put('/employee/:id', updateEmployee);
