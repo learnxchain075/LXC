@@ -228,22 +228,4 @@ export const deleteEmployee = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-// Get all Employees of a specific school
-export const getEmployeesBySchool = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { schoolId } = req.params;
 
-    const staff = await prisma.employee.findMany({
-      where: { schoolId },
-      include: { user: true },
-    });
-
-    res.status(200).json({ message: "All employees of the school", staff });
-  } catch (error) {
-    next(handlePrismaError(error));
-  }
-};
