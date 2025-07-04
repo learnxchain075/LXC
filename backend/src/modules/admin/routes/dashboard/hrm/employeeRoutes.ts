@@ -5,7 +5,7 @@ import {
   getEmployee,
   updateEmployee,
   deleteEmployee,
-  getEmployeesBySchool,
+  // getEmployeesBySchool,
 } from '../../../controllers/dashboard/hrm/employeeController';
 import multer from 'multer';
 
@@ -19,6 +19,6 @@ router.get('/employees', getAllEmployees);
 router.get('/employee/:id', getEmployee);
 router.put('/employee/:id', updateEmployee);
 router.delete('/employee/:id', deleteEmployee);
-router.get('/school/:schoolId/employees', getEmployeesBySchool);
+// router.get('/school/:schoolId/employees', getEmployeesBySchool);
 
 export default router;

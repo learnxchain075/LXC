@@ -38,7 +38,7 @@ export const registerEmployee = async (
       sex,
       employeeType,
       company,
-      schoolId,
+      
     } = parsed.data;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
@@ -77,14 +77,13 @@ export const registerEmployee = async (
         password: hashedPassword,
         profilePic: profilePicUpload.url,
         role: "employee",
-        schoolId,
-      },
+             },
     });
 
     const employee = await prisma.employee.create({
       data: {
         userId: user.id,
-        schoolId,
+
         employeeType: employeeType ?? "SUPPORT",
         company: company ?? "",
       },
@@ -230,17 +229,17 @@ export const deleteEmployee = async (req: Request, res: Response, next: NextFunc
 };
 
 // Get all Employees of a specific school
-export const getEmployeesBySchool = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { schoolId } = req.params;
+// export const getEmployeesBySchool = async (req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     const { schoolId } = req.params;
 
-    const staff = await prisma.employee.findMany({
-      where: { schoolId },
-      include: { user: true },
-    });
+//     const staff = await prisma.employee.findMany({
+//       where: { schoolId },
+//       include: { user: true },
+//     });
 
-    res.status(200).json({ message: "All employees of the school", staff });
-  } catch (error) {
-    next(handlePrismaError(error));
-  }
-};
+//     res.status(200).json({ message: "All employees of the school", staff });
+//   } catch (error) {
+//     next(handlePrismaError(error));
+//   }
+// };
