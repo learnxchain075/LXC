@@ -8,12 +8,12 @@ import ImageWithBasePath from "../../../../../core/common/imageWithBasePath";
 import useMobileDetection from "../../../../../core/common/mobileDetection";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getStudentLibraryBooks, mockLibraryData, IBookIssue } from "../../../../../services/student/StudentAllApi";
+import { getStudentLibraryBooks } from "../../../../../services/student/StudentAllApi";
 
 const StudentLibrary = () => {
   const routes = all_routes;
   const isMobile = useMobileDetection();
-  const [libraryData, setLibraryData] = useState<{ books: any[] }>(mockLibraryData);
+  const [libraryData, setLibraryData] = useState({ books: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('This Year');
 

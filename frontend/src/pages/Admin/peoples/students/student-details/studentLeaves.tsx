@@ -10,13 +10,13 @@ import { TableData } from "../../../../../core/data/interface";
 import useMobileDetection from "../../../../../core/common/mobileDetection";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { getAttendanceLeavesByStudentId, mockLeaveData, mockAttendanceData, ILeaveRequest, IAttendance } from "../../../../../services/student/StudentAllApi";
+import { getAttendanceLeavesByStudentId } from "../../../../../services/student/StudentAllApi";
 
 const StudentLeaves = () => {
   const routes = all_routes;
   const isMobile = useMobileDetection();
-  const [leaveData, setLeaveData] = useState(mockLeaveData);
-  const [attendanceData, setAttendanceData] = useState(mockAttendanceData);
+  const [leaveData, setLeaveData] = useState([]);
+  const [attendanceData, setAttendanceData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('leave');
 

@@ -148,11 +148,8 @@ export interface IPyq {
   createdAt: string;
 }
 
-
-
 import { AxiosResponse } from "axios";
 import BaseApi from "../BaseApi";
-
 
 export const getLessonsByStudentId = async (
   studentId: string
@@ -166,22 +163,17 @@ export const getFeesByStudentId = async (
   return await BaseApi.getRequest(`/student/${studentId}/fees`);
 };
 
-
 export const getResourcesByStudentId = async (
   studentId: string
 ): Promise<AxiosResponse<IResourceResponse>> => {
   return await BaseApi.getRequest(`/student/${studentId}/resources`);
 };
 
-
-
-
 export interface IAttendanceLeavesResponse {
   success: boolean;
   attendance: IAttendance[];
   leaveRequests: ILeaveRequest[];
 }
-
 
 export interface IAttendance {
   id: string;
@@ -191,7 +183,6 @@ export interface IAttendance {
   lessonId: string;
   lesson: ILesson;
 }
-
 
 export interface ILesson {
   id?: string;
@@ -217,14 +208,11 @@ export interface ILeaveRequest {
   updatedAt?: string;
 }
 
-
 export const getAttendanceLeavesByStudentId = async (
   studentId: string
 ): Promise<AxiosResponse<IAttendanceLeavesResponse>> => {
   return await BaseApi.getRequest(`/student/${studentId}/attendance-leaves`);
 };
-
-
 
 export interface IDashboardResourcesResponse {
   success: boolean;
@@ -282,13 +270,14 @@ export interface IEvent {
   schoolId?: string;
 }
 
-export const getDashboardResourcesByStudentId = async (): Promise<AxiosResponse<IDashboardResourcesResponse>> => {
-  const studentId = localStorage.getItem('studentId');
-  return await BaseApi.getRequest(`/student/${studentId}/dashboard-resources`);
+export const getDashboardResourcesByStudentId = async (studentId?:string): Promise<AxiosResponse<IDashboardResourcesResponse>> => {
+  const studentIdSend = localStorage.getItem('studentId') || studentId || '';
+  return await BaseApi.getRequest(`/student/${studentIdSend}/dashboard-resources`);
 };
 
-
-
+export const getDashboardResourcesByStudentIdV2 = async (studentId: string) => {
+  return await BaseApi.getRequest(`/student/${studentId}/dashboard-resources`);
+};
 
 export interface IExamsResultsResponse {
   success: boolean;
@@ -336,7 +325,9 @@ export const getExamsResultsByStudentId = async (): Promise<AxiosResponse<IExams
   return await BaseApi.getRequest(`/student/${studentId}/exams-results`);
 };
 
-
+export const getExamsResultsByStudentIdParam = async (studentId: string): Promise<AxiosResponse<IExamsResultsResponse>> => {
+  return await BaseApi.getRequest(`/student/${studentId}/exams-results`);
+};
 
 export interface IQuizNewspaperResponse {
   success: boolean;
@@ -367,7 +358,6 @@ export const getQuizNewspaperByStudentId = async (): Promise<AxiosResponse<IQuiz
   const studentId = localStorage.getItem('studentId');
   return await BaseApi.getRequest(`/student/${studentId}/quiz-newspaper`);
 };
-
 
 export interface IClass {
   id: string;
@@ -476,10 +466,8 @@ export const getStudentUserById = async (): Promise<{ data: IStudentUser }> => {
     throw new Error("User  not found ");
   }
   return  await BaseApi.getRequest(`/student/user/${userId}`);
-
 };
 
-// 🔹 Submit Homework
 export interface ISubmitHomeworkRequest {
   studentId: string;
   homeworkId: string;
@@ -491,7 +479,6 @@ export interface ISubmitHomeworkResponse {
   message: string;
 }
 
-// 🔹 Submit Assignment
 export interface ISubmitAssignmentRequest {
   studentId: string;
   assignmentId: string;
@@ -503,7 +490,6 @@ export interface ISubmitAssignmentResponse {
   message: string;
 }
 
-// 🔹 Submit Homework API
 export const submitHomework = async (
   payload: FormData
 ): Promise<AxiosResponse<ISubmitHomeworkResponse>> => {
@@ -519,7 +505,6 @@ export const submitHomework = async (
   );
 };
 
-// 🔹 Submit Assignment API
 export const submitAssignment = async (
   payload: FormData
 ): Promise<AxiosResponse<ISubmitAssignmentResponse>> => {
@@ -535,14 +520,17 @@ export const submitAssignment = async (
   );
 };
 
-
 export const getstudentprofiledetails = async (
   id: any
 ): Promise<AxiosResponse<any>> => {
   return await BaseApi.getRequest(`/student/user/${id}`);
 };
+export const getstudentprofiledetailsparents = async (
+  id: any
+): Promise<AxiosResponse<any>> => {
+  return await BaseApi.getRequest(`/school/student/${id}`);
+};
 
-// Library-related interfaces and APIs
 export interface ILibraryResponse {
   success: boolean;
   books: IBookIssue[];
@@ -584,7 +572,6 @@ export const getStudentLibraryBooks = async (): Promise<AxiosResponse<ILibraryRe
   return await BaseApi.getRequest(`/student/library/books`);
 };
 
-// Fees Overview interfaces
 export interface IFeesOverviewResponse {
   success: boolean;
   overview: IFeesOverview;
@@ -609,95 +596,6 @@ export interface IFeeBreakdown {
 export const getStudentFeesOverview = async (): Promise<AxiosResponse<IFeesOverviewResponse>> => {
   return await BaseApi.getRequest('/student/fees-overview');
 };
-
-// Mock data for components that don't have APIs yet
-export const mockLeaveData = {
-  medicalLeave: { total: 10, used: 5, available: 5 },
-  casualLeave: { total: 12, used: 1, available: 11 },
-  maternityLeave: { total: 10, used: 0, available: 10 },
-  paternityLeave: { total: 0, used: 0, available: 0 },
-  leaveRequests: [
-    {
-      id: '1',
-      leaveType: 'Medical Leave',
-      leaveDate: '2024-01-15',
-      noOfDays: '3',
-      appliedOn: '2024-01-10',
-      status: 'Approved'
-    },
-    {
-      id: '2',
-      leaveType: 'Casual Leave',
-      leaveDate: '2024-01-20',
-      noOfDays: '1',
-      appliedOn: '2024-01-18',
-      status: 'Pending'
-    }
-  ]
-};
-
-export const mockAttendanceData = {
-  summary: {
-    present: 265,
-    absent: 5,
-    halfDay: 1,
-    late: 12
-  },
-  monthlyData: [
-    { date: '1', jan: '1', feb: '1', mar: '1', apr: '1', may: '1', jun: '1', jul: '1', aug: '1', sep: '1', oct: '1', nov: '1', dec: '1' },
-    { date: '2', jan: '1', feb: '1', mar: '1', apr: '1', may: '1', jun: '1', jul: '1', aug: '1', sep: '1', oct: '1', nov: '1', dec: '1' },
-    { date: '3', jan: '1', feb: '1', mar: '1', apr: '1', may: '1', jun: '1', jul: '1', aug: '1', sep: '1', oct: '1', nov: '1', dec: '1' }
-  ]
-};
-
-export const mockLibraryData = {
-  books: [
-    {
-      id: '1',
-      title: 'The Small-Town Library',
-      coverImage: 'assets/img/books/book-01.jpg',
-      issueDate: '2024-01-25',
-      dueDate: '2024-02-25',
-      status: 'Issued'
-    },
-    {
-      id: '2',
-      title: 'Apex Time',
-      coverImage: 'assets/img/books/book-02.jpg',
-      issueDate: '2024-01-22',
-      dueDate: '2024-02-22',
-      status: 'Issued'
-    },
-    {
-      id: '3',
-      title: 'The Cobalt Guitar',
-      coverImage: 'assets/img/books/book-03.jpg',
-      issueDate: '2024-01-30',
-      dueDate: '2024-02-10',
-      status: 'Issued'
-    }
-  ]
-};
-
-// Leaderboard-related interfaces
-export interface ILeaderboardResponse {
-  success: boolean;
-  leaderboard: ILeaderboardEntry[];
-  start?: string;
-  end?: string;
-}
-
-export interface ILeaderboardEntry {
-  userId: string;
-  name: string;
-  email: string;
-  profilePic: string;
-  quizScore: number;
-  newspaperScore: number;
-  doubtsSolved: number;
-  totalPoints: number;
-  rank: number;
-}
 
 export interface IClassLeaderboardResponse {
   success: boolean;
@@ -732,7 +630,6 @@ export interface IRoadmapLeaderboardEntry {
   rank: number;
 }
 
-// Leaderboard API functions
 export const getMonthlyLeaderboard = async (): Promise<AxiosResponse<ILeaderboardResponse>> => {
   return await BaseApi.getRequest('/leader-board/monthly');
 };
@@ -758,7 +655,10 @@ export const applyStudentLeave = async (payload: IApplyLeaveRequest): Promise<Ax
   return await BaseApi.postRequest('/user/leave', payload);
 };
 
-// Get student's leave requests
 export const getStudentLeaveRequests = async (): Promise<AxiosResponse<ILeaveRequest[]>> => {
   return await BaseApi.getRequest('/user/leave/me');
+};
+
+export const getStudentUserDetails = async (userId: string) => {
+  return await BaseApi.getRequest(`/student/user/${userId}`);
 };
