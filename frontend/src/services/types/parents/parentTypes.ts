@@ -4,7 +4,7 @@
 export interface IParent {
   id: string;
   userId: string;
-  students: IStudent[];
+  students: Student[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,4 +85,103 @@ export interface IParentStudent {
     pending: number;
     total: number;
   };
+}
+
+// Dashboard specific types
+export interface StudentInfo {
+  name: string;
+  class: string;
+  rollNo: string;
+  profilePic: string;
+  email: string;
+  phone: string;
+  admissionDate: string;
+  schoolName: string;
+}
+
+export interface AttendanceData {
+  percentage: number;
+  totalDays: number;
+  presentDays: number;
+  absentDays: number;
+  recentRecords: any[];
+}
+
+export interface AcademicPerformance {
+  averages: Array<{
+    subject?: string;
+    score?: number;
+    grade?: string;
+  }>;
+}
+
+export interface FeeData {
+  pendingFees: Array<{
+    feeCategory: string;
+    amount: number;
+    dueDate?: string;
+  }>;
+  totalPending: number;
+  totalPaid: number;
+  paymentHistory: Array<{
+    feeCategory: string;
+    amount: number;
+    date: string;
+    method: string;
+    receiptId: string;
+  }>;
+}
+
+export interface EventData {
+  events: any[];
+  announcements: any[];
+  notices: Array<{
+    title: string;
+    content: string;
+    date: string;
+  }>;
+}
+
+export interface TimetableEntry {
+  day: string;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  teacher: string;
+}
+
+export interface Student {
+  studentId: string;
+  studentInfo: StudentInfo;
+  attendance: AttendanceData;
+  academicPerformance: AcademicPerformance;
+  fees: FeeData;
+  events: EventData;
+  assignments: any[];
+  communication: any[];
+  timetable: TimetableEntry[];
+}
+
+export interface ParentDashboardData {
+  parentId: string;
+  parentName: string;
+  students: Student[];
+}
+
+export interface ParentDashboardResponse {
+  data: ParentDashboardData;
+  status: number;
+  statusText: string;
+  headers: any;
+  config: any;
+  request: any;
+}
+
+export interface ApiResponse<T> {
+  data: T;
+  status: number;
+  statusText: string;
+  headers: any;
+  config: any;
+  request: any;
 }

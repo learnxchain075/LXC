@@ -1,6 +1,6 @@
 import { AxiosResponse } from "axios";
 import BaseApi from "../BaseApi";
-import { Parent, Student } from "../types/parents/parentTypes";
+import { IParent, Student, ParentDashboardData, ApiResponse } from "../types/parents/parentTypes";
 
 /**
  * Fetches a parent by its ID, including associated students.
@@ -10,7 +10,7 @@ import { Parent, Student } from "../types/parents/parentTypes";
  */
 export const getParentById = async (
   id: string
-): Promise<AxiosResponse<{ success: boolean; data: Parent }>> => {
+): Promise<AxiosResponse<{ success: boolean; data: IParent }>> => {
   return BaseApi.getRequest(`/school/parents/${id}`);
 };
 
@@ -34,6 +34,13 @@ export const getChildrenByParent = async (
  */
 export const getParentsBySchool = async (
   schoolId: string
-): Promise<AxiosResponse<{ success: boolean; data: Parent[] }>> => {
+): Promise<AxiosResponse<{ success: boolean; data: IParent[] }>> => {
   return BaseApi.getRequest(`/schools/${schoolId}/parents`);
+};
+export const getParentsDashbord = async (): Promise<AxiosResponse<ParentDashboardData>> => {
+  return BaseApi.getRequest(`/school-parent/dashboard`);
+};
+
+export const getParentsStudent = async (): Promise<AxiosResponse<ParentDashboardData>> => {
+  return BaseApi.getRequest(`/guardian-all/students`);
 };
