@@ -156,6 +156,22 @@ model InventoryTransaction {
   updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at")
 }
 
+model Employee {
+  id            String       @id @default(cuid()) @map("employee_id")
+  userId        String       @unique @map("user_id")
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schoolId      String       @map("school_id")
+  school        School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  employeeType  EmployeeType @map("employee_type")
+  company       String       @map("company")
+  departmentId  String?      @map("department_id")
+  department    Department?  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  designationId String?      @map("designation_id")
+  designation   Designation? @relation(fields: [designationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @default(now()) @updatedAt @map("updated_at")
+}
+
 model User {
   id String @id @default(cuid()) @map("user_id")
 

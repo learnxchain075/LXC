@@ -36,6 +36,8 @@ export const registerEmployee = async (
       pincode,
       bloodType,
       sex,
+      employeeType,
+      company,
       schoolId,
     } = parsed.data;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -79,20 +81,35 @@ export const registerEmployee = async (
       },
     });
 
+    const employee = await prisma.employee.create({
+      data: {
+        userId: user.id,
+        schoolId,
+        employeeType: employeeType ?? "SUPPORT",
+        company: company ?? "",
+      },
+    });
+
     await sendRegistrationEmail(email, tempPassword);
 
-    res.status(200).json({ message: "Employee registered successfully", user });
+    res.status(200).json({
+      message: "Employee registered successfully",
+      user,
+      employee,
+    });
   } catch (error) {
     next(handlePrismaError(error));
   }
 };
 
 // Get all Employees
-export const getAllEmployees = async (req: Request, res: Response, next: NextFunction):Promise<any> => {
+export const getAllEmployees = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
   try {
-    const staff = await prisma.user.findMany({
-      where: { role: "employee" },
-    });
+    const staff = await prisma.employee.findMany({ include: { user: true } });
     res.status(200).json({ message: "All employees", staff });
   } catch (error) {
     next(handlePrismaError(error));
@@ -103,10 +120,11 @@ export const getAllEmployees = async (req: Request, res: Response, next: NextFun
 export const getEmployee = async (req: Request, res: Response, next: NextFunction):Promise<any> => {
   try {
     const { id } = req.params;
-    const staff = await prisma.user.findUnique({
+    const staff = await prisma.employee.findUnique({
       where: { id },
+      include: { user: true },
     });
-    if (!staff || staff.role !== "employee") {
+    if (!staff) {
       return res.status(404).json({ message: "Employee not found" });
     }
     res.status(200).json({ message: "Employee", staff });
@@ -125,12 +143,24 @@ export const updateEmployee = async (req: Request, res: Response, next: NextFunc
         .status(400)
         .json({ message: "Validation failed", errors: parsed.error.errors });
     }
-    const { name, phone, address, city, state, country, pincode, bloodType, sex } = parsed.data;
+    const {
+      name,
+      phone,
+      address,
+      city,
+      state,
+      country,
+      pincode,
+      bloodType,
+      sex,
+      employeeType,
+      company,
+    } = parsed.data;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     let profilePicUrl: string | undefined;
 
-    const existingStaff = await prisma.user.findUnique({ where: { id } });
-    if (!existingStaff || existingStaff.role !== "employee") {
+    const existingStaff = await prisma.employee.findUnique({ where: { id } });
+    if (!existingStaff) {
       return res.status(404).json({ message: "Employee not found" });
     }
 
@@ -147,7 +177,7 @@ export const updateEmployee = async (req: Request, res: Response, next: NextFunc
     }
 
     const updatedStaff = await prisma.user.update({
-      where: { id },
+      where: { id: existingStaff.userId },
       data: {
         name,
         phone,
@@ -162,7 +192,19 @@ export const updateEmployee = async (req: Request, res: Response, next: NextFunc
       },
     });
 
-    res.status(200).json({ message: "Employee updated successfully", staff: updatedStaff });
+    const updatedEmployee = await prisma.employee.update({
+      where: { id },
+      data: {
+        employeeType: employeeType ?? existingStaff.employeeType,
+        company: company ?? existingStaff.company,
+      },
+    });
+
+    res.status(200).json({
+      message: "Employee updated successfully",
+      staff: updatedStaff,
+      employee: updatedEmployee,
+    });
   } catch (error) {
     next(handlePrismaError(error));
   }
@@ -173,12 +215,13 @@ export const deleteEmployee = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params;
 
-    const existingStaff = await prisma.user.findUnique({ where: { id } });
-    if (!existingStaff || existingStaff.role !== "employee") {
+    const existingStaff = await prisma.employee.findUnique({ where: { id } });
+    if (!existingStaff) {
       return res.status(404).json({ message: "Employee not found" });
     }
 
-    await prisma.user.delete({ where: { id } });
+    await prisma.employee.delete({ where: { id } });
+    await prisma.user.delete({ where: { id: existingStaff.userId } });
 
     res.status(200).json({ message: "Employee deleted successfully" });
   } catch (error) {
@@ -191,11 +234,9 @@ export const getEmployeesBySchool = async (req: Request, res: Response, next: Ne
   try {
     const { schoolId } = req.params;
 
-    const staff = await prisma.user.findMany({
-      where: {
-        role: "employee",
-        schoolId,
-      },
+    const staff = await prisma.employee.findMany({
+      where: { schoolId },
+      include: { user: true },
     });
 
     res.status(200).json({ message: "All employees of the school", staff });

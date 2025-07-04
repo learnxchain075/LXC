@@ -1,4 +1,4 @@
-import { UserSex } from "@prisma/client";
+import { UserSex, EmployeeType } from "@prisma/client";
 import { z } from "zod";
 
 export const registerStaffSchema = z.object({
@@ -11,7 +11,9 @@ export const registerStaffSchema = z.object({
   country: z.string().min(1),
   pincode: z.string().min(1),
   bloodType: z.string(),
- sex: z.nativeEnum(UserSex),
+  sex: z.nativeEnum(UserSex),
+  employeeType: z.nativeEnum(EmployeeType).optional(),
+  company: z.string().optional(),
   schoolId: z.string().cuid("Invalid school id"),
 });
 
@@ -25,4 +27,6 @@ export const updateStaffSchema = z.object({
   pincode: z.string().optional(),
   bloodType: z.string().optional(),
   sex: z.nativeEnum(UserSex),
+  employeeType: z.nativeEnum(EmployeeType).optional(),
+  company: z.string().optional(),
 });

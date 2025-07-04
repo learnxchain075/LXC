@@ -17,6 +17,8 @@ const AddEmployee = () => {
     pincode: "",
     bloodType: "",
     sex: "",
+    employeeType: "",
+    company: "",
     profilePic: null as File | null,
     schoolId: localStorage.getItem("schoolId") || "",
   });
@@ -44,6 +46,8 @@ const AddEmployee = () => {
         pincode: "",
         bloodType: "",
         sex: "",
+        employeeType: "",
+        company: "",
         profilePic: null,
         schoolId: localStorage.getItem("schoolId") || "",
       });
@@ -171,6 +175,30 @@ const AddEmployee = () => {
                     <option value="FEMALE">Female</option>
                     <option value="OTHER">Other</option>
                   </select>
+                </div>
+                <div className="col-md-6">
+                  <select
+                    className="form-select"
+                    value={formData.employeeType}
+                    onChange={e =>
+                      setFormData({ ...formData, employeeType: e.target.value })
+                    }
+                  >
+                    <option value="">Select Employee Type</option>
+                    <option value="TEACHER">Teacher</option>
+                    <option value="LIBRARIAN">Librarian</option>
+                    <option value="ADMINISTRATOR">Administrator</option>
+                    <option value="SUPPORT">Support</option>
+                  </select>
+                </div>
+                <div className="col-md-6">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Company"
+                    value={formData.company}
+                    onChange={e => setFormData({ ...formData, company: e.target.value })}
+                  />
                 </div>
                 <div className="col-md-6">
                   <input

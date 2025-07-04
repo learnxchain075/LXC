@@ -11,5 +11,7 @@ export interface IEmployeeBase {
   bloodType?: string;
   sex?: string;
   profilePic?: File;
+  employeeType?: string;
+  company?: string;
   schoolId: string;
 }
