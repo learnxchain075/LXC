@@ -14,11 +14,14 @@ const upload = multer();
 const router = express.Router();
 
 
-router.post('/employee', upload.fields([{ name: 'profilePic', maxCount: 1 }]), registerEmployee);
-router.get('/employees', getAllEmployees);
-router.get('/employee/:id', getEmployee);
-router.put('/employee/:id', updateEmployee);
-router.delete('/employee/:id', deleteEmployee);
+
+router.post('/lxc/employee', upload.fields([{ name: 'profilePic', maxCount: 1 }]), registerEmployee);
+router.get('/lxc/employees', getAllEmployees);
+router.get('/lxc/employee/:id', getEmployee);
+router.put('/lxc/employee/:id', updateEmployee);
+router.delete('/lxc/employee/:id', deleteEmployee);
+// router.get('/school/:schoolId/employees', getEmployeesBySchool);
 router.get('/school/:schoolId/employees', getEmployeesBySchool);
+
 
 export default router;

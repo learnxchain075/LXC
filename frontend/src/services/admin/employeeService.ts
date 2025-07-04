@@ -13,7 +13,7 @@ export const registerEmployee = async (
       formData.append(key, value?.toString() || "");
     }
   });
-  return await BaseApi.postRequest("/employee", formData, {
+  return await BaseApi.postRequest("/lxc/employee", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -21,11 +21,11 @@ export const registerEmployee = async (
 };
 
 export const getAllEmployees = async (): Promise<AxiosResponse<any>> => {
-  return await BaseApi.getRequest("/employees");
+  return await BaseApi.getRequest("/lxc/employees");
 };
 
 export const getEmployeeById = async (id: string): Promise<AxiosResponse<any>> => {
-  return await BaseApi.getRequest(`/employee/${id}`);
+  return await BaseApi.getRequest(`/lxc/employee/${id}`);
 };
 
 export const updateEmployee = async (
@@ -40,7 +40,7 @@ export const updateEmployee = async (
       formData.append(key, value?.toString() || "");
     }
   });
-  return await BaseApi.putRequest(`/employee/${id}`, formData as any, {
+  return await BaseApi.putRequest(`/lxc/employee/${id}`, formData as any, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -48,7 +48,7 @@ export const updateEmployee = async (
 };
 
 export const deleteEmployee = async (id: string): Promise<AxiosResponse<any>> => {
-  return await BaseApi.deleteRequest(`/employee/${id}`);
+  return await BaseApi.deleteRequest(`/lxc/employee/${id}`);
 };
 
 export const getEmployeesBySchool = async (
