@@ -12,7 +12,7 @@ export const registerStaffSchema = z.object({
   pincode: z.string().min(1),
   bloodType: z.string(),
  sex: z.nativeEnum(UserSex),
-  schoolId: z.string().cuid("Invalid school id"),
+  schoolId: z.string().cuid("Invalid school id").optional(),
 });
 
 export const updateStaffSchema = z.object({
