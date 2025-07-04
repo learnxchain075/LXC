@@ -13,5 +13,4 @@ export interface IEmployeeBase {
   profilePic?: File;
   employeeType?: string;
   company?: string;
-  schoolId: string;
 }

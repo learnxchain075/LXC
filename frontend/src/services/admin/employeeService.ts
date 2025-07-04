@@ -13,7 +13,7 @@ export const registerEmployee = async (
       formData.append(key, value?.toString() || "");
     }
   });
-  return await BaseApi.postRequest("/school/employee", formData, {
+  return await BaseApi.postRequest("/employee", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },

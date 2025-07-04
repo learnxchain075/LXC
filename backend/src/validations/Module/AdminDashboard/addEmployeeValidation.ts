@@ -1,7 +1,7 @@
 import { UserSex, EmployeeType } from "@prisma/client";
 import { z } from "zod";
 
-export const registerStaffSchema = z.object({
+export const registerEmployeeSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   phone: z.string().min(1),
@@ -15,11 +15,9 @@ export const registerStaffSchema = z.object({
   sex: z.nativeEnum(UserSex),
   employeeType: z.nativeEnum(EmployeeType).optional(),
   company: z.string().optional(),
-  schoolId: z.string().cuid("Invalid school id").optional(),
-
 });
 
-export const updateStaffSchema = z.object({
+export const updateEmployeeSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),

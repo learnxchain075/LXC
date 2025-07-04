@@ -7,9 +7,9 @@ import { uploadFile } from "../../../../../config/upload";
 import { prisma } from "../../../../../db/prisma";
 import { handlePrismaError } from "../../../../../utils/prismaErrorHandler";
 import {
-  registerStaffSchema,
-  updateStaffSchema,
-} from "../../../../../validations/Module/AdminDashboard/addStaffValidation";
+  registerEmployeeSchema,
+  updateEmployeeSchema,
+} from "../../../../../validations/Module/AdminDashboard/addEmployeeValidation";
 
 // Register an Employee
 export const registerEmployee = async (
@@ -18,7 +18,7 @@ export const registerEmployee = async (
   next: NextFunction
 ): Promise<any> => {
   try {
-    const parsed = registerStaffSchema.safeParse(req.body);
+    const parsed = registerEmployeeSchema.safeParse(req.body);
     if (!parsed.success) {
       return res
         .status(400)
@@ -136,7 +136,7 @@ export const getEmployee = async (req: Request, res: Response, next: NextFunctio
 export const updateEmployee = async (req: Request, res: Response, next: NextFunction):Promise<any> => {
   try {
     const { id } = req.params;
-    const parsed = updateStaffSchema.safeParse(req.body);
+    const parsed = updateEmployeeSchema.safeParse(req.body);
     if (!parsed.success) {
       return res
         .status(400)
