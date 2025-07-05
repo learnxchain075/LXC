@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getCompanyTransactions, deleteCompanyTransaction } from "../../../services/superadmin/companyAccountApi";
+import { wrap } from "module";
 
 const AllTransactions = () => {
   const [list, setList] = useState<any[]>([]);
@@ -26,6 +27,8 @@ const AllTransactions = () => {
   };
 
   return (
+    
+    <div className="page-wrapper">
     <div className="container-fluid py-4 px-3 px-md-5">
       <h2 className="mb-3">All Transactions</h2>
       <div className="table-responsive">
@@ -66,6 +69,7 @@ const AllTransactions = () => {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 };

@@ -7,6 +7,7 @@ const Summary = () => {
     getCompanySummary().then((res) => setSummary(res.data || summary));
   }, []);
   return (
+     <div className="page-wrapper">
     <div className="container-fluid py-4 px-3 px-md-5">
       <h2 className="mb-3">Summary</h2>
       <div className="row g-4">
@@ -29,6 +30,7 @@ const Summary = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

@@ -51,6 +51,7 @@ const AddTransaction = () => {
     }
   };
   return (
+     <div className="page-wrapper">
     <div className="container-fluid py-4 px-3 px-md-5">
       <h2 className="mb-3">Add Transaction</h2>
       <form onSubmit={handleSubmit} className="row g-3">
@@ -98,6 +99,7 @@ const AddTransaction = () => {
           <button className="btn btn-primary" type="submit">Submit</button>
         </div>
       </form>
+    </div>
     </div>
   );
 };
