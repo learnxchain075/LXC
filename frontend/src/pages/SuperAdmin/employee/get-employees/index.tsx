@@ -26,6 +26,7 @@ const GetEmployees = () => {
       const employeesData = staff.map((emp: any) => ({
         id: emp.id,
         name: emp.user?.name,
+        profilePic: emp.user?.profilePic || "",
         email: emp.user?.email,
         phone: emp.user?.phone,
         address: emp.user?.address,
@@ -51,9 +52,18 @@ const GetEmployees = () => {
       title: "Name",
       dataIndex: "name",
       render: (_: any, record: IEmployeeBase) => (
-        <Link to="#" onClick={() => setSelectedEmployee(record)} className="link-primary">
-          {record.name}
-        </Link>
+        <div className="d-flex align-items-center">
+          <img
+            src={record.profilePic || "assets/img/profiles/avatar-01.jpg"}
+            alt="img"
+            className="rounded-circle me-2"
+            width={32}
+            height={32}
+          />
+          <Link to="#" onClick={() => setSelectedEmployee(record)} className="link-primary">
+            {record.name}
+          </Link>
+        </div>
       ),
     },
     { title: "Email", dataIndex: "email" },
@@ -102,6 +112,15 @@ const GetEmployees = () => {
                 <button type="button" className="btn-close" onClick={() => setSelectedEmployee(null)} />
               </div>
               <div className="modal-body">
+                <div className="text-center mb-3">
+                  <img
+                    src={selectedEmployee.profilePic || "assets/img/profiles/avatar-01.jpg"}
+                    alt="img"
+                    className="rounded-circle"
+                    width={80}
+                    height={80}
+                  />
+                </div>
                 <p><strong>Name:</strong> {selectedEmployee.name}</p>
                 <p><strong>Email:</strong> {selectedEmployee.email}</p>
                 <p><strong>Phone:</strong> {selectedEmployee.phone}</p>
