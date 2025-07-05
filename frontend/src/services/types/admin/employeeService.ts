@@ -10,7 +10,7 @@ export interface IEmployeeBase {
   pincode: string;
   bloodType?: string;
   sex?: string;
-  profilePic?: File;
+  profilePic?: File | string | null;
   employeeType?: string;
   company?: string;
 }
