@@ -74,7 +74,7 @@ const HomeBanner = () => {
               </ScrollAnimate>
             </div>
           </div>
-          <div className="col-lg-5 col-md12">
+          <div className="col-lg-5 col-md-12">
             <ScrollAnimate>
               <div className="hero-img">
                 <div className="overlay">
@@ -85,7 +85,7 @@ const HomeBanner = () => {
                     </span>
                   </a>
                 </div>
-                <img src={heroImg} alt="hero-img" />
+                <img src={heroImg} alt="hero-img"  />
               </div>
             </ScrollAnimate>
           </div>
