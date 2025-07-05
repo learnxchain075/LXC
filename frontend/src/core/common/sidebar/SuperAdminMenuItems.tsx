@@ -261,6 +261,18 @@ const SuperAdminMenuItems = () => {
               <span>Register Employee</span>
             </Link>
           </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.getEmployees}
+              onClick={() =>
+                handleClick("Get All Employees", undefined, getLayoutClass("Get All Employees"))
+              }
+              className={`${subOpen === "Get All Employees" ? "subdrop" : ""} ${all_routes.getEmployees === location.pathname ? "active" : ""}`}
+            >
+              <i className="ti ti-users"></i>
+              <span>Get All Employees</span>
+            </Link>
+          </li>
         </ul>
       </li>
 
