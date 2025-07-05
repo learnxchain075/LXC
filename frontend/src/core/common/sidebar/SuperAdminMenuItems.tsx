@@ -344,6 +344,7 @@ const SuperAdminMenuItems = () => {
         <h6 className="submenu-hdr">
           <span>CONTENT</span>
         </h6>
+
         <ul>
           <li className="submenu">
             <Link
@@ -351,31 +352,25 @@ const SuperAdminMenuItems = () => {
               onClick={() =>
                 handleClick("Feedback", undefined, getLayoutClass("Feedback"))
               }
-              className={`${subOpen === "Feedback" ? "subdrop" : ""} ${all_routes.testimonials === location.pathname ? "active" : ""
-                }`}
+              className={`${subOpen === "Feedback" ? "subdrop" : ""} ${all_routes.testimonials === location.pathname ? "active" : ""}`}
             >
               <i className="ti ti-quote"></i>
               <span>Feedback</span>
             </Link>
           </li>
-        </ul>
-
-        <ul>
           <li className="submenu">
             <Link
               to={all_routes.demoRequest}
               onClick={() =>
                 handleClick("Demo Request", undefined, getLayoutClass("Demo Request"))
               }
-              className={`${subOpen === "Demo Request" ? "subdrop" : ""} ${all_routes.demoRequest === location.pathname ? "active" : ""
-                }`}
+              className={`${subOpen === "Demo Request" ? "subdrop" : ""} ${all_routes.demoRequest === location.pathname ? "active" : ""}`}
             >
               <i className="ti ti-calendar-check"></i>
               <span>Demo Request</span>
             </Link>
           </li>
         </ul>
-
       </li>
 
       <li>
@@ -389,48 +384,39 @@ const SuperAdminMenuItems = () => {
               onClick={() =>
                 handleClick("Tickets", undefined, getLayoutClass("Tickets"))
               }
-              className={`${subOpen === "Tickets" ? "subdrop" : ""} ${all_routes.tickets === location.pathname ? "active" : ""
-                }`}
+              className={`${subOpen === "Tickets" ? "subdrop" : ""} ${all_routes.tickets === location.pathname ? "active" : ""}`}
             >
               <i className="ti ti-ticket"></i>
               <span>Tickets</span>
             </Link>
           </li>
-        </ul>
-
-        <ul>
           <li className="submenu">
             <Link
               to={all_routes.contactMessages}
               onClick={() =>
-                handleClick("contact messages", undefined, getLayoutClass("contact message"))
+                handleClick("Contact Messages", undefined, getLayoutClass("Contact Messages"))
               }
-              className={`${subOpen === "contact messages" ? "subdrop" : ""} ${all_routes.contactMessages === location.pathname ? "active" : ""
-                }`}
+              className={`${subOpen === "Contact Messages" ? "subdrop" : ""} ${all_routes.contactMessages === location.pathname ? "active" : ""}`}
             >
               <i className="ti ti-ticket"></i>
-              <span>contact message</span>
+              <span>Contact Messages</span>
             </Link>
           </li>
-        </ul>
-
-        <ul>
           <li className="submenu">
             <Link
               to={all_routes.logs}
               onClick={() =>
-                handleClick("Logs messages", undefined, getLayoutClass("Logs "))
+                handleClick("Logs", undefined, getLayoutClass("Logs"))
               }
-              className={`${subOpen === "Logs messages" ? "subdrop" : ""} ${all_routes.logs === location.pathname ? "active" : ""
-                }`}
+              className={`${subOpen === "Logs" ? "subdrop" : ""} ${all_routes.logs === location.pathname ? "active" : ""}`}
             >
               <i className="ti ti-ticket"></i>
-              <span>Logs messages</span>
+              <span>Logs</span>
             </Link>
           </li>
         </ul>
-      </li>
-      <li>
+        </li>
+        <li>
         <ul>
           <li className="submenu">
             <Link
