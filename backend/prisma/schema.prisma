@@ -2080,6 +2080,33 @@ enum AttendanceType {
   HALF_DAY
 }
 
+enum CompanyTransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum CompanyPaymentMode {
+  CASH
+  BANK_TRANSFER
+  UPI
+  OTHER
+}
+
+model CompanyTransaction {
+  id               String                @id @default(uuid())
+  transactionType  CompanyTransactionType
+  title            String
+  description      String
+  amount           Float
+  date             DateTime
+  paymentMode      CompanyPaymentMode
+  sourceOrRecipient String
+  billUrl          String?
+  createdBy        String
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
 // enum AttendanceStatus {
 //   PRESENT
 //   ABSENT

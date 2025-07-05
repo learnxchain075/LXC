@@ -1,0 +1,24 @@
+import BaseApi from "../BaseApi";
+import { AxiosRequestConfig } from "axios";
+
+export const createCompanyTransaction = async (data: FormData) => {
+  const config: AxiosRequestConfig = { headers: { "Content-Type": "multipart/form-data" } };
+  return await BaseApi.postRequest("/company-accounts/create", data, config);
+};
+
+export const getCompanyTransactions = async (params?: any) => {
+  return await BaseApi.getRequest("/company-accounts/list", { params });
+};
+
+export const getCompanySummary = async () => {
+  return await BaseApi.getRequest("/company-accounts/summary");
+};
+
+export const updateCompanyTransaction = async (id: string, data: FormData) => {
+  const config: AxiosRequestConfig = { headers: { "Content-Type": "multipart/form-data" } };
+  return await BaseApi.putRequest(`/company-accounts/${id}/update`, data, config);
+};
+
+export const deleteCompanyTransaction = async (id: string) => {
+  return await BaseApi.deleteRequest(`/company-accounts/${id}`);
+};
