@@ -62,6 +62,27 @@ export const getSuperAdminDashboard = async (req: Request, res: Response): Promi
 
     const monthlyNewSchoolsArray = Object.entries(monthlyNewSchools).map(([month, count]) => ({ month, count }));
 
+    // --- Plan Statistics ---
+    const totalPlans = await prisma.subscription.count();
+    const activePlans = await prisma.subscription.count({
+      where: { isActive: true },
+    });
+    const inactivePlans = totalPlans - activePlans;
+
+    // --- Employee Statistics ---
+    const totalEmployees = await prisma.user.count({
+      where: { role: 'employee' },
+    });
+    const activeEmployees = await prisma.user.count({
+      where: {
+        role: 'employee',
+        lastOnline: {
+          gte: new Date(new Date().setDate(new Date().getDate() - 30)),
+        },
+      },
+    });
+    const inactiveEmployees = totalEmployees - activeEmployees;
+
     // --- Financial Metrics ---
     const totalRevenue = await prisma.payment.aggregate({
       _sum: {
@@ -163,6 +184,16 @@ export const getSuperAdminDashboard = async (req: Request, res: Response): Promi
         totalSchools,
         activeSchools,
         monthlyNewSchools: monthlyNewSchoolsArray,
+      },
+      planStatistics: {
+        totalPlans,
+        activePlans,
+        inactivePlans,
+      },
+      employeeStatistics: {
+        totalEmployees,
+        activeEmployees,
+        inactiveEmployees,
       },
       financialMetrics: {
         totalRevenue: totalRevenue._sum.amount || 0,
