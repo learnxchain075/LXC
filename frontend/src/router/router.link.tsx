@@ -107,6 +107,7 @@ import ListLeaves from "../pages/SuperAdmin/hrm/leaves/list-leaves";
 import Payroll from "../pages/SuperAdmin/hrm/payroll";
 import AddStaff from "../pages/SuperAdmin/hrm/staff-list/add-staff";
 import AddEmployee from "../pages/SuperAdmin/employee/add-employee";
+import GetEmployees from "../pages/SuperAdmin/employee/get-employees";
 import EditStaff from "../pages/SuperAdmin/hrm/staff-list/edit-staff";
 import Staff from "../pages/SuperAdmin/hrm/staff-list/staff";
 import StaffDetails from "../pages/SuperAdmin/hrm/staff-list/staff-details.tsx";
@@ -1507,6 +1508,12 @@ export const publicRoutes = [
   {
     path: routes.addEmployee,
     element: <AddEmployee />,
+    route: Route,
+    role: ["superadmin"],
+  },
+  {
+    path: routes.getEmployees,
+    element: <GetEmployees />,
     route: Route,
     role: ["superadmin"],
   },
