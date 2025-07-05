@@ -1,6 +1,6 @@
 import BaseApi from "../BaseApi";
-
 import { AxiosResponse } from "axios";
+import { TicketForm } from "../types/superAdmin/ticketServices";
 
 
 // 🔸 Create a new ticket
