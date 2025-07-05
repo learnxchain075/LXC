@@ -405,6 +405,8 @@ model Notification {
 model Ticket {
   id String @id @default(cuid()) @map("ticket_id")
 
+  ticketNumber Int @default(autoincrement()) @map("ticket_number")
+
   title       String   @map("ticket_title")
   description String   @map("ticket_description")
   category    String?  @map("ticket_category")

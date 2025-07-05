@@ -52,7 +52,10 @@ const TicketDetail = () => {
                 </li>
                 <li className="breadcrumb-item">Support</li>
                 <li className="breadcrumb-item active" aria-current="page">
-                  Ticket #{ticket.id}
+                  Ticket{' '}
+                  {ticket.ticketNumber
+                    ? `#${String(ticket.ticketNumber).padStart(2, '0')}`
+                    : ticket.id}
                 </li>
               </ol>
             </nav>

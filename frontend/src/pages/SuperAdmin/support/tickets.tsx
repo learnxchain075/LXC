@@ -25,6 +25,7 @@ import "../../../style/css/tickets.css";
 
 interface TicketForm {
   id?: string;
+  ticketNumber?: number;
   title: string;
   schoolId: string;
   userId: string;
@@ -378,7 +379,9 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                                 </span>
                               )}
                               <span className="badge bg-secondary">
-                                #{ticket.id?.slice(0, 6)}
+                                {ticket.ticketNumber
+                                  ? `TKT #${String(ticket.ticketNumber).padStart(2, '0')}`
+                                  : `#${ticket.id?.slice(0, 6)}`}
                               </span>
                             </div>
                           </div>
