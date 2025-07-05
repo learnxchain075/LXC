@@ -9,7 +9,7 @@ import {
   companyTransactionFilterSchema,
 } from "../../../validations/Module/SuperadminDashboard/companyAccountsValidation";
 
-export const createTransaction = async (req: Request, res: Response, next: NextFunction) => {
+export const createTransaction = async (req: Request, res: Response, next: NextFunction) : Promise<any>=> {
   try {
     const parsed = companyTransactionSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -28,7 +28,7 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const listTransactions = async (req: Request, res: Response, next: NextFunction) => {
+export const listTransactions = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const q = companyTransactionFilterSchema.safeParse(req.query);
     if (!q.success) {
@@ -50,7 +50,7 @@ export const listTransactions = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const getSummary = async (req: Request, res: Response, next: NextFunction) => {
+export const getSummary = async (req: Request, res: Response, next: NextFunction) : Promise<any>=> {
   try {
     const income = await prisma.companyTransaction.aggregate({
       _sum: { amount: true },
@@ -68,7 +68,7 @@ export const getSummary = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const updateTransaction = async (req: Request, res: Response, next: NextFunction) => {
+export const updateTransaction = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = companyTransactionIdSchema.safeParse(req.params);
     if (!params.success) {
@@ -93,7 +93,7 @@ export const updateTransaction = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const deleteTransaction = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteTransaction = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = companyTransactionIdSchema.safeParse(req.params);
     if (!params.success) {
