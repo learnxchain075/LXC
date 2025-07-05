@@ -41,11 +41,11 @@ const PaymentGateways = () => {
           setIsEdit(true);
         } else {
           toast.error(response.data.message || "Failed to fetch payment secret");
-          console.error("Payment secret fetch error:", response);
+          // Payment secret fetch error
         }
       } catch (err: any) {
         toast.error((err?.response?.data?.message || err?.message || "Failed to fetch payment secret") + " (see console for details)");
-        console.error("Payment secret fetch exception:", err);
+        // Payment secret fetch exception
       } finally {
         setIsLoading(false);
       }

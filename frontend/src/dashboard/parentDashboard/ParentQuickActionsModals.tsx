@@ -68,7 +68,7 @@ export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean
     if (!show) return;
     setLoading(true);
     BaseApi.getRequest(`/school/student/${studentId}`)
-      .then(res => { setData(res.data); console.log('Student Details Modal Data:', res.data); })
+      .then(res => { setData(res.data); })
       .catch(() => setError('Failed to load student details'))
       .finally(() => setLoading(false));
   }, [show, studentId]);
@@ -147,7 +147,13 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
 }
 
 
-export function FeesModal({ show, onHide, studentId, refetchDashboard }: { show: boolean, onHide: () => void, studentId: string, refetchDashboard: () => void }) {
+export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpdated }: { 
+  show: boolean, 
+  onHide: () => void, 
+  studentId: string, 
+  refetchDashboard?: () => void,
+  onFeesUpdated?: (updatedFees: any) => void 
+}) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -198,23 +204,32 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard }: { show:
     setFatalError(null);
     setPayError(null);
     const fee = payModal?.fee;
-    if (!fee) return;
+    if (!fee) {
+      toast.error('Fee information not found. Please try again.');
+      setPaying(false);
+      return;
+    }
     if (payAmount < 1 || payAmount > fee.amount) {
-      setPayError('Please enter a valid amount.');
+      setPayError('Please enter a valid amount between ₹1 and ₹' + fee.amount);
       setPaying(false);
       return;
     }
     const isRazorpayLoaded = await loadRazorpayScript();
     if (!isRazorpayLoaded) {
-      setPaymentError('Razorpay SDK failed to load. Please try again.');
+      setPaymentError('Payment gateway failed to load. Please check your internet connection and try again.');
       setPaying(false);
+      toast.error('Payment gateway unavailable. Please try again later.');
       return;
     }
     try {
      
       const orderRes = await createFeeOrder(fee.id, payAmount);
       const { orderId, amount, currency, success, error } = orderRes.data;
-      if (!success) throw new Error(error || 'Failed to create order');
+      if (!success) {
+        const errorMessage = error || 'Failed to create payment order';
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
     
       const options = {
         key: razorpayKey,
@@ -234,26 +249,65 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard }: { show:
               paymentResponse.razorpay_signature,
               fee.id
             );
-          //  console.log('Payment Verification Response:', verifyRes.data);
-            if (verifyRes.data && (verifyRes.data.status === 'PAID' || verifyRes.data.success)) {
+          // console.log('Payment Verification Response:', verifyRes.data);
+          if (verifyRes.data && (verifyRes.data.status === 'PAID' || verifyRes.data.status === 'PARTIAL')) {
               setPaymentStatus('success');
               setPayFee(null);
               setVerifying(false);
               toast.success('Payment successful! Fee paid.');
-              refetchDashboard();
+              // Update the fees data locally instead of refetching entire dashboard
+              setData((prevData: any) => {
+                if (!prevData || !prevData.fees) return prevData;
+                const updatedFees = prevData.fees.map((fee: any) => {
+                  if (fee.id === payModal?.fee?.id) {
+                    return {
+                      ...fee,
+                      status: 'PAID',
+                      Payment: [
+                        ...(fee.Payment || []),
+                        {
+                          id: paymentResponse.razorpay_payment_id,
+                          amount: payAmount,
+                          method: 'Online',
+                          paymentDate: new Date().toISOString(),
+                          status: 'SUCCESS'
+                        }
+                      ]
+                    };
+                  }
+                  return fee;
+                });
+                
+                // Notify parent component about the updated fees
+                if (onFeesUpdated) {
+                  onFeesUpdated(updatedFees);
+                }
+                
+                return {
+                  ...prevData,
+                  fees: updatedFees
+                };
+              });
             } else {
               setPaymentStatus('failed');
-              setPaymentError(verifyRes.data?.message || 'Payment verification failed.');
+              const errorMessage = verifyRes.data?.message || 'Payment verification failed. Please contact support if amount was deducted.';
+              setPaymentError(errorMessage);
               setVerifying(false);
-              toast.error('Payment failed. Please try again.');
+              toast.error(errorMessage);
             }
-            console.log('Payment Response:', verifyRes.data);
+            // Payment Response
           } catch (err: any) {
             setPaymentStatus('failed');
-            setPaymentError('Payment verification failed.');
+            const errorMessage = err?.response?.data?.message || err?.message || 'Payment verification failed. Please contact support if amount was deducted.';
+            setPaymentError(errorMessage);
             setVerifying(false);
-            toast.error('Payment failed. Please try again.');
-            console.log('Payment Error:', err);
+            toast.error(errorMessage);
+            // Payment Error
+            
+            // Reset payment state on verification failure
+            setPayAmount(0);
+            setPayConfirm(false);
+            setPayError(null);
           } finally {
             setPaying(false);
           }
@@ -265,6 +319,10 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard }: { show:
             setPaying(false);
             setPaymentStatus(null);
             setPayModal(null);
+            // Reset payment state when modal is dismissed
+            setPayAmount(0);
+            setPayConfirm(false);
+            setPayError(null);
           }
         }
       };
@@ -276,22 +334,32 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard }: { show:
         setPayModal(null);
         setVerifying(false);
         toast.error('Payment failed. Please try again.');
+        
+        // Reset payment amount and confirmation
+        setPayAmount(0);
+        setPayConfirm(false);
+        setPayError(null);
       });
       rzp.open();
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
-        setFatalError('Payment endpoint not found. Please contact school admin.');
-      } else if (err?.message?.includes('Network')) {
-        setFatalError('Network error. Please check your internet connection and try again.');
-      } else {
-        setFatalError(err.message || 'Payment initiation failed.');
+          } catch (err: any) {
+        if (err?.response?.status === 404) {
+          setFatalError('Payment endpoint not found. Please contact school admin.');
+        } else if (err?.message?.includes('Network')) {
+          setFatalError('Network error. Please check your internet connection and try again.');
+        } else {
+          setFatalError(err.message || 'Payment initiation failed.');
+        }
+        setPaymentStatus('failed');
+        setPaying(false);
+        setPayModal(null);
+        setVerifying(false);
+        toast.error('Payment failed. Please try again.');
+        
+        // Reset payment state on initiation failure
+        setPayAmount(0);
+        setPayConfirm(false);
+        setPayError(null);
       }
-      setPaymentStatus('failed');
-      setPaying(false);
-      setPayModal(null);
-      setVerifying(false);
-      toast.error('Payment failed. Please try again.');
-    }
   }
 
   async function handleDownloadReceipt(paymentId: string) {
@@ -306,8 +374,10 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard }: { show:
       link.click();
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Failed to download receipt');
+      toast.success('Receipt downloaded successfully');
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || 'Failed to download receipt. Please try again later.';
+      toast.error(errorMessage);
     } finally {
       setDownloading(null);
     }
@@ -357,9 +427,38 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard }: { show:
                   ))}
                 </tbody>
               </Table>
-              {paymentStatus === 'success' && <Alert variant="success">Payment successful! Fee paid.</Alert>}
-              {paymentStatus === 'failed' && <Alert variant="danger">{paymentError || 'Payment failed.'}</Alert>}
-              {paymentStatus === 'verifying' && <Alert variant="info">Verifying payment...</Alert>}
+                        {paymentStatus === 'success' && (
+            <Alert variant="success">
+              <i className="ti ti-check-circle me-2"></i>
+              Payment successful! Fee paid.
+            </Alert>
+          )}
+          {paymentStatus === 'failed' && (
+            <Alert variant="danger">
+              <i className="ti ti-alert-circle me-2"></i>
+              {paymentError || 'Payment failed.'}
+              <div className="mt-2">
+                <Button 
+                  size="sm" 
+                  variant="outline-danger" 
+                  onClick={() => {
+                    setPaymentStatus(null);
+                    setPaymentError(null);
+                    setPayModal({ fee: payModal?.fee, show: true });
+                  }}
+                >
+                  <i className="ti ti-refresh me-1"></i>
+                  Try Again
+                </Button>
+              </div>
+            </Alert>
+          )}
+          {paymentStatus === 'verifying' && (
+            <Alert variant="info">
+              <i className="ti ti-loader me-2"></i>
+              Verifying payment...
+            </Alert>
+          )}
               <h6 className="mt-3">Payment History</h6>
               <Table striped bordered hover size="sm">
                 <thead><tr><th>Amount</th><th>Method</th><th>Date</th><th>Receipt</th></tr></thead>

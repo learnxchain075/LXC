@@ -55,7 +55,7 @@ const authSlice = createSlice({
 
       localStorage.removeItem("schoolId");
       localStorage.removeItem("userId");
-
+localStorage.removeItem("studentId");
       //  localStorage.clear();
       // Reset state
       state.isLoggedIn = false;

@@ -26,7 +26,7 @@ const FeesGroup = () => {
         const res = await getFeeGroups();
         setGroups(res.data || []);
       } catch (err) {
-        console.error(err);
+        // Error occurred
       }
     };
     fetchGroups();

@@ -47,7 +47,6 @@ const SchoolSelector: React.FC<SchoolSelectorProps> = ({ onSelect }) => {
         setError("Failed to load school list.");
       }
     } catch (err) {
-      console.error("Error fetching school data:", err);
       setError("Failed to load school list.");
     } finally {
       setLoading(false);

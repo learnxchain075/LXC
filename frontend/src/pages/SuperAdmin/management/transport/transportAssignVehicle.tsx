@@ -80,7 +80,6 @@ const TransportAssignVehicle = () => {
         setTableData([]);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
       setTableData([]);
     }
   };

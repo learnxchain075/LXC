@@ -5,7 +5,7 @@ import { all_routes } from "../../../router/all_routes";
 import { setDataLayout } from "../../../Store/themeSettingSlice";
 import { useAppSelector } from "../../../Store/hooks";
 import { getBaseUrl } from "../../../utils/general";
-
+import { getStudentId } from "../../../utils/general";
 
 interface SubItem {
   name: string;
@@ -13,6 +13,7 @@ interface SubItem {
   icon?: string;
   hasSubItems?: boolean;
   subItems?: SubItem[];
+  modalType?: string;
 }
 
 interface Module {
@@ -29,6 +30,7 @@ const ParentsMenuItems: React.FC = () => {
   const userPermissions = useAppSelector((state: any) => state.auth.userPermissions);
   const [subOpen, setSubopen] = useState<string>("");
   const [subsidebar, setSubsidebar] = useState<string>("");
+  const [activeModal, setActiveModal] = useState<string | null>(null);
 
   const toggleSidebar = (title: string) => {
     localStorage.setItem("menuOpened", title);
@@ -48,6 +50,22 @@ const ParentsMenuItems: React.FC = () => {
     if (themeSetting && layout) handleLayoutChange(layout);
   };
 
+  const handleModalClick = (modalType: string) => {
+    const studentId = getStudentId();
+    if (!studentId) {
+      const event = new CustomEvent('showToast', {
+        detail: { type: 'error', message: 'Please select a student first' }
+      });
+      window.dispatchEvent(event);
+      return;
+    }
+    
+    const event = new CustomEvent('openParentModal', {
+      detail: { modalType, studentId }
+    });
+    window.dispatchEvent(event);
+  };
+
   const getLayoutClass = (label: string): string => {
     switch (label) {
       case "Default": return "default_layout";
@@ -64,44 +82,59 @@ const ParentsMenuItems: React.FC = () => {
       key: "ChildAcademics",
       displayName: "Child Academics",
       subItems: [
-        { name: "Get Child's Class", route: all_routes.studentTimeTable, icon: "ti ti-school" },
-        { name: "View Attendance", route: all_routes.studentAttendance, icon: "ti ti-calendar-check" },
-        { name: "View Result", route: all_routes.studentResult, icon: "ti ti-award" },
-        { name: "View Assignment & Homework", route: all_routes.assignment, icon: "ti ti-file-text" },
+        { name: "Student Details", modalType: "studentDetails", icon: "ti ti-user" },
+        { name: "Student Timetable", modalType: "timetable", icon: "ti ti-calendar-time" },
+        { name: "Student Attendance", modalType: "attendance", icon: "ti ti-calendar-check" },
+        { name: "Student Results", modalType: "examResults", icon: "ti ti-award" },
+        { name: "Student ID Card", route: all_routes.studentIdCard, icon: "ti ti-id" },
       ],
     },
     {
       key: "ChildFees",
       displayName: "Child Fees",
       subItems: [
-        { name: "Get Fees", route: all_routes.studentFees, icon: "ti ti-cash" },
-        { name: "Pay Fees", route: all_routes.payfee, icon: "ti ti-credit-card" },
+        { name: "Student Fees", modalType: "fees", icon: "ti ti-cash" },
+        //{ name: "Pay Fees", route: all_routes.payfee, icon: "ti ti-credit-card" },
+        { name: "Fees Overview", route: all_routes.FeesOverviewstudent, icon: "ti ti-receipt" },
       ],
     },
     {
-      key: "ChildLibrary",
-      displayName: "Child Library",
+      key: "ChildAssignments",
+      displayName: "Assignments & Homework",
       subItems: [
-        { name: "View Borrowed Books", route: all_routes.libraryIssueBook, icon: "ti ti-book" },
+        { name: "Assignments & Homework", modalType: "assignments", icon: "ti ti-book" },
       ],
     },
     {
-      key: "ChildServices",
-      displayName: "hostel & Transport",
+      key: "ChildCommunication",
+      displayName: "Communication",
       subItems: [
-        {
-          // name: "Hostel & Transport Info",
-          // hasSubItems: true,
-          // icon: "ti ti-building-community",
-          // subItems: userPermissions?.HostelModule?.access || userPermissions?.TransportModule?.access ? [
-          //   ...(userPermissions?.HostelModule?.access ? [{ name: "Hostel Info", route: all_routes.hostelDashboard, icon: "ti ti-home" }] : []),
-          //   ...(userPermissions?.TransportModule?.access ? [{ name: "Transport Info", route: all_routes.transportDashboard, icon: "ti ti-bus" }] : []),
-          // ] : [],
-          name: "child hostel", route: all_routes.hostelList, icon: "ti ti-book" },
-         { name: "child transport", route: all_routes.transportVehicle, icon: "ti ti-book"} ,
-        
+        { name: "Notices & Events", modalType: "notices", icon: "ti ti-bell" },
+        { name: "Notice Board", route: all_routes.noticeBoard, icon: "ti ti-bell" },
+        { name: "Events", route: all_routes.events, icon: "ti ti-calendar-event" },
+        { name: "Contact Messages", route: all_routes.contactMessages, icon: "ti ti-message-circle" },
       ],
     },
+    // {
+    //   key: "ChildServices",
+    //   displayName: "Hostel & Transport",
+    //   subItems: [
+    //     { name: "Hostel Information", route: all_routes.hostelList, icon: "ti ti-home" },
+    //     { name: "Transport Information", route: all_routes.transportVehicle, icon: "ti ti-bus" },
+    //     { name: "Transport Routes", route: all_routes.transportRoutes, icon: "ti ti-route" },
+    //     { name: "Pickup Points", route: all_routes.transportPickupPoints, icon: "ti ti-map-pin" },
+    //   ],
+    // },
+    // {
+    //   key: "ChildReports",
+    //   displayName: "Reports & Analytics",
+    //   subItems: [
+    //     { name: "Attendance Report", route: all_routes.attendanceReport, icon: "ti ti-chart-line" },
+    //     { name: "Student Report", route: all_routes.studentReport, icon: "ti ti-report" },
+    //     { name: "Fees Report", route: all_routes.feesReport, icon: "ti ti-chart-pie" },
+    //     { name: "Grade Report", route: all_routes.gradeReport, icon: "ti ti-chart-bar" },
+    //   ],
+    // },
   ];
 
   useEffect(() => {
@@ -145,7 +178,7 @@ const ParentsMenuItems: React.FC = () => {
                 all_routes.requestFeatures === location.pathname ? "active" : ""
               }`}
             >
-              <i className="ti ti-layout-dashboard"></i>
+              <i className="ti ti-lightbulb"></i>
               <span>Feature Request</span>
             </Link>
           </li> */}
@@ -202,7 +235,13 @@ const ParentsMenuItems: React.FC = () => {
                     ) : (
                       <Link
                         to={item.route || "#"}
-                        onClick={() => handleClick(item.name, undefined, getLayoutClass(item.name))}
+                        onClick={() => {
+                          if (item.modalType) {
+                            handleModalClick(item.modalType);
+                          } else {
+                            handleClick(item.name, undefined, getLayoutClass(item.name));
+                          }
+                        }}
                         className={`${subOpen === item.name ? "subdrop" : ""} ${
                           item.route === location.pathname ? "active" : ""
                         }`}

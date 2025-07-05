@@ -56,7 +56,6 @@ const MembershipPlan = () => {
       const response = await getAllPlans();
       setPlans(response.data);
     } catch (error) {
-      console.error("Error fetching plans:", error);
       toast.error("Error fetching plans");
     } finally {
       setIsLoading(false);

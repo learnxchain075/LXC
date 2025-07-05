@@ -15,11 +15,14 @@ import {
   TimetableModal,
   AssignmentsModal,
   NoticesModal,
-  ExamResultsModal
-} from './ParentQuickActionsModals';
+  ExamResultsModal,
+} from "./ParentQuickActionsModals";
 import { Button, Modal } from "react-bootstrap";
 import { Table as AntdTable, Button as AntdButton, Modal as AntdModal, Tooltip, Badge } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
+import { setStudentId, getStudentId } from "../../utils/general";
+import { toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 const ParentDashboard = () => {
   const routes = all_routes;
@@ -29,10 +32,18 @@ const ParentDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const isMobile = useMobileDetection();
   // Modal state
-  const [modal, setModal] = useState<null | string>(null);
   const [noticeAttachment, setNoticeAttachment] = useState<{ show: boolean, url: string | null }>({ show: false, url: null });
   const [guardianStudents, setGuardianStudents] = useState<any>(null);
   const [detailsModal, setDetailsModal] = useState<{ type: 'student' | 'parent' | 'communication' | null, data: any }>({ type: null, data: null });
+  
+  // Parent Quick Actions Modal states
+  const [studentDetailsModal, setStudentDetailsModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
+  const [attendanceModal, setAttendanceModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
+  const [feesModal, setFeesModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
+  const [timetableModal, setTimetableModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
+  const [assignmentsModal, setAssignmentsModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
+  const [noticesModal, setNoticesModal] = useState<{ show: boolean, student: any }>({ show: false, student: null });
+  const [examResultsModal, setExamResultsModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
 
   // Chart configuration for attendance and performance
   const [statistic_chart] = useState<any>({
@@ -121,19 +132,97 @@ const ParentDashboard = () => {
         });
         const mergedStudents = dashboardRes.data.students.map((student: any) => ({
           ...student,
-          guardianInfo: guardianMap[student.studentId] || {},
+          ...guardianMap[student.studentId]
         }));
-        setDashboardData({ ...dashboardRes.data, students: mergedStudents });
+        setDashboardData(dashboardRes.data);
+        
+        // Set the first student as active
         if (mergedStudents.length > 0) {
-          setActiveStudent(mergedStudents[0].studentId);
+          const firstStudent = mergedStudents[0];
+          setActiveStudent(firstStudent.studentId);
+          // Set the student ID in localStorage for other components to use
+          setStudentId(firstStudent.studentId);
+        } else {
+          setActiveStudent("");
+          setStudentId("");
         }
-      } catch (err) {
-        setError("Failed to load dashboard data");
+      } catch (error) {
+        toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
+  }, []);
+
+  // Update localStorage when activeStudent changes
+  useEffect(() => {
+    if (activeStudent) {
+      setStudentId(activeStudent);
+      // Clear any cached data when student changes
+      localStorage.removeItem('cachedFeesData');
+      localStorage.removeItem('cachedAttendanceData');
+      localStorage.removeItem('cachedTimetableData');
+    } else {
+      setStudentId("");
+    }
+  }, [activeStudent]);
+
+  // Event listeners for modal opening from sidebar
+  useEffect(() => {
+    const handleOpenParentModal = (event: CustomEvent) => {
+      const { modalType, studentId } = event.detail;
+      
+      switch (modalType) {
+        case 'studentDetails':
+          setStudentDetailsModal({ show: true, studentId });
+          break;
+        case 'attendance':
+          setAttendanceModal({ show: true, studentId });
+          break;
+        case 'fees':
+          setFeesModal({ show: true, studentId });
+          break;
+        case 'timetable':
+          setTimetableModal({ show: true, studentId });
+          break;
+        case 'assignments':
+          setAssignmentsModal({ show: true, studentId });
+          break;
+        case 'notices':
+          const activeStudent = getActiveStudent();
+          setNoticesModal({ show: true, student: activeStudent });
+          break;
+        case 'examResults':
+          setExamResultsModal({ show: true, studentId });
+          break;
+        default:
+          // Unknown modal type
+          break;
+      }
+    };
+
+    const handleShowToast = (event: CustomEvent) => {
+      const { type, message } = event.detail;
+      if (type === 'error') {
+        toast.error(message);
+      } else if (type === 'success') {
+        toast.success(message);
+      } else if (type === 'warning') {
+        toast.warning(message);
+      } else {
+        toast.info(message);
+      }
+    };
+
+    window.addEventListener('openParentModal', handleOpenParentModal as EventListener);
+    window.addEventListener('showToast', handleShowToast as EventListener);
+
+    return () => {
+      window.removeEventListener('openParentModal', handleOpenParentModal as EventListener);
+      window.removeEventListener('showToast', handleShowToast as EventListener);
+    };
   }, []);
  
   const getActiveStudent = (): Student | null => {
@@ -170,27 +259,29 @@ const ParentDashboard = () => {
     if (!student.academicPerformance || !student.academicPerformance.averages.length) {
       return <span className="text-muted">No academic data available</span>;
     }
+    
+    const academicColumns = [
+      { title: 'Subject', dataIndex: 'subject', key: 'subject', ellipsis: true },
+      { title: 'Average', dataIndex: 'average', key: 'average' },
+      { title: 'Grade', dataIndex: 'grade', key: 'grade' },
+    ];
+
+    const academicData = student.academicPerformance.averages.map((avg, idx) => ({
+      key: idx,
+      subject: avg.subject || '-',
+      average: ('average' in avg ? avg.average : avg.score) ?? '-',
+      grade: avg.grade || '-',
+    }));
+
     return (
-      <div className="table-responsive">
-        <table className="table table-sm table-bordered mb-0">
-          <thead>
-            <tr>
-              <th>Subject</th>
-              <th>Average</th>
-              <th>Grade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {student.academicPerformance.averages.map((avg, idx) => (
-              <tr key={idx}>
-                <td>{avg.subject || '-'}</td>
-                <td>{('average' in avg ? avg.average : avg.score) ?? '-'}</td>
-                <td>{avg.grade || '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AntdTable
+        columns={academicColumns}
+        dataSource={academicData}
+        pagination={false}
+        size="small"
+        scroll={{ x: true }}
+        locale={{ emptyText: 'No academic data available' }}
+      />
     );
   };
 
@@ -313,11 +404,23 @@ const ParentDashboard = () => {
       {/* Page Wrapper */}
       <div className={isMobile ? "page-wrapper" : "p-3"}>
         <div className="content">
+          <div className="d-flex align-items-center justify-content-between bg-white rounded shadow-sm p-3 mb-4" style={{borderLeft: '6px solid #667eea'}}>
+            <div className="d-flex align-items-center">
+              <img src="/assets/img/logo.svg" alt="LearnXChain" style={{width: 48, height: 48, marginRight: 16}} />
+              <div>
+                <h4 className="mb-1 fw-bold" style={{color: '#667eea'}}>Welcome, {dashboardData?.parentName?.split(' ')[0] || 'Parent'}!</h4>
+                <div className="text-muted small">Empowering your child's learning journey with <b>LearnXChain</b></div>
+              </div>
+            </div>
+            <div className="d-none d-md-block text-end">
+              <span className="badge bg-primary fs-6">Today: {new Date().toLocaleDateString('en-US', {weekday: 'long', month: 'short', day: 'numeric'})}</span>
+            </div>
+          </div>
           <div className="row">
             <StudentBreadcrumb />
           </div>
           <div className="row mb-4">
-            <div className="col-md-7 mb-3 mb-md-0">
+            <div className="col-lg-8 col-md-7 mb-3 mb-md-0">
               <div className="card h-100">
                 <div className="card-header">
                   <h5 className="mb-0"><i className="ti ti-bell me-2"></i>School Communications</h5>
@@ -328,21 +431,21 @@ const ParentDashboard = () => {
                   {(activeStudentData?.events?.notices?.length || 0) > 0 ? (
                     <AntdTable
                       columns={[
-                        { title: 'Title', dataIndex: 'title', key: 'title', width: 180, ellipsis: true },
-                        { title: 'Date', dataIndex: 'publishDate', key: 'publishDate', width: 120, render: (date, record) => new Date(date || record.date).toLocaleDateString() },
+                        { title: 'Title', dataIndex: 'title', key: 'title', ellipsis: true, responsive: ['md'] },
+                        { title: 'Date', dataIndex: 'publishDate', key: 'publishDate', width: 120, render: (date, record) => new Date(date || record.date).toLocaleDateString(), responsive: ['md'] },
                         { title: 'Action', key: 'action', width: 120, render: (_, record) => (
-                          <>
+                          <div className="d-flex gap-1 flex-wrap">
                             {record.attachment && (
                               <AntdButton size="small" type="primary" onClick={() => setNoticeAttachment({ show: true, url: record.attachment })}>View</AntdButton>
                             )}
-                            <AntdButton size="small" className="ms-2" onClick={() => setDetailsModal({ type: 'communication', data: record })}>Details</AntdButton>
-                          </>
+                            <AntdButton size="small" onClick={() => setDetailsModal({ type: 'communication', data: record })}>Details</AntdButton>
+                          </div>
                         ) },
                       ]}
                       dataSource={activeStudentData?.events?.notices || []}
                       rowKey="id"
-                      pagination={{ pageSize: 10 }}
-                      scroll={{ x: true, y: 320 }}
+                      pagination={{ pageSize: 5, size: 'small' }}
+                      scroll={{ x: true, y: 250 }}
                       locale={{ emptyText: 'No notices for this student.' }}
                       size="small"
                       className="mb-4"
@@ -355,16 +458,16 @@ const ParentDashboard = () => {
                   {(activeStudentData?.events?.events?.length || 0) > 0 ? (
                     <AntdTable
                       columns={[
-                        { title: 'Title', dataIndex: 'title', key: 'title', width: 180, ellipsis: true },
-                        { title: 'Date', dataIndex: 'publishDate', key: 'publishDate', width: 120, render: (date, record) => new Date(date || record.date).toLocaleDateString() },
+                        { title: 'Title', dataIndex: 'title', key: 'title', ellipsis: true, responsive: ['md'] },
+                        { title: 'Date', dataIndex: 'publishDate', key: 'publishDate', width: 120, render: (date, record) => new Date(date || record.date).toLocaleDateString(), responsive: ['md'] },
                         { title: 'Action', key: 'action', width: 120, render: (_, record) => (
-                          <AntdButton size="small" className="ms-2" onClick={() => setDetailsModal({ type: 'communication', data: record })}>Details</AntdButton>
+                          <AntdButton size="small" onClick={() => setDetailsModal({ type: 'communication', data: record })}>Details</AntdButton>
                         ) },
                       ]}
                       dataSource={activeStudentData?.events?.events || []}
                       rowKey="id"
-                      pagination={{ pageSize: 10 }}
-                      scroll={{ x: true, y: 320 }}
+                      pagination={{ pageSize: 5, size: 'small' }}
+                      scroll={{ x: true, y: 250 }}
                       locale={{ emptyText: 'No events for this student.' }}
                       size="small"
                     />
@@ -374,45 +477,72 @@ const ParentDashboard = () => {
                           </div>
                         </div>
                             </div>
-            <div className="col-md-5">
+            <div className="col-lg-4 col-md-5">
               <div className="card h-100">
                 <div className="card-body">
                   <h5 className="mb-3">Parent Information</h5>
                   <div className="mb-2"><b>Name:</b> {dashboardData.parentName}</div>
                   <div className="mb-2"><b>Email:</b> {guardianStudents.guardianEmail}</div>
                   <div className="mb-2"><b>Children Enrolled:</b> {dashboardData.students.length}</div>
+                  {/* Children Selection Dropdown */}
+                  <div className="mt-3">
+                    <label htmlFor="childrenSelect" className="form-label fw-semibold">
+                      <i className="ti ti-users me-1"></i>Select Child
+                    </label>
+                    <select
+                      id="childrenSelect"
+                      className="form-select"
+                      value={activeStudent}
+                      onChange={(e) => {
+                        const selectedStudentId = e.target.value;
+                        
+                        if (selectedStudentId) {
+                          setActiveStudent(selectedStudentId);
+                          // Set the student ID in localStorage for other components to use
+                          setStudentId(selectedStudentId);
+                          
+                          // Clear any cached data to prevent mismatches
+                          localStorage.removeItem('cachedFeesData');
+                          localStorage.removeItem('cachedAttendanceData');
+                          localStorage.removeItem('cachedTimetableData');
+                          localStorage.removeItem('cachedResultsData');
+                          
+                          // Show success message
+                          toast.success(`Switched to ${dashboardData.students.find(s => s.studentId === selectedStudentId)?.studentInfo.name || 'student'}`);
+                        } else {
+                          setActiveStudent("");
+                          setStudentId("");
+                        }
+                      }}
+                    >
+                      <option value="">-- Select a child --</option>
+                      {dashboardData.students.map((student) => (
+                        <option key={student.studentId} value={student.studentId}>
+                          {student.studentInfo.name} - {student.studentInfo.class}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-          {/* Children selector as cards/buttons */}
-          {dashboardData.students.length > 1 && (
+          {/* Children Selection Message */}
+          {!activeStudent && dashboardData.students.length > 0 && (
             <div className="mb-4">
-              <div className="d-flex flex-wrap gap-2 align-items-center">
-                <span className="me-2 fw-semibold">Select Children:</span>
-                {dashboardData.students.map((student) => (
-                  <button
-                    key={student.studentId}
-                    className={`btn ${activeStudent === student.studentId ? 'btn-primary' : 'btn-outline-primary'} d-flex align-items-center px-3 py-2 rounded-pill`}
-                    onClick={() => setActiveStudent(student.studentId)}
-                  >
-                    <img
-                      src={student.studentInfo.profilePic}
-                      alt={student.studentInfo.name}
-                      className="rounded-circle me-2"
-                      width="28"
-                      height="28"
-                    />
-                    {student.studentInfo.name}
-                  </button>
-                ))}
+              <div className="alert alert-info text-center">
+                <i className="ti ti-info-circle me-2"></i>
+                Please select a child from the dropdown above to view their details
                             </div>
                           </div>
           )}
 
-          {/* 6 Quick Action Cards in a grid */}
-          <div className="row g-3 mb-4">
+          {/* 7 Quick Action Cards in horizontal sliding format - Only show when child is selected */}
+          {activeStudent && (
+            <div className="mb-4">
+              <h5 className="mb-3"><i className="ti ti-apps me-2"></i>Quick Actions</h5>
+              <div className="d-flex gap-2 gap-md-3 overflow-auto pb-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#dee2e6 #f8f9fa' }}>
             {[
               { key: 'studentDetails', icon: 'ti ti-user', label: 'Student Details', color: 'primary' },
               { key: 'attendance', icon: 'ti ti-calendar-due', label: 'Attendance & Leave', color: 'warning' },
@@ -422,23 +552,38 @@ const ParentDashboard = () => {
               { key: 'notices', icon: 'ti ti-bell', label: 'Notices & Events', color: 'primary' },
               { key: 'examResults', icon: 'ti ti-award', label: 'Exam & Result', color: 'danger' },
             ].map(action => (
-              <div className="col-6 col-md-3 col-lg-2" key={action.key}>
+                  <div key={action.key} className="flex-shrink-0" style={{ minWidth: isMobile ? '160px' : '200px', maxWidth: isMobile ? '160px' : '200px' }}>
                 <button
-                  className={`btn btn-outline-${action.color} d-flex flex-column align-items-center p-3 rounded-4 shadow-sm border-0 w-100 h-100`}
-                  style={{ minHeight: 120 }}
-                  onClick={() => setModal(action.key)}
+                      className={`btn btn-outline-${action.color} d-flex flex-column align-items-center p-2 p-md-3 rounded-4 shadow-sm border-0 w-100 h-100`}
+                      style={{ minHeight: isMobile ? 120 : 140 }}
+                  onClick={() => {
+                    const studentId = getStudentId();
+                    if (!studentId) {
+                      toast.error('Please select a student first');
+                      return;
+                    }
+                    
+                    // Dispatch modal open event
+                    const event = new CustomEvent('openParentModal', {
+                      detail: { modalType: action.key, studentId }
+                    });
+                    window.dispatchEvent(event);
+                  }}
                 >
-                  <span className={`d-flex align-items-center justify-content-center rounded-circle bg-${action.color} mb-2`} style={{ width: 48, height: 48 }}>
-                    <i className={`${action.icon} text-white fs-2`}></i>
+                      <span className={`d-flex align-items-center justify-content-center rounded-circle bg-${action.color} mb-2 mb-md-3`} style={{ width: isMobile ? 48 : 56, height: isMobile ? 48 : 56 }}>
+                        <i className={`${action.icon} text-white ${isMobile ? 'fs-4' : 'fs-3'}`}></i>
                   </span>
-                  <span className="fw-semibold text-center">{action.label}</span>
+                      <span className="fw-semibold text-center small">{action.label}</span>
                 </button>
               </div>
             ))}
                         </div>
+            </div>
+          )}
 
           <div className="row">
             <div className="col-12">
+              {activeStudent ? (
               <div className="row">
                 {/* Enhanced: Student Overview Card */}
                 {activeStudentData && (
@@ -446,25 +591,28 @@ const ParentDashboard = () => {
                     <div className="card shadow border-0">
                       <div className="card-body">
                         <div className="row align-items-center">
-                          <div className="col-md-2 text-center mb-3 mb-md-0">
+                            <div className="col-lg-2 col-md-3 col-4 text-center mb-3 mb-md-0">
                             <img
                               src={activeStudentData?.studentInfo.profilePic}
                               alt={activeStudentData?.studentInfo.name}
                               className="rounded-circle border border-2"
-                              width="80"
-                              height="80"
+                                width={isMobile ? "60" : "80"}
+                                height={isMobile ? "60" : "80"}
                             />
                           </div>
-                          <div className="col-md-10">
-                            <h5 className="mb-1">{activeStudentData?.studentInfo.name} <span className="badge bg-info ms-2">{activeStudentData?.studentInfo.class}</span></h5>
-                            <div className="d-flex flex-wrap gap-3 mb-2">
-                              <span><strong>Roll No:</strong> {activeStudentData?.studentInfo.rollNo}</span>
-                              <span><strong>School:</strong> {activeStudentData?.studentInfo.schoolName}</span>
-                              <span><strong>Admission:</strong> {formatDate(activeStudentData?.studentInfo.admissionDate)}</span>
+                            <div className="col-lg-10 col-md-9 col-8">
+                              <h5 className="mb-1">
+                                {activeStudentData?.studentInfo.name} 
+                                <span className="badge bg-info ms-2">{activeStudentData?.studentInfo.class}</span>
+                              </h5>
+                              <div className="d-flex flex-column flex-md-row flex-wrap gap-2 gap-md-3 mb-2">
+                                <span className="small"><strong>Roll No:</strong> {activeStudentData?.studentInfo.rollNo}</span>
+                                <span className="small"><strong>School:</strong> {activeStudentData?.studentInfo.schoolName}</span>
+                                <span className="small"><strong>Admission:</strong> {formatDate(activeStudentData?.studentInfo.admissionDate)}</span>
                         </div>
-                            <div className="d-flex flex-wrap gap-3">
-                              <span><strong>Email:</strong> {activeStudentData?.studentInfo.email}</span>
-                              <span><strong>Phone:</strong> {activeStudentData?.studentInfo.phone}</span>
+                              <div className="d-flex flex-column flex-md-row flex-wrap gap-2 gap-md-3">
+                                <span className="small"><strong>Email:</strong> {activeStudentData?.studentInfo.email}</span>
+                                <span className="small"><strong>Phone:</strong> {activeStudentData?.studentInfo.phone}</span>
                             </div>
                           </div>
                         </div>
@@ -482,7 +630,19 @@ const ParentDashboard = () => {
                         <button
                           className="btn btn-sm btn-outline-primary rounded-circle ms-2"
                           title="View Academic Details"
-                          onClick={() => setModal('studentDetails')}
+                          onClick={() => {
+                            const studentId = getStudentId();
+                            if (!studentId) {
+                              toast.error('Please select a student first');
+                              return;
+                            }
+                            
+                            // Dispatch modal open event
+                            const event = new CustomEvent('openParentModal', {
+                              detail: { modalType: 'studentDetails', studentId }
+                            });
+                            window.dispatchEvent(event);
+                          }}
                         >
                           <i className="ti ti-user"></i>
                         </button>
@@ -496,8 +656,8 @@ const ParentDashboard = () => {
                 )}
 
                 {/* Quick Stats */}
-                <div className="col-md-4">
-                  <div className="card">
+                  <div className="col-lg-4 col-md-6 col-12 mb-3">
+                    <div className="card h-100">
                     <div className="card-body text-center">
                       <div className="avatar avatar-lg bg-primary rounded-circle mx-auto mb-3">
                         <i className="ti ti-calendar-check text-white fs-2"></i>
@@ -511,8 +671,8 @@ const ParentDashboard = () => {
                   </div>
                 </div>
 
-                <div className="col-md-4">
-                  <div className="card">
+                  <div className="col-lg-4 col-md-6 col-12 mb-3">
+                    <div className="card h-100">
                     <div className="card-body text-center">
                       <div className="avatar avatar-lg bg-success rounded-circle mx-auto mb-3">
                         <i className="ti ti-report-money text-white fs-2"></i>
@@ -526,8 +686,8 @@ const ParentDashboard = () => {
                   </div>
                 </div>
 
-                <div className="col-md-4">
-                  <div className="card">
+                  <div className="col-lg-4 col-md-6 col-12 mb-3">
+                    <div className="card h-100">
                     <div className="card-body text-center">
                       <div className="avatar avatar-lg bg-warning rounded-circle mx-auto mb-3">
                         <i className="ti ti-alert-circle text-white fs-2"></i>
@@ -543,7 +703,7 @@ const ParentDashboard = () => {
 
                 {/* Pending Fees */}
                 {activeStudentData && activeStudentData.fees.pendingFees.length > 0 && (
-                  <div className="col-12">
+                    <div className="col-12 mb-4">
                     <div className="card border-warning">
                       <div className="card-header bg-warning text-white">
                         <h5 className="mb-0">
@@ -552,34 +712,30 @@ const ParentDashboard = () => {
                         </h5>
                       </div>
                       <div className="card-body">
-                        <div className="table-responsive">
-                          <table className="table table-hover">
-                            <thead>
-                              <tr>
-                                <th>Fee Category</th>
-                                <th>Amount</th>
-                                <th>Due Date</th>
-                                <th>Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {activeStudentData.fees.pendingFees.map((fee, index) => (
-                                <tr key={index}>
-                                  <td>{fee.feeCategory || fee.feeCategory}</td>
-                                  <td>{formatCurrency(fee.amount || 0)}</td>
-                                  <td>{fee.dueDate ? formatDate(fee.dueDate) : 'Not specified'}</td>
-                                  <td>
-                                    {fee.dueDate && (
+                          <AntdTable
+                            columns={[
+                              { title: 'Fee Category', dataIndex: 'feeCategory', key: 'feeCategory', ellipsis: true, responsive: ['md'] },
+                              { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (amount) => formatCurrency(amount || 0) },
+                              { title: 'Due Date', dataIndex: 'dueDate', key: 'dueDate', render: (dueDate) => dueDate ? formatDate(dueDate) : 'Not specified', responsive: ['md'] },
+                              { title: 'Action', key: 'action', render: (_, record) => (
+                                record.dueDate ? (
                                       <Link to={routes.studentFees} className="btn btn-sm btn-primary">
                                         Pay Now
                                       </Link>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                                ) : null
+                              ) },
+                            ]}
+                            dataSource={activeStudentData.fees.pendingFees.map((fee, index) => ({
+                              key: index,
+                              feeCategory: fee.feeCategory || fee.feeCategory,
+                              amount: fee.amount || 0,
+                              dueDate: fee.dueDate,
+                            }))}
+                            pagination={false}
+                            size="small"
+                            scroll={{ x: true }}
+                            locale={{ emptyText: 'No pending fees.' }}
+                          />
                       </div>
                     </div>
                   </div>
@@ -587,8 +743,8 @@ const ParentDashboard = () => {
 
                 {/* Recent Payments */}
                 {activeStudentData && activeStudentData.fees.paymentHistory.length > 0 && (
-                  <div className="col-md-6">
-                    <div className="card">
+                    <div className="col-lg-6 col-md-12 mb-3">
+                      <div className="card h-100">
                       <div className="card-header">
                         <h5 className="mb-0">
                           <i className="ti ti-receipt me-2"></i>
@@ -599,13 +755,13 @@ const ParentDashboard = () => {
                         <div className="list-group list-group-flush">
                           {activeStudentData.fees.paymentHistory.slice(0, 5).map((payment, index) => (
                             <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                              <div>
-                                <h6 className="mb-1">{payment.feeCategory}</h6>
+                                <div className="flex-grow-1">
+                                  <h6 className="mb-1 small">{payment.feeCategory}</h6>
                                 <small className="text-muted">
                                   {formatDate(payment.date)} • {payment.method}
                                 </small>
               </div>
-                              <span className="badge bg-success rounded-pill">
+                                <span className="badge bg-success rounded-pill ms-2">
                                 {formatCurrency(payment.amount || 0)}
                               </span>
                   </div>
@@ -618,8 +774,8 @@ const ParentDashboard = () => {
 
                 {/* Notices */}
                 {activeStudentData && activeStudentData.events.notices.length > 0 && (
-                  <div className="col-md-6">
-                    <div className="card">
+                    <div className="col-lg-6 col-md-12 mb-3">
+                      <div className="card h-100">
                       <div className="card-header">
                         <h5 className="mb-0">
                           <i className="ti ti-bell me-2"></i>
@@ -636,8 +792,8 @@ const ParentDashboard = () => {
                             if (!title && !message && !date) return null;
                             return (
                               <div key={index} className="list-group-item list-group-item-action pointer" onClick={() => setDetailsModal({ type: 'communication', data: notice })}>
-                                <h6 className="mb-1">{title}</h6>
-                                <p className="mb-1 text-muted">{message}</p>
+                                  <h6 className="mb-1 small">{title}</h6>
+                                  <p className="mb-1 text-muted small">{message}</p>
                                 <small className="text-muted">{formatDate(date)}</small>
                                 {hasAttachment && (
                                   <div className="mt-2">
@@ -661,8 +817,8 @@ const ParentDashboard = () => {
 
                 {/* Events */}
                 {activeStudentData && activeStudentData.events.events.length > 0 && (
-                  <div className="col-md-6">
-                    <div className="card">
+                    <div className="col-lg-6 col-md-12 mb-3">
+                      <div className="card h-100">
                   <div className="card-header">
                         <h5 className="mb-0">
                           <i className="ti ti-calendar-event me-2"></i>
@@ -677,8 +833,8 @@ const ParentDashboard = () => {
                             const date = ('publishDate' in event && typeof event.publishDate === 'string') ? event.publishDate : (('date' in event && typeof event.date === 'string') ? event.date : '');
                             return (
                               <div key={index} className="list-group-item list-group-item-action pointer" onClick={() => setDetailsModal({ type: 'communication', data: event })}>
-                                <h6 className="mb-1">{title}</h6>
-                                <p className="mb-1 text-muted">{message}</p>
+                                  <h6 className="mb-1 small">{title}</h6>
+                                  <p className="mb-1 text-muted small">{message}</p>
                                 <small className="text-muted">{formatDate(date)}</small>
                               </div>
                             );
@@ -691,7 +847,7 @@ const ParentDashboard = () => {
 
                 {/* Timetable */}
                 {activeStudentData && activeStudentData.timetable.length > 0 && (
-                  <div className="col-12">
+                    <div className="col-12 mb-4">
                 <div className="card">
                   <div className="card-header">
                         <h5 className="mb-0">
@@ -700,61 +856,107 @@ const ParentDashboard = () => {
                         </h5>
                   </div>
                   <div className="card-body">
-                        <div className="table-responsive">
-                          <table className="table table-hover">
-                            <thead>
-                              <tr>
-                                <th>Time</th>
-                                <th>Subject</th>
-                                <th>Teacher</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {activeStudentData.timetable.map((entry, index) => (
-                                <tr key={index}>
-                                  <td>
-                                    {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
-                                  </td>
-                                  <td>{entry.subject}</td>
-                                  <td>{entry.teacher}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                          <AntdTable
+                            columns={[
+                              { title: 'Time', dataIndex: 'time', key: 'time', width: 150 },
+                              { title: 'Subject', dataIndex: 'subject', key: 'subject', ellipsis: true, responsive: ['md'] },
+                              { title: 'Teacher', dataIndex: 'teacher', key: 'teacher', ellipsis: true, responsive: ['md'] },
+                            ]}
+                            dataSource={activeStudentData.timetable.map((entry, index) => ({
+                              key: index,
+                              time: `${formatTime(entry.startTime)} - ${formatTime(entry.endTime)}`,
+                              subject: entry.subject,
+                              teacher: entry.teacher,
+                            }))}
+                            pagination={false}
+                            size="small"
+                            scroll={{ x: true }}
+                            locale={{ emptyText: 'No schedule available for today.' }}
+                          />
                       </div>
                     </div>
                   </div>
                 )}
               </div>
+              ) : (
+                <div className="text-center py-5">
+                  <div className="alert alert-info">
+                    <i className="ti ti-info-circle me-2"></i>
+                    Please select a child from the dropdown above to view their details
             </div>
           </div>
+              )}
         </div>
       </div>
-    <StudentModals />
+        </div>
+      </div>
 
-      {/* Modals */}
-      {modal === 'studentDetails' && (
-        <StudentDetailsModal show onHide={() => setModal(null)} studentId={activeStudentData?.studentId || ''} />
-      )}
-      {modal === 'attendance' && (
-        <AttendanceLeaveModal show onHide={() => setModal(null)} studentId={activeStudentData?.studentId || ''} />
-      )}
-      {modal === 'fees' && (
-        <FeesModal show={modal === 'fees'} onHide={() => setModal(null)} studentId={activeStudentData?.studentId || ''} refetchDashboard={refetchDashboard} />
-      )}
-      {modal === 'timetable' && (
-        <TimetableModal show onHide={() => setModal(null)} studentId={activeStudentData?.studentId || ''} />
-      )}
-      {modal === 'assignments' && (
-        <AssignmentsModal show onHide={() => setModal(null)} studentId={activeStudentData?.studentId || ''} />
-      )}
-      {modal === 'notices' && (
-        <NoticesModal show={modal === 'notices'} onHide={() => setModal(null)} student={activeStudentData} />
-      )}
-      {modal === 'examResults' && (
-        <ExamResultsModal show onHide={() => setModal(null)} studentId={activeStudentData?.studentId || ''} />
-      )}
+      {/* Parent Quick Actions Modals */}
+      <StudentDetailsModal 
+        show={studentDetailsModal.show} 
+        onHide={() => setStudentDetailsModal({ show: false, studentId: '' })} 
+        studentId={studentDetailsModal.studentId} 
+      />
+      <AttendanceLeaveModal 
+        show={attendanceModal.show} 
+        onHide={() => setAttendanceModal({ show: false, studentId: '' })} 
+        studentId={attendanceModal.studentId} 
+      />
+      <FeesModal 
+        show={feesModal.show} 
+        onHide={() => setFeesModal({ show: false, studentId: '' })} 
+        studentId={feesModal.studentId} 
+        refetchDashboard={() => {
+          // Instead of refetching entire dashboard, just update the fees data
+          // This will be handled within the FeesModal component
+        }}
+        onFeesUpdated={(updatedFees) => {
+          // Update the dashboard data with the new fees information
+          setDashboardData(prevData => {
+            if (!prevData || !activeStudent) return prevData;
+            
+            return {
+              ...prevData,
+              students: prevData.students.map(student => {
+                if (student.studentId === activeStudent) {
+                  return {
+                    ...student,
+                    fees: {
+                      ...student.fees,
+                      pendingFees: updatedFees.filter((fee: any) => fee.status !== 'PAID'),
+                      paymentHistory: [
+                        ...student.fees.paymentHistory,
+                        ...updatedFees.flatMap((fee: any) => fee.Payment || [])
+                      ]
+                    }
+                  };
+                }
+                return student;
+              })
+            };
+          });
+        }}
+      />
+      <TimetableModal 
+        show={timetableModal.show} 
+        onHide={() => setTimetableModal({ show: false, studentId: '' })} 
+        studentId={timetableModal.studentId} 
+      />
+      <AssignmentsModal 
+        show={assignmentsModal.show} 
+        onHide={() => setAssignmentsModal({ show: false, studentId: '' })} 
+        studentId={assignmentsModal.studentId} 
+      />
+      <NoticesModal 
+        show={noticesModal.show} 
+        onHide={() => setNoticesModal({ show: false, student: null })} 
+        student={noticesModal.student} 
+      />
+      <ExamResultsModal 
+        show={examResultsModal.show} 
+        onHide={() => setExamResultsModal({ show: false, studentId: '' })} 
+        studentId={examResultsModal.studentId} 
+      />
 
       {/* Notice Attachment Modal */}
       <Modal show={noticeAttachment.show} onHide={() => setNoticeAttachment({ show: false, url: null })} size="lg" centered>

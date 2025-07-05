@@ -93,7 +93,6 @@ const CommonRouteWrapper = () => {
             break;
         }
       } catch (err: any) {
-        console.error("Failed to fetch user profile:", err);
         if (err.response?.status === 401) {
           localStorage.removeItem(AppConfig.LOCAL_STORAGE_ACCESS_TOKEN_KEY);
           dispatch(setIsLoggedIn(false));

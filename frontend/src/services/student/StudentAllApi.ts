@@ -160,7 +160,20 @@ export const getLessonsByStudentId = async (
 export const getFeesByStudentId = async (
   studentId: string
 ): Promise<AxiosResponse<IFeeResponse>> => {
-  return await BaseApi.getRequest(`/student/${studentId}/fees`);
+  // Validate studentId before making the request
+  if (!studentId || studentId === 'undefined' || studentId === 'null') {
+    throw new Error('Invalid student ID provided');
+  }
+  
+  try {
+    return await BaseApi.getRequest(`/student/${studentId}/fees`);
+  } catch (error: any) {
+    // Error fetching student fees
+    if (error.response?.status === 400) {
+      throw new Error('Invalid student ID format. Please check the student ID.');
+    }
+    throw error;
+  }
 };
 
 export const getResourcesByStudentId = async (
@@ -628,6 +641,11 @@ export interface IRoadmapLeaderboardEntry {
   completionRate: number;
   score: number;
   rank: number;
+}
+
+export interface ILeaderboardResponse {
+  success: boolean;
+  leaderboard: any[];
 }
 
 export const getMonthlyLeaderboard = async (): Promise<AxiosResponse<ILeaderboardResponse>> => {

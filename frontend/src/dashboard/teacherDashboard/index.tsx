@@ -509,10 +509,10 @@ const TeacherDashboard = () => {
         const teacherDetails = response.data;
         setTeacherdata(teacherDetails);
       } else {
-        console.error("Failed to fetch teacher details");
+        // Failed to fetch teacher details
       }
     } catch (error) {
-      console.error("Error fetching teacher details:", error);
+      // Error fetching teacher details
     } finally {
       setLoading(false); // End loading
     }

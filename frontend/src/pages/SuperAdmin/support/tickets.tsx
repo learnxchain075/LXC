@@ -89,9 +89,9 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
           (empRes.data.staff || []).map((e: any) => ({ value: e.id, label: e.name }))
         );
       }
-    } catch (error) {
-      console.error("Failed to load ticket metadata", error);
-    }
+          } catch (error) {
+        // Failed to load ticket metadata
+      }
   };
 
   const fetchTickets = async () => {

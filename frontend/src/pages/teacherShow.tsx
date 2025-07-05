@@ -43,7 +43,7 @@ const Teachershow = () => {
         setteacherList(response.data);
       }
       catch(error){
-        console.error("Error fetching data:", error);
+        // Error fetching data
       }
     }
     fetchData();

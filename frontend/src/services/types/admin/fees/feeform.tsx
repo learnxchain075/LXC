@@ -56,9 +56,9 @@ const FeesManagement = () => {
     try {
       const res = await getClassByschoolId(schoolId);
       setClasses(res.data?.data || []);
-    } catch (err) {
-      console.error("Failed to fetch classes", err);
-    }
+          } catch (err) {
+        // Failed to fetch classes
+      }
   };
 
   const fetchStudents = async (classId: string) => {
@@ -78,9 +78,9 @@ const FeesManagement = () => {
         studentsData = responseData;
       }
       setStudents(studentsData);
-    } catch (err) {
-      console.error("Failed to fetch students", err);
-    }
+          } catch (err) {
+        // Failed to fetch students
+      }
   };
  const handleStudentSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!selectedClassId) return;

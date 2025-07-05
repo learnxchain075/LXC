@@ -59,9 +59,9 @@ const TicketDetails = () => {
       setCategories(c.map((v: string) => ({ value: v, label: v })));
       setPriorities(p.map((v: string) => ({ value: v, label: v })));
       setStatuses(s.map((v: string) => ({ value: v, label: v })));
-    } catch (err) {
-      console.error('Failed to load ticket metadata', err);
-    }
+          } catch (err) {
+        // Failed to load ticket metadata
+      }
   };
 
   useEffect(() => {
@@ -77,11 +77,11 @@ const TicketDetails = () => {
         // ... handle success ...
       } else {
         toast.error(response.data.message || "Failed to create ticket");
-        console.error("Ticket creation error:", response);
+        // Ticket creation error
       }
     } catch (err: any) {
       toast.error((err?.response?.data?.message || err?.message || "Failed to create ticket") + " (see console for details)");
-      console.error("Ticket creation exception:", err);
+      // Ticket creation exception
     }
   };
 
