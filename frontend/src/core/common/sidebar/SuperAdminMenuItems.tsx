@@ -438,9 +438,8 @@ const SuperAdminMenuItems = () => {
               onClick={() =>
                 handleClick("Profile", undefined, getLayoutClass("Profile"))
               }
-              className={`${subOpen === "Profile" ? "subdrop" : ""} ${
-                all_routes.profile === location.pathname ? "active" : ""
-              }`}
+              className={`${subOpen === "Profile" ? "subdrop" : ""} ${all_routes.profile === location.pathname ? "active" : ""
+                }`}
             >
               <i className="ti ti-user"></i>
               <span>Advanced Profile</span>
@@ -448,6 +447,58 @@ const SuperAdminMenuItems = () => {
           </li>
         </ul>
       </li>
+
+      {/* company Accoutns  */}
+
+      <li>
+        <span className="menu-header">Company Accounts</span>
+        <ul>
+          <li className="submenu">
+            <Link
+              to={all_routes.companyAccounts}
+              onClick={() =>
+                handleClick("All Transactions", undefined, getLayoutClass("All Transactions"))
+              }
+              className={`${subOpen === "All Transactions" ? "subdrop" : ""} ${all_routes.companyAccounts === location.pathname ? "active" : ""
+                }`}
+            >
+              <i className="ti ti-list-details"></i>
+              <span>All Transactions</span>
+            </Link>
+          </li>
+
+          <li className="submenu">
+            <Link
+              to={all_routes.companyAccountsAdd}
+              onClick={() =>
+                handleClick("Add Transaction", undefined, getLayoutClass("Add Transaction"))
+              }
+              className={`${subOpen === "Add Transaction" ? "subdrop" : ""} ${all_routes.companyAccountsAdd === location.pathname ? "active" : ""
+                }`}
+            >
+              <i className="ti ti-circle-plus"></i>
+              <span>Add Transaction</span>
+            </Link>
+          </li>
+
+          <li className="submenu">
+            <Link
+              to={all_routes.companyAccountsSummary}
+              onClick={() =>
+                handleClick("Summary", undefined, getLayoutClass("Summary"))
+              }
+              className={`${subOpen === "Summary" ? "subdrop" : ""} ${all_routes.companyAccountsSummary === location.pathname ? "active" : ""
+                }`}
+            >
+              <i className="ti ti-chart-bar"></i>
+              <span>Summary</span>
+            </Link>
+          </li>
+        </ul>
+      </li>
+
+
+
     </ul>
   );
 };
