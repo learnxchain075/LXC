@@ -241,6 +241,9 @@ import Error from "../lxc-home/pages/Error";
 import HomePage from "../lxc-home/pages/Home";
 import PlansAccessPage from "../pages/SuperAdmin/plans-access";
 import DemoBookingList from "../pages/SuperAdmin/demorequest/DemoBooking";
+import AllTransactions from "../pages/SuperAdmin/CompanyAccounts/AllTransactions";
+import AddTransaction from "../pages/SuperAdmin/CompanyAccounts/AddTransaction";
+import Summary from "../pages/SuperAdmin/CompanyAccounts/Summary";
 import HomeDashboard from "../pages/Admin/peoples/students/homedashboard";
 import Leaderboard from "../pages/Admin/peoples/students/student-details/Leaderboard";
 import ClassesRegister from "../pages/Admin/ClassesRegister";
@@ -323,6 +326,24 @@ export const publicRoutes = [
   {
     path: routes.demoRequest,
     element: <DemoBookingList />,
+    route: Route,
+    role: ["superadmin"]
+  },
+  {
+    path: routes.companyAccounts,
+    element: <AllTransactions />,
+    route: Route,
+    role: ["superadmin"]
+  },
+  {
+    path: routes.companyAccountsAdd,
+    element: <AddTransaction />,
+    route: Route,
+    role: ["superadmin"]
+  },
+  {
+    path: routes.companyAccountsSummary,
+    element: <Summary />,
     route: Route,
     role: ["superadmin"]
   },

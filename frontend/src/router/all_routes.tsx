@@ -23,6 +23,9 @@ export const all_routes = {
   logs: "/super-admin/logs",
   // Plan Subscriptions
   schoolPlanSubscription: "/super-admin/school-subscribe",
+  companyAccounts: "/super-admin/company-accounts",
+  companyAccountsAdd: "/super-admin/company-accounts/add",
+  companyAccountsSummary: "/super-admin/company-accounts/summary",
 
 
 

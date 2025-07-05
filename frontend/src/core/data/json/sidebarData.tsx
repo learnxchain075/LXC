@@ -751,6 +751,40 @@ export const SidebarData: SidebarItem[] = [
     ],
   },
 
+  {
+    label: "Company Accounts",
+    submenuOpen: true,
+    showSubRoute: false,
+    submenuHdr: "Company Accounts",
+    roles: ["superadmin"],
+    submenuItems: [
+      {
+        label: "All Transactions",
+        link: routes.companyAccounts,
+        icon: "ti ti-list-details",
+        showSubRoute: false,
+        submenu: false,
+        roles: ["superadmin"],
+      },
+      {
+        label: "Add Transaction",
+        link: routes.companyAccountsAdd,
+        icon: "ti ti-circle-plus",
+        showSubRoute: false,
+        submenu: false,
+        roles: ["superadmin"],
+      },
+      {
+        label: "Summary",
+        link: routes.companyAccountsSummary,
+        icon: "ti ti-chart-bar",
+        showSubRoute: false,
+        submenu: false,
+        roles: ["superadmin"],
+      },
+    ],
+  },
+
   // content 
   {
     label: "CONTENT",
