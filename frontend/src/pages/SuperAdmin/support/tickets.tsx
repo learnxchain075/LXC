@@ -41,6 +41,7 @@ interface TicketForm {
   };
   comments?: number;
   assignedTo?: string;
+  assignedToId?: string;
 }
 
 const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
@@ -130,7 +131,10 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
     }
 
     try {
-      const res = await createTicket(TicketData);
+      const res = await createTicket({
+        ...TicketData,
+        assignedToId: TicketData.assignedTo,
+      } as any);
       if (res) {
         toast.success("Ticket successfully added");
         closeModal("add_ticket");
@@ -143,6 +147,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
           category: "",
           schoolId: schoolID,
           userId: localStorage.getItem("userId") || teacherdata?.userId || "",
+          assignedTo: "",
         });
         navigate(`${route.ticketDetail}/${res.data.id}`);
       }

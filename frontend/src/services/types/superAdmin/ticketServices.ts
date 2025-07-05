@@ -1,4 +1,4 @@
-interface TicketForm{
+export interface TicketForm{
     title: string;
     description: string;
     category: string;
@@ -7,5 +7,7 @@ interface TicketForm{
     schoolId?: string;
     id?: string;
     userId:string;
+    assignedToId?: string;
 }
+
 
