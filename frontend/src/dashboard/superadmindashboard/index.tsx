@@ -47,13 +47,15 @@ const SuperAdminDashboard = () => {
   const systemHealth = dashboardData?.systemHealth || {};
   const supportAndFeedback = dashboardData?.supportAndFeedback || {};
 
-  const totalPlans = 162; // Static if not in API
-  const activePlans = 161;
-  const inactivePlans = 1;
+  const totalPlans = dashboardData?.planStatistics?.totalPlans || 0;
+  const activePlans = dashboardData?.planStatistics?.activePlans || 0;
+  const inactivePlans = dashboardData?.planStatistics?.inactivePlans ||
+    (totalPlans - activePlans);
 
-  const totalEmployees = 82;
-  const activeEmployees = 81;
-  const inactiveEmployees = 1;
+  const totalEmployees = dashboardData?.employeeStatistics?.totalEmployees || 0;
+  const activeEmployees = dashboardData?.employeeStatistics?.activeEmployees || 0;
+  const inactiveEmployees = dashboardData?.employeeStatistics?.inactiveEmployees ||
+    (totalEmployees - activeEmployees);
 
   const [totalEarningArea] = useState<any>({
     chart: {

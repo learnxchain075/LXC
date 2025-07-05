@@ -18,6 +18,18 @@ export interface SchoolStatistics {
   monthlyNewSchools: MonthlyData[];
 }
 
+export interface PlanStatistics {
+  totalPlans: number;
+  activePlans: number;
+  inactivePlans: number;
+}
+
+export interface EmployeeStatistics {
+  totalEmployees: number;
+  activeEmployees: number;
+  inactiveEmployees: number;
+}
+
 export interface FinancialMetrics {
   totalRevenue: number;
   monthlyRevenue: MonthlyData[];
@@ -38,6 +50,8 @@ export interface SupportAndFeedback {
 export interface SuperAdminDashboardData {
   userStatistics: UserStatistics;
   schoolStatistics: SchoolStatistics;
+  planStatistics: PlanStatistics;
+  employeeStatistics: EmployeeStatistics;
   financialMetrics: FinancialMetrics;
   systemHealth: SystemHealth;
   supportAndFeedback: SupportAndFeedback;
