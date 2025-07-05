@@ -56,18 +56,18 @@ export const getTicketMetadata = async (
       "Inprogress",
     ];
 
-    const categories =
-      categoriesData.length > 0
-        ? categoriesData.map((c) => c.category)
-        : defaultCategories;
-    const statuses =
-      statusesData.length > 0
-        ? statusesData.map((s) => s.status)
-        : defaultStatuses;
-    const priorities =
-      prioritiesData.length > 0
-        ? prioritiesData.map((p) => p.priority)
-        : defaultPriorities;
+    const categoriesSet = new Set<string>(defaultCategories);
+    categoriesData.forEach((c) => c.category && categoriesSet.add(c.category));
+
+    const statusesSet = new Set<string>(defaultStatuses);
+    statusesData.forEach((s) => statusesSet.add(s.status));
+
+    const prioritiesSet = new Set<string>(defaultPriorities);
+    prioritiesData.forEach((p) => prioritiesSet.add(p.priority));
+
+    const categories = Array.from(categoriesSet);
+    const statuses = Array.from(statusesSet);
+    const priorities = Array.from(prioritiesSet);
 
     res.json({ categories, statuses, priorities });
   } catch (error) {
