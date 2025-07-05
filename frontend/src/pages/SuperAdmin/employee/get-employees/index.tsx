@@ -20,7 +20,25 @@ const GetEmployees = () => {
     setLoading(true);
     try {
       const res = await getAllEmployees();
-      setEmployees(res.data.staff || []);
+      const staff = res.data.staff || [];
+      // Backend returns employee details with nested `user` object.
+      // Flatten the data so the table can directly access name, email and phone.
+      const employeesData = staff.map((emp: any) => ({
+        id: emp.id,
+        name: emp.user?.name,
+        email: emp.user?.email,
+        phone: emp.user?.phone,
+        address: emp.user?.address,
+        city: emp.user?.city,
+        state: emp.user?.state,
+        country: emp.user?.country,
+        pincode: emp.user?.pincode,
+        bloodType: emp.user?.bloodType,
+        sex: emp.user?.sex,
+        employeeType: emp.employeeType,
+        company: emp.company,
+      }));
+      setEmployees(employeesData);
     } catch (err) {
       toast.error("Failed to load employees");
     } finally {
