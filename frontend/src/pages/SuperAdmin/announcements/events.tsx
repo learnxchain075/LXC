@@ -38,11 +38,9 @@ const Events = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
- 
   const userRole = useAppSelector(state => state.auth.userObj?.role);
-
-
-  const canAddEvent = userRole === 'admin' || userRole === 'teacher';
+  const currentRole = getCurrentUserRole();
+  const canAddEvent = canPerformCRUD();
 
   const [formData, setFormData] = useState<EventFormState>({
     id: localStorage.getItem("userId") ?? "",
@@ -59,50 +57,42 @@ const Events = () => {
     Class: [],
   });
 
-
   useEffect(() => {
     fetchEvents();
   }, []);
 
- 
-const fetchEvents = async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    const schoolId = localStorage.getItem("schoolId") ?? "";
-    if (!schoolId) {
-      setError("No school ID found in localStorage");
-      toast.error("No school ID found. Please log in again.");
-      setEvents([]);
-      return;
-    }
-    const response = await getEventsBySchoolId(schoolId);
-    // console.log('Fetch Events API response:', response);
-    if (Array.isArray(response.data)) {
-      const sortedEvents = response.data.sort((a: any, b: any) => dayjs(a.start).diff(dayjs(b.start)));
-      setEvents(sortedEvents);
+  const fetchEvents = async () => {
+    setLoading(true);
+    setError(null);
+    
+    const result = await apiCallWithRoleHandling(
+      async () => {
+        const schoolId = localStorage.getItem("schoolId") ?? "";
+        if (!schoolId) {
+          throw new Error("No school ID found. Please log in again.");
+        }
+        const response = await getEventsBySchoolId(schoolId);
+        
+        if (Array.isArray(response.data)) {
+          const sortedEvents = response.data.sort((a: any, b: any) => dayjs(a.start).diff(dayjs(b.start)));
+          return sortedEvents;
+        } else {
+          throw new Error("Invalid response format");
+        }
+      },
+      undefined,
+      getApiErrorMessage('events')
+    );
+
+    if (result) {
+      setEvents(result);
     } else {
-      setError("Failed to fetch events");
-      toast.error("Failed to fetch events");
       setEvents([]);
     }
-  } catch (err: any) {
-    setError(err?.message || "Failed to fetch events");
-    toast.error((err?.response?.data?.message || err?.message || "Failed to fetch events") + " (see console for details)");
-    setEvents([]);
-  } finally {
     setLoading(false);
-  }
-};
+  };
 
-
-const getEventColor = (category: string) => {
-  // let hash = 0;
-  // for (let i = 0; i < category.length; i++) {
-  //   hash = category.charCodeAt(i) + ((hash << 5) - hash);
-  // }
-  // return `hsl(${hash % 360}, 70%, 70%)`;
-  
+  const getEventColor = (category: string) => {
     switch (category?.toUpperCase()) {
       case "CELEBRATION":
         return "#ffc107"; 
@@ -117,31 +107,31 @@ const getEventColor = (category: string) => {
       default:
         return "#6c757d"; 
     }
-  
-  
-};
+  };
 
-
-const calendarEvents = events.map((event) => ({
-  id: event.id,
-  title: event.title,
-  start: event.start,
-  end: event.end,
-  allDay: true,
-  backgroundColor: getEventColor(event.category),
-  textColor: "#fff",
-  extendedProps: {
-    description: event.description,
-    category: event.category,
-    targetAudience: event.targetAudience,
-    roles: (event.roles || []).map((r) => r.name).join(", "),
-    classes: (event.Class || []).map((c) => c.name).join(", "),
-    sections: (event.sections || []).map((s) => s.name).join(", ")
-  }
-}));
+  const calendarEvents = events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    start: event.start,
+    end: event.end,
+    allDay: true,
+    backgroundColor: getEventColor(event.category),
+    textColor: "#fff",
+    extendedProps: {
+      description: event.description,
+      category: event.category,
+      targetAudience: event.targetAudience,
+      roles: (event.roles || []).map((r) => r.name).join(", "),
+      classes: (event.Class || []).map((c) => c.name).join(", "),
+      sections: (event.sections || []).map((s) => s.name).join(", ")
+    }
+  }));
 
   const handleDateClick = () => {
-    if (!canAddEvent) return;
+    if (!canAddEvent) {
+      toast.warning("You don't have permission to add events. Please contact an administrator.");
+      return;
+    }
     setIsEditMode(false);
     setFormData({
       id: localStorage.getItem("userId") ?? "",
@@ -161,18 +151,23 @@ const calendarEvents = events.map((event) => ({
   };
 
   const handleEventClick = async (info: any) => {
-    try {
-      const eventId = info.event.id;
-      const response = await getEventById(eventId);
-      if (response.data.success) {
-        const eventData = { ...response.data.data, attachment: response.data.data.attachment ?? null };
-        setSelectedEvent(eventData as IEventForm);
-        setShowEventDetailsModal(true);
-      } else {
-        toast.error(response.data.message || "Failed to fetch event details");
-      }
-    } catch (error) {
-      toast.error("Failed to fetch event details");
+    const result = await apiCallWithRoleHandling(
+      async () => {
+        const eventId = info.event.id;
+        const response = await getEventById(eventId);
+        if (response.data.success) {
+          return { ...response.data.data, attachment: response.data.data.attachment ?? null };
+        } else {
+          throw new Error(response.data.message || "Failed to fetch event details");
+        }
+      },
+      undefined,
+      "Failed to fetch event details"
+    );
+
+    if (result) {
+      setSelectedEvent(result as IEventForm);
+      setShowEventDetailsModal(true);
     }
   };
 

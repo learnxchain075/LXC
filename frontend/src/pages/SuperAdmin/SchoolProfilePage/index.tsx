@@ -291,7 +291,7 @@ const SchoolProfilePage = () => {
         const details = await fetchSchoolDetails(schoolId || '');
         setSchoolDetails(details);
       } catch (error) {
-        console.error('Error fetching school details:', error);
+        // Error fetching school details
       } finally {
         setLoading(false);
       }

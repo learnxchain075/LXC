@@ -107,7 +107,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
       }));
       setBusList(minimal);
     } catch (err) {
-      console.error("Error fetching buses", err);
+      // Error fetching buses
     }
   };
   const fetchpickup = async () => {
@@ -118,7 +118,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
       setPickupPoints(buses);
     
     } catch (err) {
-      console.error("Error fetching buses", err);
+      // Error fetching buses
     }
   };
   const fetchRoutes = async () => {
@@ -128,7 +128,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
       const routes = Array.isArray(res.data) ? res.data : [];
       setroutelist(routes);
     } catch (err) {
-      console.error("Error fetching routes", err);
+      // Error fetching routes
     }
   };
   const fetchStudents = async () => {
@@ -138,7 +138,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
       const res = await getSchoolStudents(schoolId);
       setStudents(res.data);
     } catch (err) {
-      console.error('Failed to fetch students', err);
+      // Failed to fetch students
     }
   };
   const fetchBusStop = async () => {
@@ -149,7 +149,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
       const res = await getBusStops();
       setbusStopList(res.data as any);
     } catch (err) {
-      console.error('Failed to fetch students', err);
+      // Failed to fetch students
     }
   };
   useEffect(() => {
@@ -193,7 +193,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
       toast.success('Bus added successfully!'); 
       setForm({ busNumber: '', capacity: '' }); 
     } catch (err) {
-      console.error('Failed to create bus:', err);
+      // Failed to create bus
     }
   };
   const handleSubmitDriver = async (e: React.FormEvent) => {
@@ -218,7 +218,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
       });
 
     } catch (err) {
-      console.error('Error creating driver:', err);
+      // Error creating driver
     }
   };
   const handleSubmitRoute = async (e: React.FormEvent) => {
@@ -244,7 +244,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
       });
 
     } catch (err) {
-      console.error('Error creating route:', err);
+      // Error creating route
     }
   };
   
@@ -276,7 +276,6 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
         schoolId: localStorage.getItem('schoolId') || '',
       });
     } catch (err) {
-      console.error('Error creating pickup point:', err);
       toast.error('Failed to add pickup point. Please try again.');
     }
   };
@@ -314,7 +313,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
   
       closeModal("add_assign_vehicle"); 
     } catch (err) {
-      console.error("Error assigning transport:", err);
+      // Error assigning transport
       toast.error("Failed to assign transport.");
     }
   };
@@ -342,7 +341,7 @@ const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
         schoolId: localStorage.getItem('schoolId') || '',
       });
     } catch (err) {
-      console.error('Error creating bus stop:', err);
+      // Error creating bus stop
       toast.error('Failed to add bus stop.');
     }
   };

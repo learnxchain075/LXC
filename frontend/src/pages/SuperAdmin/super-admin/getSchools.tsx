@@ -145,13 +145,7 @@ const GetSchools = () => {
 
       toast.success("School deleted successfully");
     } catch (error: any) {
-      console.error("deletion error:"
-        //    {
-        //   error: error.response?.data || error.message,
-        //   status: error.response?.status,
-        //   config: error.config
-        // }
-      );
+      // deletion error
 
       // More specific error message
       const errorMessage = error.response?.data?.message ||

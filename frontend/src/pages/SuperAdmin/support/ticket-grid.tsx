@@ -126,10 +126,9 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
         const res = await getTicketsByuserid(userId);
         setSchoolTickets(res.data || []);
       }
-    } catch (error) {
-      console.error("Failed to fetch tickets:", error);
-      toast.error("Failed to load tickets");
-    }
+          } catch (error) {
+        toast.error("Failed to load tickets");
+      }
   };
 
   const fetchMetadata = async () => {
@@ -139,9 +138,9 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
       setCategories(c.map((v: string) => ({ value: v, label: v })));
       setPriorities(p.map((v: string) => ({ value: v, label: v })));
       setStatuses(s.map((v: string) => ({ value: v, label: v })));
-    } catch (err) {
-      console.error('Failed to load ticket metadata', err);
-    }
+          } catch (err) {
+        // Failed to load ticket metadata
+      }
   };
 
   useEffect(() => {
@@ -163,10 +162,9 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
         handleCancel();
         navigate(`${route.ticketDetail}/${res.data.id}`);
       }
-    } catch (error) {
-      console.error("Error creating ticket:", error);
-      toast.error("Failed to create ticket");
-    }
+          } catch (error) {
+        toast.error("Failed to create ticket");
+      }
   };
 
   const handleDelete = async (id: string) => {
@@ -174,10 +172,9 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
       await deleteTicket(id);
       toast.success("Ticket successfully deleted");
       fetchTickets();
-    } catch (error) {
-      console.error("Error deleting ticket:", error);
-      toast.error("Failed to delete ticket");
-    }
+          } catch (error) {
+        toast.error("Failed to delete ticket");
+      }
   };
 
   const handleCancel = () => {
@@ -207,10 +204,9 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
       fetchTickets();
       setSelectedTicket(null);
       closeModal("update_ticket");
-    } catch (error) {
-      console.error("Error updating ticket:", error);
-      toast.error("Failed to update ticket");
-    }
+          } catch (error) {
+        toast.error("Failed to update ticket");
+      }
   };
 
   const closeModal = (id: string) => {

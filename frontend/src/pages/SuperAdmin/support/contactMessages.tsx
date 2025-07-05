@@ -41,7 +41,6 @@ const ContactMessages = () => {
           const response = await getAllmessage();
           setData(response.data);
         } catch (error) {
-          console.error("Error fetching contact messages:", error);
           toast.error("Failed to load contact messages");
         } finally {
           setIsLoading(false);
@@ -107,10 +106,9 @@ const ContactMessages = () => {
           closeButton.click();
         }
       }
-    } catch (error) {
-      console.error("Error submitting message:", error);
-      toast.error("Failed to submit message");
-    } finally {
+          } catch (error) {
+        toast.error("Failed to submit message");
+      } finally {
       setIsLoading(false);
     }
   };

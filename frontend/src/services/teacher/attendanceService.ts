@@ -19,7 +19,7 @@ export const createAttendance = async (
  */
 export const getAttendances = async (): Promise<AxiosResponse<IAttendance[]>> => {
   const response = await BaseApi.getRequest(`/teacher/attendance`);
-  console.log('API /teacher/attendance response:', response);
+      // API /teacher/attendance response
   return response;
 };
 
@@ -83,6 +83,6 @@ export const getStudentAttendanceAndLeave = async (
   studentId: string
 ): Promise<AxiosResponse<any>> => {
   const response = await BaseApi.getRequest(`/student/${studentId}/attendance-leaves`);
-  console.log('API /student/' + studentId + '/attendance-leaves response:', response);
+      // API /student/attendance-leaves response
   return response;
 };

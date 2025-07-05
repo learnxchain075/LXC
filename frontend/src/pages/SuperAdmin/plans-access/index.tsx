@@ -34,7 +34,6 @@ const PlansAccessPage = () => {
         const res = await BaseApi.getRequest("/super/plans");
         setPlans(res.data);
       } catch (err) {
-        console.error("Failed to fetch plans", err);
         setError("❌ Unable to fetch plans. Please try again later.");
       }
     };
@@ -104,11 +103,11 @@ const PlansAccessPage = () => {
             if (verifiedStatus) {
               setSuccess("✅ Payment verified and plan activated!");
             } else {
-              console.error("❌ Unexpected verification result:", verificationRes?.data);
+              // Unexpected verification result
               setError("❌ Verification failed. Please contact support.");
             }
           } catch (verifyErr: any) {
-            console.error("❌ Verification error:", verifyErr.response?.data || verifyErr.message);
+            // Verification error
             setError("❌ Payment verification failed.");
           }
         },

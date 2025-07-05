@@ -42,9 +42,9 @@ const MembershipTransaction = () => {
       };
       const response = await PlanTransactionService.getAllTransactions(filters);
       setTransactions(response);
-    } catch (error) {
-      console.error("Error applying filters", error);
-    } finally {
+          } catch (error) {
+        // Error applying filters
+      } finally {
       setLoading(false);
     }
   };
@@ -54,9 +54,9 @@ const MembershipTransaction = () => {
     try {
       const response = await PlanTransactionService.getAllTransactions();
       setTransactions(response);
-    } catch (error) {
-      console.error("Error fetching transactions", error);
-    } finally {
+          } catch (error) {
+        // Error fetching transactions
+      } finally {
       setLoading(false);
     }
   };
@@ -75,7 +75,7 @@ const MembershipTransaction = () => {
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Failed to download invoice", err);
+      // Failed to download invoice
     }
   };
 
