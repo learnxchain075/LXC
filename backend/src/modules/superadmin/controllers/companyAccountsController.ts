@@ -290,7 +290,7 @@ export const exportTransactionsPdf = async (req: Request, res: Response, next: N
   }
 };
 
-export const exportSummaryCsv = async (req: Request, res: Response, next: NextFunction) => {
+export const exportSummaryCsv = async (req: Request, res: Response, next: NextFunction) :Promise<any> => {
   try {
     const parse = companySummaryFilterSchema.safeParse(req.query);
     if (!parse.success) {
@@ -313,7 +313,7 @@ export const exportSummaryCsv = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const exportSummaryPdf = async (req: Request, res: Response, next: NextFunction) => {
+export const exportSummaryPdf = async (req: Request, res: Response, next: NextFunction) :Promise<any> => {
   try {
     const parse = companySummaryFilterSchema.safeParse(req.query);
     if (!parse.success) {
