@@ -143,16 +143,28 @@ const AllTransactions = () => {
         </table>
       </div>
 
-      <Modal show={!!billUrl} onHide={() => setBillUrl(null)} size="lg" centered>
+      <Modal show={!!billUrl} onHide={() => setBillUrl(null)} size="xl" centered>
         <div className="modal-header">
           <h4 className="modal-title">Bill Attachment</h4>
           <button type="button" className="btn-close" onClick={() => setBillUrl(null)} />
         </div>
         <div className="modal-body">
           {billUrl && (
-            <iframe src={billUrl} style={{ width: "100%", height: "500px" }} title="bill" />
+            <iframe
+              src={billUrl}
+              style={{ width: "100%", height: "70vh" }}
+              className="border-0"
+              title="bill"
+            />
           )}
         </div>
+        {billUrl && (
+          <div className="modal-footer">
+            <a href={billUrl} className="btn btn-primary" download>
+              Download
+            </a>
+          </div>
+        )}
       </Modal>
 
       <Modal show={!!detailTx} onHide={() => setDetailTx(null)} size="lg" centered>
