@@ -4,7 +4,7 @@ export const companyTransactionSchema = z.object({
   transactionType: z.enum(["INCOME", "EXPENSE"]),
   title: z.string().min(1),
   description: z.string().min(1),
-  amount: z.number(),
+  amount: z.coerce.number(),
   date: z.coerce.date(),
   paymentMode: z.enum(["CASH", "BANK_TRANSFER", "UPI", "OTHER"]),
   sourceOrRecipient: z.string().min(1),
