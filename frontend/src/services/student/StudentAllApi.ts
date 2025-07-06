@@ -536,12 +536,12 @@ export const submitAssignment = async (
 export const getstudentprofiledetails = async (
   id: any
 ): Promise<AxiosResponse<any>> => {
-  return await BaseApi.getRequest(`/student/user/${id}`);
+  return await BaseApi.getRequest(`/user/get/${id}`);
 };
 export const getstudentprofiledetailsparents = async (
   id: any
 ): Promise<AxiosResponse<any>> => {
-  return await BaseApi.getRequest(`/school/student/${id}`);
+  return await BaseApi.getRequest(`/school/student/${id}`); //fee
 };
 
 export interface ILibraryResponse {
