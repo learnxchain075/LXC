@@ -9,6 +9,8 @@ import {
   getTransactions,
   exportTransactionsCsv,
   exportTransactionsPdf,
+  exportSummaryCsv,
+  exportSummaryPdf,
 } from "../../controllers/companyAccountsController";
 
 const router = express.Router();
@@ -18,6 +20,8 @@ router.post("/company-accounts/create", upload.single("bill"), createTransaction
 router.get("/company-accounts/list", listTransactions);
 router.get("/company-accounts/transactions", getTransactions);
 router.get("/company-accounts/summary", getSummary);
+router.get("/company-accounts/summary/export/csv", exportSummaryCsv);
+router.get("/company-accounts/summary/export/pdf", exportSummaryPdf);
 router.put("/company-accounts/:id/update", upload.single("bill"), updateTransaction);
 router.delete("/company-accounts/:id", deleteTransaction);
 router.get("/company-accounts/transactions/export/csv", exportTransactionsCsv);
