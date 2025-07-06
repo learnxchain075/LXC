@@ -20,4 +20,5 @@ export const UserRole = {
   hostel: "hostel",
   transport: "transport",
   account: "account",
+  employee: "employee",
 };

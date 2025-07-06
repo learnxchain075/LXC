@@ -334,6 +334,7 @@ addsection:"/student/add-section",
   getEmployees: "/superadmin/get-employees",
   editStaff: "/hrm/edit-staff",
   staffsAttendance: "/hrm/staffs-attendance",
+  employeeDashboard: "/employee-dashboard",
   employeeTickets: "/employee/tickets",
   projectDashboard: "/projects",
 

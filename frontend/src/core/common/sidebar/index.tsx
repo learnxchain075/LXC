@@ -398,6 +398,7 @@ import TeacherMenuItems from "./TeacherMenuItems";
 import StudentMenuItems from "./StudentMenuItems";
 import useMobileDetection from "../mobileDetection";
 import ParentsMenuItems from "./ParentsMenuItems";
+import EmployeeMenuItems from "./EmployeeMenuItems";
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -535,6 +536,7 @@ const Sidebar: React.FC = () => {
     parent: ParentsMenuItems,
     admin: AdminMenuItems,
     superadmin: SuperAdminMenuItems,
+    employee: EmployeeMenuItems,
   };
 
   const MenuItemsComponent = roleMenuMap[userObj.role];
