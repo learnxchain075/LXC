@@ -2120,3 +2120,97 @@ model CompanyTransaction {
 // zoom meeting call , White board(With all Features ), screen sharing, recording, chat, raise hand, mute, unmute, video off, video on, share screen, invite, end meeting, leave meeting,
 
 // download reports ,  import Reports , export Reports , Custom report download , print , share Reports 
+// <---------------------- Project Management Models --------------------->
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Project {
+  id          String   @id @default(cuid()) @map("project_id")
+  name        String   @map("project_name")
+  description String?  @map("project_description")
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  tasks       Task[]
+  User        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+}
+
+model Task {
+  id          String       @id @default(cuid()) @map("task_id")
+  title       String       @map("task_title")
+  description String       @map("task_description")
+  status      TaskStatus   @default(OPEN) @map("task_status")
+  priority    TaskPriority @default(LOW) @map("task_priority")
+  deadline    DateTime?    @map("deadline")
+  projectId   String       @map("project_id")
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedToId String?     @map("assigned_to_id")
+  assignedTo   User?       @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById  String       @map("created_by")
+  createdBy    User        @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  comments     Comment[]
+  attachments  Attachment[]
+  githubBranches GitHubBranch[]
+  timelineLogs TimelineLog[]
+}
+
+model Comment {
+  id        String   @id @default(cuid()) @map("comment_id")
+  content   String   @map("comment_content")
+  taskId    String   @map("task_id")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String   @map("author_id")
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Attachment {
+  id        String   @id @default(cuid()) @map("attachment_id")
+  fileName  String   @map("file_name")
+  url       String   @map("file_url")
+  taskId    String   @map("task_id")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+}
+
+model GitHubBranch {
+  id        String   @id @default(cuid()) @map("github_branch_id")
+  name      String   @map("branch_name")
+  prUrl     String?  @map("pr_url")
+  status    String?  @map("pr_status")
+  taskId    String   @map("task_id")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Sprint {
+  id        String   @id @default(cuid()) @map("sprint_id")
+  name      String   @map("sprint_name")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model TimelineLog {
+  id        String     @id @default(cuid()) @map("timeline_log_id")
+  taskId    String     @map("task_id")
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  status    TaskStatus @map("task_status")
+  timestamp DateTime   @default(now())
+}
+

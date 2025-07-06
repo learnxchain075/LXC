@@ -38,6 +38,7 @@ import newspaperSubmissionRoutes from "../modules/teacher/routes/dashboard/newsp
 import quizresultRoutes from "../modules/teacher/routes/dashboard/quizresultRoutes";
 import quizRoutes from "../modules/teacher/routes/dashboard/quizRoutes";
 import doubtRoutes from "../modules/admin/routes/dashboard/doubtRoutes";
+import projectRoutes from "../modules/project/routes/projectRoutes";
 import libraryRoutes from "../modules/admin/routes/core/schoolauthroutes/libraryRoutes";
 import attendanceMarkRoute from "./attendanceMarkRoute";
 import teacherAttendanceRoutes from "../modules/admin/routes/dashboard/teacherAttendanceRoutes";
@@ -141,6 +142,7 @@ apiRouter.use(getProfileRoute);
 apiRouter.use(ticketRoutes);
 apiRouter.use(feedbackRoutes);
 apiRouter.use(todoRoutes);
+apiRouter.use(projectRoutes);
 apiRouter.use(companyAccountsRoutes);
 apiRouter.use(answerRoutes);
 apiRouter.use(inventoryRoutes);
