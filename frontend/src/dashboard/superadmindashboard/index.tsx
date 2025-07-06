@@ -12,6 +12,7 @@ import AdminDashboardModal from "../adminDashboard/adminDashboardModal";
 import { useSelector } from "react-redux";
 import GreetingComponent from "../../core/common/greetingComponent";
 import { getSuperAdminDashboard } from "../../services/superadmin/dashboardAPI";
+import { getTasks } from "../../services/projectService";
 
 
 const SuperAdminDashboard = () => {
@@ -19,6 +20,13 @@ const SuperAdminDashboard = () => {
   const user = useSelector((state: any) => state.auth.userObj);
 
   const [dashboardData, setDashboardData] = useState<any>(null);
+  interface Task {
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+  }
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   const fetchDashboardData = async () => {
     try {
@@ -31,6 +39,7 @@ const SuperAdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    getTasks().then((res) => setTasks(res.data || [])).catch(() => {});
   }, []);
 
   const totalSchools = dashboardData?.schoolStatistics?.totalSchools || 0;
@@ -407,6 +416,28 @@ const SuperAdminDashboard = () => {
                   type="area"
                   height={90}
                 />
+              </div>
+            </div>
+          </div>
+          <div className="row mt-4">
+            <div className="col-md-12">
+              <div className="card">
+                <div className="card-header">
+                  <h5 className="card-title mb-0">Recent Tasks</h5>
+                </div>
+                <div className="card-body">
+                  {tasks.length === 0 ? (
+                    <p className="mb-0">No tasks available.</p>
+                  ) : (
+                    <ul className="mb-0">
+                      {tasks.slice(0, 5).map((t) => (
+                        <li key={t.id}>
+                          {t.title} - {t.status}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             </div>
           </div>

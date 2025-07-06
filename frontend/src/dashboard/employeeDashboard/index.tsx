@@ -19,11 +19,17 @@ const EmployeeDashboard = () => {
     <div className="container mt-4">
       <h3>Employee Dashboard</h3>
       <h5 className="mt-4">My Tasks</h5>
-      <ul>
-        {tasks.map(t => (
-          <li key={t.id}>{t.title} - {t.status}</li>
-        ))}
-      </ul>
+      {tasks.length === 0 ? (
+        <p>No tasks assigned.</p>
+      ) : (
+        <ul>
+          {tasks.map((t) => (
+            <li key={t.id}>
+              {t.title} - {t.status}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
