@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Modal } from "react-bootstrap";
+import AppConfig from "../../../config/config";
 import {
-  getCompanyTransactions,
+  filterCompanyTransactions,
   deleteCompanyTransaction,
   updateCompanyTransaction,
 } from "../../../services/superadmin/companyAccountApi";
 
 const AllTransactions = () => {
   const [list, setList] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageCount, setPageCount] = useState(0);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [summary, setSummary] = useState({ income: 0, expense: 0 });
   const [billUrl, setBillUrl] = useState<string | null>(null);
   const [detailTx, setDetailTx] = useState<any | null>(null);
   const [editTx, setEditTx] = useState<any | null>(null);
@@ -22,15 +27,43 @@ const AllTransactions = () => {
     sourceOrRecipient: "",
     bill: null as File | null,
   });
+  const [filters, setFilters] = useState({
+    search: "",
+    fromDate: "",
+    toDate: "",
+    type: "ALL",
+    mode: "ALL",
+    minAmount: "",
+    maxAmount: "",
+    billAttached: "all",
+    sortBy: "date",
+    sortOrder: "desc",
+  });
+  const buildParams = () => {
+    const params: any = { page, perPage: 10, sortBy: filters.sortBy, sortOrder: filters.sortOrder };
+    if (filters.search) params.search = filters.search;
+    if (filters.fromDate) params.fromDate = filters.fromDate;
+    if (filters.toDate) params.toDate = filters.toDate;
+    if (filters.type !== "ALL") params.type = filters.type;
+    if (filters.mode !== "ALL") params.mode = filters.mode;
+    if (filters.minAmount) params.minAmount = filters.minAmount;
+    if (filters.maxAmount) params.maxAmount = filters.maxAmount;
+    if (filters.billAttached !== "all") params.billAttached = filters.billAttached === "yes";
+    return params;
+  };
+
   const fetchData = async () => {
     try {
-      const res = await getCompanyTransactions();
-      setList(res.data || []);
+      const res = await filterCompanyTransactions(buildParams());
+      setList(res.data.data || []);
+      setPageCount(res.data.pageCount);
+      setTotalRecords(res.data.totalCount);
+      setSummary({ income: res.data.totalIncome, expense: res.data.totalExpense });
     } catch (err) {
       toast.error("Failed to load");
     }
   };
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [page]);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete transaction?")) return;
@@ -69,6 +102,40 @@ const AllTransactions = () => {
     setEditForm((p) => ({ ...p, bill: file }));
   };
 
+  const handleFilterChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFilters((p) => ({ ...p, [name]: value }));
+  };
+
+  const applyFilters = () => {
+    setPage(1);
+    fetchData();
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      search: "",
+      fromDate: "",
+      toDate: "",
+      type: "ALL",
+      mode: "ALL",
+      minAmount: "",
+      maxAmount: "",
+      billAttached: "all",
+      sortBy: "date",
+      sortOrder: "desc",
+    });
+    setPage(1);
+    fetchData();
+  };
+
+  const handleExport = (format: "csv" | "pdf") => {
+    const params = new URLSearchParams(buildParams() as any).toString();
+    window.open(`${AppConfig.apiGateway.BASE_URL}/company-accounts/transactions/export/${format}?${params}`, "_blank");
+  };
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editTx) return;
@@ -97,6 +164,80 @@ const AllTransactions = () => {
     <div className="page-wrapper">
     <div className="container-fluid py-4 px-3 px-md-5">
       <h2 className="mb-3">All Transactions</h2>
+      <div className="row g-2 mb-3">
+        <div className="col-md-3">
+          <input
+            className="form-control"
+            placeholder="Search"
+            name="search"
+            value={filters.search}
+            onChange={handleFilterChange}
+          />
+        </div>
+        <div className="col-md-2">
+          <input type="date" className="form-control" name="fromDate" value={filters.fromDate} onChange={handleFilterChange} />
+        </div>
+        <div className="col-md-2">
+          <input type="date" className="form-control" name="toDate" value={filters.toDate} onChange={handleFilterChange} />
+        </div>
+        <div className="col-md-2">
+          <select className="form-select" name="type" value={filters.type} onChange={handleFilterChange}>
+            <option value="ALL">All Type</option>
+            <option value="INCOME">Income</option>
+            <option value="EXPENSE">Expense</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <select className="form-select" name="mode" value={filters.mode} onChange={handleFilterChange}>
+            <option value="ALL">All Mode</option>
+            <option value="CASH">Cash</option>
+            <option value="BANK_TRANSFER">Bank</option>
+            <option value="UPI">UPI</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <select className="form-select" name="billAttached" value={filters.billAttached} onChange={handleFilterChange}>
+            <option value="all">Bill?</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <input type="number" className="form-control" placeholder="Min" name="minAmount" value={filters.minAmount} onChange={handleFilterChange} />
+        </div>
+        <div className="col-md-2">
+          <input type="number" className="form-control" placeholder="Max" name="maxAmount" value={filters.maxAmount} onChange={handleFilterChange} />
+        </div>
+        <div className="col-md-2">
+          <select className="form-select" name="sortBy" value={filters.sortBy} onChange={handleFilterChange}>
+            <option value="date">Date</option>
+            <option value="amount">Amount</option>
+            <option value="title">Title</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <select className="form-select" name="sortOrder" value={filters.sortOrder} onChange={handleFilterChange}>
+            <option value="asc">ASC</option>
+            <option value="desc">DESC</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <button className="btn btn-primary w-100" onClick={applyFilters}>Apply</button>
+        </div>
+        <div className="col-md-2">
+          <button className="btn btn-secondary w-100" onClick={resetFilters}>Reset</button>
+        </div>
+      </div>
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          Total Records: {totalRecords} | Income: {summary.income} | Expense: {summary.expense}
+        </div>
+        <div>
+          <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleExport("csv")}>Download CSV</button>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => handleExport("pdf")}>Download PDF</button>
+        </div>
+      </div>
       <div className="table-responsive">
         <table className="table table-bordered">
           <thead>
@@ -122,15 +263,15 @@ const AllTransactions = () => {
                 <td>{t.description.length > 30 ? `${t.description.slice(0, 30)}...` : t.description}</td>
                 <td>{t.sourceOrRecipient}</td>
                 <td>
-                  <span className={t.transactionType === "INCOME" ? "text-success" : "text-danger"}>{t.transactionType}</span>
+                  <span className={`badge ${t.transactionType === "INCOME" ? "bg-success" : "bg-danger"}`}>{t.transactionType}</span>
                 </td>
                 <td>{t.amount}</td>
                 <td>{t.paymentMode}</td>
                 <td>
-                  {t.billUrl && (
-                    <button className="btn btn-link p-0" onClick={() => setBillUrl(t.billUrl)}>
-                      View
-                    </button>
+                  {t.billUrl ? (
+                    <button className="btn btn-link p-0" onClick={() => setBillUrl(t.billUrl)}>🧾</button>
+                  ) : (
+                    ""
                   )}
                 </td>
                 <td>
@@ -142,6 +283,21 @@ const AllTransactions = () => {
           </tbody>
         </table>
       </div>
+      <nav>
+        <ul className="pagination">
+          <li className={`page-item ${page === 1 ? "disabled" : ""}`}>
+            <button className="page-link" onClick={() => page > 1 && setPage(page - 1)}>Prev</button>
+          </li>
+          {Array.from({ length: pageCount }).map((_, i) => (
+            <li key={i} className={`page-item ${page === i + 1 ? "active" : ""}`}>
+              <button className="page-link" onClick={() => setPage(i + 1)}>{i + 1}</button>
+            </li>
+          ))}
+          <li className={`page-item ${page === pageCount ? "disabled" : ""}`}>
+            <button className="page-link" onClick={() => page < pageCount && setPage(page + 1)}>Next</button>
+          </li>
+        </ul>
+      </nav>
 
       <Modal show={!!billUrl} onHide={() => setBillUrl(null)} size="xl" centered>
         <div className="modal-header">

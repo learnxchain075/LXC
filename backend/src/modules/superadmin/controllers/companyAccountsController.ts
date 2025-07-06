@@ -105,3 +105,123 @@ export const deleteTransaction = async (req: Request, res: Response, next: NextF
     next(handlePrismaError(error));
   }
 };
+
+import puppeteer from "puppeteer";
+import { generateCompanyTransactionsHtml } from "../../../template/companyTransactionsTemplate";
+import { companyTransactionAdvancedFilterSchema } from "../../../validations/Module/SuperadminDashboard/companyAccountsValidation";
+
+const buildFilter = (q: any) => {
+  const where: any = {};
+  if (q.type) where.transactionType = q.type;
+  if (q.mode) where.paymentMode = q.mode;
+  if (q.billAttached === "true") where.billUrl = { not: null };
+  if (q.billAttached === "false") where.billUrl = null;
+  if (q.minAmount !== undefined || q.maxAmount !== undefined) {
+    where.amount = {};
+    if (q.minAmount !== undefined) where.amount.gte = q.minAmount;
+    if (q.maxAmount !== undefined) where.amount.lte = q.maxAmount;
+  }
+  if (q.fromDate || q.toDate) {
+    where.date = {} as any;
+    if (q.fromDate) where.date.gte = new Date(q.fromDate);
+    if (q.toDate) where.date.lte = new Date(q.toDate);
+  }
+  if (q.search) {
+    where.OR = [
+      { title: { contains: q.search, mode: "insensitive" } },
+      { description: { contains: q.search, mode: "insensitive" } },
+      { sourceOrRecipient: { contains: q.search, mode: "insensitive" } },
+    ];
+  }
+  return where;
+};
+
+export const getTransactions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = companyTransactionAdvancedFilterSchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid query", errors: parsed.error.errors });
+    }
+    const q = parsed.data;
+    const page = q.page || 1;
+    const perPage = q.perPage || 10;
+    const where = buildFilter(q);
+    const orderBy: any = { [q.sortBy || "date"]: q.sortOrder || "desc" };
+
+    const [data, totalCount, incomeAgg, expenseAgg] = await Promise.all([
+      prisma.companyTransaction.findMany({ where, orderBy, skip: (page - 1) * perPage, take: perPage }),
+      prisma.companyTransaction.count({ where }),
+      prisma.companyTransaction.aggregate({ _sum: { amount: true }, where: { ...where, transactionType: "INCOME" } }),
+      prisma.companyTransaction.aggregate({ _sum: { amount: true }, where: { ...where, transactionType: "EXPENSE" } }),
+    ]);
+
+    const pageCount = Math.ceil(totalCount / perPage);
+    const totalIncome = incomeAgg._sum.amount || 0;
+    const totalExpense = expenseAgg._sum.amount || 0;
+
+    res.json({ data, totalCount, pageCount, totalIncome, totalExpense });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const exportTransactionsCsv = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = companyTransactionAdvancedFilterSchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid query", errors: parsed.error.errors });
+    }
+    const q = parsed.data;
+    const where = buildFilter(q);
+    const orderBy: any = { [q.sortBy || "date"]: q.sortOrder || "desc" };
+    const data = await prisma.companyTransaction.findMany({ where, orderBy });
+    const rows = data.map(d => [
+      new Date(d.date).toISOString().split("T")[0],
+      d.title,
+      d.description,
+      d.sourceOrRecipient,
+      d.transactionType,
+      d.amount,
+      d.paymentMode,
+      d.billUrl ? "Yes" : "No",
+    ]);
+    const header = ["Date","Title","Description","Recipient","Type","Amount","Mode","Bill Attached"];
+    const csv = [header.join(","), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","))].join("\n");
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=transactions.csv");
+    return res.send(csv);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const exportTransactionsPdf = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = companyTransactionAdvancedFilterSchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid query", errors: parsed.error.errors });
+    }
+    const q = parsed.data;
+    const where = buildFilter(q);
+    const orderBy: any = { [q.sortBy || "date"]: q.sortOrder || "desc" };
+    const [data, incomeAgg, expenseAgg] = await Promise.all([
+      prisma.companyTransaction.findMany({ where, orderBy }),
+      prisma.companyTransaction.aggregate({ _sum: { amount: true }, where: { ...where, transactionType: "INCOME" } }),
+      prisma.companyTransaction.aggregate({ _sum: { amount: true }, where: { ...where, transactionType: "EXPENSE" } }),
+    ]);
+    const html = generateCompanyTransactionsHtml(data, {
+      income: incomeAgg._sum.amount || 0,
+      expense: expenseAgg._sum.amount || 0,
+    });
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox','--disable-setuid-sandbox'] });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+    await browser.close();
+    res.setHeader('Content-Type','application/pdf');
+    res.setHeader('Content-Disposition','attachment; filename=transactions.pdf');
+    return res.send(pdfBuffer);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};

@@ -22,3 +22,11 @@ export const updateCompanyTransaction = async (id: string, data: FormData) => {
 export const deleteCompanyTransaction = async (id: string) => {
   return await BaseApi.deleteRequest(`/company-accounts/${id}`);
 };
+
+export const filterCompanyTransactions = async (params?: any) => {
+  return await BaseApi.getRequest("/company-accounts/transactions", { params });
+};
+
+export const exportCompanyTransactions = async (format: "csv" | "pdf", params?: any) => {
+  return await BaseApi.getRequest(`/company-accounts/transactions/export/${format}`, { params, responseType: 'blob' });
+};
