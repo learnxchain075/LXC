@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../../db/prisma';
 import { handlePrismaError } from '../../../utils/prismaErrorHandler';
-import { projectSchema, taskSchema, taskStatusSchema, commentSchema, updateProjectSchema, updateTaskSchema, projectIdParamSchema, taskIdParamSchema } from '../../../validations/Module/ProjectManagement/projectValidation';
+import { projectSchema, taskSchema, taskStatusSchema, commentSchema, updateProjectSchema, updateTaskSchema, projectIdParamSchema, taskIdParamSchema, githubRepoSchema, githubBranchSchema } from '../../../validations/Module/ProjectManagement/projectValidation';
 
 export const createProject = async (req: Request, res: Response, next: NextFunction) : Promise<any> => {
   try {
@@ -18,7 +18,7 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
 
 export const getProjects = async (_req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
-    const projects = await prisma.project.findMany({ include: { tasks: true } });
+    const projects = await prisma.project.findMany({ include: { tasks: true, githubRepos: true } });
     res.json(projects);
   } catch (error) {
     next(handlePrismaError(error));
@@ -171,6 +171,56 @@ export const deleteTask = async (
     const { id } = paramsResult.data;
     await prisma.task.delete({ where: { id } });
     res.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const addGitHubRepo = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = projectIdParamSchema.safeParse(req.params);
+    const body = githubRepoSchema.safeParse(req.body);
+    if (!params.success || !body.success) {
+      return res.status(400).json({
+        errors: [
+          ...(params.success ? [] : params.error.errors),
+          ...(body.success ? [] : body.error.errors),
+        ],
+      });
+    }
+    const repo = await prisma.gitHubRepo.create({
+      data: { projectId: params.data.id, repoUrl: body.data.repoUrl },
+    });
+    res.status(201).json(repo);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const createGitHubBranch = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = taskIdParamSchema.safeParse(req.params);
+    const body = githubBranchSchema.safeParse(req.body);
+    if (!params.success || !body.success) {
+      return res.status(400).json({
+        errors: [
+          ...(params.success ? [] : params.error.errors),
+          ...(body.success ? [] : body.error.errors),
+        ],
+      });
+    }
+    const branch = await prisma.gitHubBranch.create({
+      data: { taskId: params.data.id, ...body.data },
+    });
+    res.status(201).json(branch);
   } catch (error) {
     next(handlePrismaError(error));
   }

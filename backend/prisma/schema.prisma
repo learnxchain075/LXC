@@ -2155,6 +2155,7 @@ model Project {
   User        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   Sprint Sprint[]
+  githubRepos GitHubRepo[]
 }
 
 model Task {
@@ -2195,6 +2196,14 @@ model Attachment {
   taskId    String   @map("task_id")
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   uploadedAt DateTime @default(now()) @map("uploaded_at")
+}
+
+model GitHubRepo {
+  id        String   @id @default(cuid()) @map("github_repo_id")
+  repoUrl   String   @map("repo_url")
+  projectId String   @map("project_id")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
 }
 
 model GitHubBranch {

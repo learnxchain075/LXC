@@ -42,3 +42,13 @@ export const taskIdParamSchema = z.object({
 export const updateProjectSchema = projectSchema.partial();
 
 export const updateTaskSchema = taskSchema.partial();
+
+export const githubRepoSchema = z.object({
+  repoUrl: z.string().url('Invalid repository url'),
+});
+
+export const githubBranchSchema = z.object({
+  name: z.string().min(1, 'Branch name is required'),
+  prUrl: z.string().url('Invalid PR url').optional(),
+  status: z.string().optional(),
+});
