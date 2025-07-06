@@ -8,6 +8,7 @@ export const companyTransactionSchema = z.object({
   date: z.coerce.date(),
   paymentMode: z.enum(["CASH", "BANK_TRANSFER", "UPI", "OTHER"]),
   sourceOrRecipient: z.string().min(1),
+  category: z.string().optional(),
   createdBy: z.string().min(1),
 });
 
@@ -37,4 +38,13 @@ export const companyTransactionAdvancedFilterSchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().optional(),
   perPage: z.coerce.number().optional(),
+});
+
+export const companySummaryFilterSchema = z.object({
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+  type: z.enum(["INCOME", "EXPENSE", "ALL"]).optional(),
+  mode: z.enum(["CASH", "BANK_TRANSFER", "UPI", "OTHER", "ALL"]).optional(),
+  recipient: z.string().optional(),
+  category: z.string().optional(),
 });

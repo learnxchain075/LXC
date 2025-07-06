@@ -11,6 +11,7 @@ const AddTransaction = () => {
     transactionType: "INCOME",
     paymentMode: "CASH",
     sourceOrRecipient: "",
+    category: "",
     bill: null as File | null,
   });
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -31,6 +32,7 @@ const AddTransaction = () => {
     fd.append("transactionType", form.transactionType);
     fd.append("paymentMode", form.paymentMode);
     fd.append("sourceOrRecipient", form.sourceOrRecipient);
+    fd.append("category", form.category);
     fd.append("createdBy", localStorage.getItem("userId") || "");
     if (form.bill) fd.append("bill", form.bill);
     try {
@@ -44,6 +46,7 @@ const AddTransaction = () => {
         transactionType: "INCOME",
         paymentMode: "CASH",
         sourceOrRecipient: "",
+        category: "",
         bill: null,
       });
     } catch (err) {
@@ -86,6 +89,10 @@ const AddTransaction = () => {
         <div className="col-md-6">
           <label className="form-label">Source / Recipient</label>
           <input className="form-control" name="sourceOrRecipient" value={form.sourceOrRecipient} onChange={handleChange} />
+        </div>
+        <div className="col-md-6">
+          <label className="form-label">Category</label>
+          <input className="form-control" name="category" value={form.category} onChange={handleChange} />
         </div>
         <div className="col-12">
           <label className="form-label">Description</label>

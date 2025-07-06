@@ -2101,6 +2101,7 @@ model CompanyTransaction {
   date             DateTime
   paymentMode      CompanyPaymentMode
   sourceOrRecipient String
+  category         String?
   billUrl          String?
   createdBy        String
   createdAt        DateTime             @default(now())

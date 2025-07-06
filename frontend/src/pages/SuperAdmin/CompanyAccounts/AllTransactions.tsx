@@ -25,6 +25,7 @@ const AllTransactions = () => {
     transactionType: "INCOME",
     paymentMode: "CASH",
     sourceOrRecipient: "",
+    category: "",
     bill: null as File | null,
   });
   const [filters, setFilters] = useState({
@@ -33,6 +34,8 @@ const AllTransactions = () => {
     toDate: "",
     type: "ALL",
     mode: "ALL",
+    category: "",
+    recipient: "",
     minAmount: "",
     maxAmount: "",
     billAttached: "all",
@@ -46,6 +49,8 @@ const AllTransactions = () => {
     if (filters.toDate) params.toDate = filters.toDate;
     if (filters.type !== "ALL") params.type = filters.type;
     if (filters.mode !== "ALL") params.mode = filters.mode;
+    if (filters.category) params.category = filters.category;
+    if (filters.recipient) params.recipient = filters.recipient;
     if (filters.minAmount) params.minAmount = filters.minAmount;
     if (filters.maxAmount) params.maxAmount = filters.maxAmount;
     if (filters.billAttached !== "all") params.billAttached = filters.billAttached === "yes";
@@ -86,6 +91,7 @@ const AllTransactions = () => {
       transactionType: tx.transactionType,
       paymentMode: tx.paymentMode,
       sourceOrRecipient: tx.sourceOrRecipient,
+      category: tx.category || "",
       bill: null,
     });
   };
@@ -147,6 +153,7 @@ const AllTransactions = () => {
     fd.append("transactionType", editForm.transactionType);
     fd.append("paymentMode", editForm.paymentMode);
     fd.append("sourceOrRecipient", editForm.sourceOrRecipient);
+    fd.append("category", editForm.category);
     fd.append("createdBy", editTx.createdBy || "");
     if (editForm.bill) fd.append("bill", editForm.bill);
     try {
@@ -195,6 +202,12 @@ const AllTransactions = () => {
             <option value="UPI">UPI</option>
             <option value="OTHER">Other</option>
           </select>
+        </div>
+        <div className="col-md-2">
+          <input className="form-control" placeholder="Recipient" name="recipient" value={filters.recipient} onChange={handleFilterChange} />
+        </div>
+        <div className="col-md-2">
+          <input className="form-control" placeholder="Category" name="category" value={filters.category} onChange={handleFilterChange} />
         </div>
         <div className="col-md-2">
           <select className="form-select" name="billAttached" value={filters.billAttached} onChange={handleFilterChange}>
@@ -386,6 +399,10 @@ const AllTransactions = () => {
             <div className="col-md-6">
               <label className="form-label">Source / Recipient</label>
               <input className="form-control" name="sourceOrRecipient" value={editForm.sourceOrRecipient} onChange={handleEditChange} />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Category</label>
+              <input className="form-control" name="category" value={editForm.category} onChange={handleEditChange} />
             </div>
             <div className="col-12">
               <label className="form-label">Description</label>
