@@ -30,3 +30,15 @@ export const commentSchema = z.object({
   authorId: z.string().cuid('Invalid user id'),
   content: z.string().min(1, 'Comment cannot be empty'),
 });
+
+export const projectIdParamSchema = z.object({
+  id: z.string().cuid('Invalid project id'),
+});
+
+export const taskIdParamSchema = z.object({
+  id: z.string().cuid('Invalid task id'),
+});
+
+export const updateProjectSchema = projectSchema.partial();
+
+export const updateTaskSchema = taskSchema.partial();
