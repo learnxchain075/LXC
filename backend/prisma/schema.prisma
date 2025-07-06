@@ -287,6 +287,14 @@ model User {
   // Ticket Ticket[] @relation("TicketAssignment")
 
   Employee Employee[]
+
+  Project Project[]
+
+  assignedTasks Task[] @relation("TaskAssignee")
+
+  createdTasks Task[] @relation("TaskCreator")
+
+  Comment Comment[]
 }
 
 model PasswordResetToken {
@@ -2145,6 +2153,8 @@ model Project {
   createdAt   DateTime @default(now()) @map("created_at")
   tasks       Task[]
   User        User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  Sprint Sprint[]
 }
 
 model Task {

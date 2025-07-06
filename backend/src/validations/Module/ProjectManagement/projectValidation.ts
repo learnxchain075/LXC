@@ -11,7 +11,7 @@ export const projectSchema = z.object({
 
 export const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
+  description: z.string().optional(), // Keep optional
   projectId: z.string().cuid('Invalid project id'),
   assignedToId: z.string().cuid('Invalid user id').optional(),
   priority: z.nativeEnum(TaskPriority).optional(),

@@ -3,7 +3,7 @@ import { prisma } from '../../../db/prisma';
 import { handlePrismaError } from '../../../utils/prismaErrorHandler';
 import { projectSchema, taskSchema, taskStatusSchema, commentSchema } from '../../../validations/Module/ProjectManagement/projectValidation';
 
-export const createProject = async (req: Request, res: Response, next: NextFunction) => {
+export const createProject = async (req: Request, res: Response, next: NextFunction) : Promise<any> => {
   try {
     const parsed = projectSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -16,7 +16,7 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const getProjects = async (_req: Request, res: Response, next: NextFunction) => {
+export const getProjects = async (_req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const projects = await prisma.project.findMany({ include: { tasks: true } });
     res.json(projects);
@@ -25,20 +25,29 @@ export const getProjects = async (_req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const createTask = async (req: Request, res: Response, next: NextFunction) => {
+
+export const createTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = taskSchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res.status(400).json({ message: 'Validation error', errors: parsed.error.errors });
     }
-    const task = await prisma.task.create({ data: parsed.data });
+
+    // Ensure no undefined values are sent to Prisma
+    const taskData = {
+      ...parsed.data,
+      description: parsed.data.description ?? "", // ✅ Ensure string
+    };
+
+    const task = await prisma.task.create({ data: taskData });
     res.status(201).json(task);
   } catch (error) {
     next(handlePrismaError(error));
   }
 };
 
-export const getTasks = async (req: Request, res: Response, next: NextFunction) => {
+export const getTasks = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const projectId = req.query.projectId as string | undefined;
     const tasks = await prisma.task.findMany({
@@ -51,7 +60,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
-export const updateTaskStatus = async (req: Request, res: Response, next: NextFunction) => {
+export const updateTaskStatus = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = taskStatusSchema.safeParse({ ...req.params, ...req.body });
     if (!parsed.success) {
@@ -65,7 +74,7 @@ export const updateTaskStatus = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const addComment = async (req: Request, res: Response, next: NextFunction) => {
+export const addComment = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = commentSchema.safeParse({ ...req.params, ...req.body });
     if (!parsed.success) {
