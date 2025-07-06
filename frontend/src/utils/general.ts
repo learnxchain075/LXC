@@ -16,6 +16,10 @@ export const getBaseUrl = (isLoggedIn: boolean, role: string) => {
     if (role === UserRole.teacher) {
       returnValue = `${all_routes.teacherDashboard}`;
     }
+
+    if (role === UserRole.employee) {
+      returnValue = `${all_routes.employeeDashboard}`;
+    }
   }
 
   return returnValue;
