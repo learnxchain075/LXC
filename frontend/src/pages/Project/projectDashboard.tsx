@@ -7,13 +7,29 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  addGitHubRepo,
+  createGitHubBranch,
 } from '../../services/projectService';
+
+interface GitHubRepo {
+  id: string;
+  repoUrl: string;
+}
+
+interface GitHubBranch {
+  id: string;
+  name: string;
+  prUrl?: string;
+  status?: string;
+}
 
 interface Task {
   id: string;
   title: string;
   status: string;
   priority: string;
+  deadline?: string;
+  githubBranches?: GitHubBranch[];
 }
 
 interface Project {
@@ -21,6 +37,7 @@ interface Project {
   name: string;
   description?: string;
   tasks: Task[];
+  githubRepos?: GitHubRepo[];
 }
 
 const ProjectDashboard = () => {
@@ -79,6 +96,21 @@ const ProjectDashboard = () => {
     fetchProjects();
   };
 
+  const handleAddRepo = async (projectId: string) => {
+    const repoUrl = prompt('GitHub repo URL');
+    if (!repoUrl) return;
+    await addGitHubRepo(projectId, { repoUrl });
+    fetchProjects();
+  };
+
+  const handleCreateBranch = async (taskId: string) => {
+    const name = prompt('Branch name');
+    if (!name) return;
+    const prUrl = prompt('PR URL (optional)') || undefined;
+    await createGitHubBranch(taskId, { name, prUrl });
+    fetchProjects();
+  };
+
   return (
     <div className="container mt-4">
       <h3>Projects</h3>
@@ -116,38 +148,60 @@ const ProjectDashboard = () => {
               >
                 Delete
               </button>
+              <button
+                className="btn btn-sm btn-outline-primary ms-2"
+                onClick={() => handleAddRepo(p.id)}
+              >
+                Add Repo
+              </button>
             </div>
           </div>
           <p className="text-muted">{p.description}</p>
+          {p.githubRepos && p.githubRepos[0] && (
+            <p className="mb-2">GitHub: <a href={p.githubRepos[0].repoUrl} target="_blank">{p.githubRepos[0].repoUrl}</a></p>
+          )}
           <button
             className="btn btn-sm btn-outline-primary mb-2"
             onClick={() => handleAddTask(p.id)}
           >
             Add Task
           </button>
-          <ul className="list-unstyled">
-            {p.tasks.map(t => (
-              <li key={t.id} className="d-flex justify-content-between">
-                <span>
-                  {t.title} - {t.status}
-                </span>
-                <span>
-                  <button
-                    className="btn btn-sm btn-secondary me-2"
-                    onClick={() => handleUpdateTask(t)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleDeleteTask(t.id)}
-                  >
-                    Delete
-                  </button>
-                </span>
-              </li>
+          <div className="row">
+            {['OPEN', 'IN_PROGRESS', 'REVIEW', 'DONE'].map(status => (
+              <div className="col-md-3" key={status}>
+                <h6 className="text-center">{status}</h6>
+                <ul className="list-unstyled min-vh-25">
+                  {p.tasks.filter(t => t.status === status).map(t => (
+                    <li key={t.id} className="mb-2 p-2 border rounded">
+                      <div className="d-flex justify-content-between">
+                        <span>{t.title}</span>
+                        <span>
+                          <button
+                            className="btn btn-sm btn-secondary me-1"
+                            onClick={() => handleUpdateTask(t)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-sm btn-outline-primary me-1"
+                            onClick={() => handleCreateBranch(t.id)}
+                          >
+                            Branch
+                          </button>
+                          <button
+                            className="btn btn-sm btn-danger"
+                            onClick={() => handleDeleteTask(t.id)}
+                          >
+                            Delete
+                          </button>
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       ))}
     </div>

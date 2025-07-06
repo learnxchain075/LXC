@@ -14,3 +14,9 @@ export const updateTaskStatus = (id: string, data: any) =>
   BaseApi.patchRequest(`/task/${id}/status`, data);
 export const addComment = (id: string, data: any) =>
   BaseApi.postRequest(`/task/${id}/comment`, data);
+
+export const addGitHubRepo = (projectId: string, data: any) =>
+  BaseApi.postRequest(`/project/${projectId}/github-repo`, data);
+
+export const createGitHubBranch = (taskId: string, data: any) =>
+  BaseApi.postRequest(`/task/${taskId}/github-branch`, data);
