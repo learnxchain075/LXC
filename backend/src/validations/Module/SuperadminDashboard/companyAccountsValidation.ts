@@ -23,3 +23,18 @@ export const companyTransactionFilterSchema = z.object({
   transactionType: z.enum(["INCOME", "EXPENSE"]).optional(),
   paymentMode: z.enum(["CASH", "BANK_TRANSFER", "UPI", "OTHER"]).optional(),
 });
+
+export const companyTransactionAdvancedFilterSchema = z.object({
+  search: z.string().optional(),
+  type: z.enum(["INCOME", "EXPENSE"]).optional(),
+  mode: z.enum(["CASH", "BANK_TRANSFER", "UPI", "OTHER"]).optional(),
+  billAttached: z.enum(["true", "false"]).optional(),
+  minAmount: z.coerce.number().optional(),
+  maxAmount: z.coerce.number().optional(),
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
+  sortBy: z.enum(["date", "amount", "title"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional(),
+  page: z.coerce.number().optional(),
+  perPage: z.coerce.number().optional(),
+});
