@@ -112,6 +112,7 @@ const ProjectDashboard = () => {
   };
 
   return (
+    <div className="page-wrapper">
     <div className="container mt-4">
       <h3>Projects</h3>
       <div className="mb-3">
@@ -204,6 +205,7 @@ const ProjectDashboard = () => {
           </div>
         </div>
       ))}
+    </div>
     </div>
   );
 };
