@@ -335,6 +335,7 @@ addsection:"/student/add-section",
   editStaff: "/hrm/edit-staff",
   staffsAttendance: "/hrm/staffs-attendance",
   employeeTickets: "/employee/tickets",
+  projectDashboard: "/projects",
 
   layoutDefault: "/layout-default",
   layoutMini: "/layout-mini",
