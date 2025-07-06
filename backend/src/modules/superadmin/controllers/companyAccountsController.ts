@@ -136,7 +136,7 @@ const buildFilter = (q: any) => {
   return where;
 };
 
-export const getTransactions = async (req: Request, res: Response, next: NextFunction) => {
+export const getTransactions = async (req: Request, res: Response, next: NextFunction) :Promise<any> => {
   try {
     const parsed = companyTransactionAdvancedFilterSchema.safeParse(req.query);
     if (!parsed.success) {
@@ -165,7 +165,7 @@ export const getTransactions = async (req: Request, res: Response, next: NextFun
   }
 };
 
-export const exportTransactionsCsv = async (req: Request, res: Response, next: NextFunction) => {
+export const exportTransactionsCsv = async (req: Request, res: Response, next: NextFunction) :Promise<any> => {
   try {
     const parsed = companyTransactionAdvancedFilterSchema.safeParse(req.query);
     if (!parsed.success) {
@@ -195,7 +195,7 @@ export const exportTransactionsCsv = async (req: Request, res: Response, next: N
   }
 };
 
-export const exportTransactionsPdf = async (req: Request, res: Response, next: NextFunction) => {
+export const exportTransactionsPdf = async (req: Request, res: Response, next: NextFunction) :Promise<any> => {
   try {
     const parsed = companyTransactionAdvancedFilterSchema.safeParse(req.query);
     if (!parsed.success) {
