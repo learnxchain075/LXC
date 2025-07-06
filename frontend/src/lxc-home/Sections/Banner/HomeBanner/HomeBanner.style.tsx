@@ -88,6 +88,11 @@ const HomeBannerStyle = styled.section`
       width: 400px;
       height: 500px;
       border-radius: 200px;
+      object-fit: cover;
+      object-position: center;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 4/5;
     }
 
     .overlay {
@@ -121,12 +126,16 @@ const HomeBannerStyle = styled.section`
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 20px;
-      height: 20px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
       img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
         transition: 0.3s;
       }
     }
@@ -223,9 +232,11 @@ const HomeBannerStyle = styled.section`
       padding: 17px;
       overflow: hidden;
       img {
-        height: 100%;
+        height: auto;
         width: 100%;
-        border-radius: 50%;
+        object-fit: cover;
+        object-position: center;
+        border-radius: 150px;
       }
     }
     .hero2-image2 {
