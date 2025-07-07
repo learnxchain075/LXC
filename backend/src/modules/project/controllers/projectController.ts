@@ -22,9 +22,15 @@ import {
 } from "../../../validations/Module/ProjectManagement/projectValidation";
 
 import { notifyWatchers } from "../helpers/notificationHelper";
-import { TaskNotificationType } from "@prisma/client";
+import { TaskNotificationType, TaskStatus } from "@prisma/client";
 import fetch from "node-fetch";
-import { encrypt } from "../../../utils/encryption";
+import { encrypt, decrypt } from "../../../utils/encryption";
+
+const slugify = (str: string): string =>
+  str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 export const createProject = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = projectSchema.safeParse(req.body);
@@ -162,6 +168,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
           subtasks: true,
           parent: true,
           epic: true,
+          githubBranches: true,
           labels: { include: { label: true } },
         },
       }),
@@ -227,6 +234,7 @@ export const getTask = async (req: Request, res: Response, next: NextFunction): 
         timelineLogs: true,
         comments: true,
         attachments: true,
+        githubBranches: true,
         labels: { include: { label: true } },
       },
     });
@@ -511,8 +519,43 @@ export const createGitHubBranch = async (req: Request, res: Response, next: Next
         errors: [...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors)],
       });
     }
+    const task = await prisma.task.findUnique({
+      where: { id: params.data.id },
+      include: { project: { include: { githubRepos: true } } },
+    });
+    if (!task || !task.project.githubRepos[0]) {
+      return res.status(400).json({ message: "GitHub repository not linked" });
+    }
+    const repo = task.project.githubRepos[0];
+    const [owner, repoName] = repo.repoName.split("/");
+    const base = body.data.base || repo.defaultBranch;
+    const branchName = body.data.name || `feature/${task.id}-${slugify(task.title)}`;
+
+    const headers: any = {
+      "User-Agent": "LXC-App",
+      Authorization: `token ${decrypt(repo.token)}`,
+      Accept: "application/vnd.github+json",
+    };
+
+    // Get base branch commit sha
+    const baseRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/git/ref/heads/${base}`, { headers });
+    if (!baseRes.ok) {
+      return res.status(400).json({ message: "Invalid base branch" });
+    }
+    const baseJson: any = await baseRes.json();
+    const createRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/git/refs`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha: baseJson.object.sha }),
+    });
+    if (!createRes.ok) {
+      const err = await createRes.text();
+      return res.status(400).json({ message: "GitHub branch creation failed", error: err });
+    }
+
+    const url = `https://github.com/${owner}/${repoName}/tree/${branchName}`;
     const branch = await prisma.gitHubBranch.create({
-      data: { taskId: params.data.id, ...body.data },
+      data: { taskId: params.data.id, name: branchName, url, prUrl: body.data.prUrl || null, status: body.data.status || null },
     });
     res.status(201).json(branch);
   } catch (error) {
@@ -704,4 +747,40 @@ export const getNotifications = async (req: Request, res: Response, next: NextFu
   } catch (error) {
     next(handlePrismaError(error));
   }
+};
+
+export const handleGitHubWebhook = async (req: Request, res: Response): Promise<any> => {
+  const event = req.headers["x-github-event"];
+  const payload = req.body;
+  if (event === "pull_request") {
+    const branchName = payload.pull_request.head.ref;
+    const action = payload.action;
+    const merged = payload.pull_request.merged;
+    const prUrl = payload.pull_request.html_url;
+    const gh = await prisma.gitHubBranch.findFirst({ where: { name: branchName } });
+    if (gh) {
+      await prisma.gitHubBranch.update({ where: { id: gh.id }, data: { prUrl, status: merged ? "merged" : action } });
+      let status: TaskStatus | null = null;
+      if (action === "opened") status = TaskStatus.REVIEW;
+      else if (merged) status = TaskStatus.DONE;
+      else if (action === "closed") status = TaskStatus.IN_PROGRESS;
+      if (status) {
+        await prisma.task.update({ where: { id: gh.taskId }, data: { status } });
+        await prisma.timelineLog.create({
+          data: { taskId: gh.taskId, action: "STATUS_CHANGE", details: `Status set to ${status}` },
+        });
+      }
+    }
+  } else if (event === "check_suite" || event === "check_run") {
+    const branchName = payload.check_suite?.head_branch || payload.check_run?.check_suite?.head_branch;
+    const conclusion = payload.check_suite?.conclusion || payload.check_run?.conclusion;
+    if (branchName && conclusion) {
+      const gh = await prisma.gitHubBranch.findFirst({ where: { name: branchName } });
+      if (gh) {
+        const status = conclusion === "success" ? "success" : "failed";
+        await prisma.gitHubBranch.update({ where: { id: gh.id }, data: { status } });
+      }
+    }
+  }
+  res.json({ ok: true });
 };
