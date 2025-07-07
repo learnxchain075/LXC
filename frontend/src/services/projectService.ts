@@ -66,3 +66,15 @@ export const createEpic = (data: any) => BaseApi.postRequest("/epic", data);
 export const updateEpic = (id: string, data: any) =>
   BaseApi.putRequest(`/epic/${id}`, data);
 export const deleteEpic = (id: string) => BaseApi.deleteRequest(`/epic/${id}`);
+
+export const updateWorkflowApi = (projectId: string, data: any) =>
+  BaseApi.putRequest(`/project/${projectId}/workflow`, data);
+
+export const addProjectMemberApi = (projectId: string, data: any) =>
+  BaseApi.postRequest(`/project/${projectId}/users`, data);
+
+export const removeProjectMemberApi = (projectId: string, userId: string) =>
+  BaseApi.deleteRequest(`/project/${projectId}/users/${userId}`);
+
+export const getProjectRole = (projectId: string) =>
+  BaseApi.getRequest(`/project/${projectId}/role`);
