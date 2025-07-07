@@ -1,0 +1,116 @@
+import { useEffect, useState } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import {
+  getProjects,
+  getTasks,
+  updateTaskStatus,
+  getSprints,
+  assignTaskSprint,
+} from '../../services/projectService';
+
+interface Task {
+  id: string;
+  title: string;
+  status: string;
+  sprintId?: string | null;
+}
+
+const columns = ['OPEN', 'IN_PROGRESS', 'REVIEW', 'DONE'];
+
+const TaskBoard = () => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projectId, setProjectId] = useState('');
+  const [projects, setProjects] = useState<any[]>([]);
+  const [sprints, setSprints] = useState<any[]>([]);
+
+  useEffect(() => {
+    getProjects().then(res => setProjects(res.data || []));
+  }, []);
+
+  useEffect(() => {
+    if (projectId) {
+      getTasks(projectId).then(res => setTasks(res.data || []));
+      getSprints(projectId).then(res => setSprints(res.data || []));
+    }
+  }, [projectId]);
+
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+    const taskId = result.draggableId;
+    const newStatus = result.destination.droppableId;
+    const sprintId = result.destination.droppableId.startsWith('sprint-')
+      ? result.destination.droppableId.replace('sprint-', '')
+      : undefined;
+    await updateTaskStatus(taskId, { status: newStatus });
+    if (sprintId !== undefined) {
+      await assignTaskSprint(taskId, { sprintId });
+    }
+    getTasks(projectId).then(res => setTasks(res.data || []));
+  };
+
+  return (
+    <div className="page-wrapper">
+      <div className="container mt-3">
+        <h4>Task Board</h4>
+        <select className="form-select mb-3" value={projectId} onChange={e => setProjectId(e.target.value)}>
+          <option value="">Select Project</option>
+          {projects.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="d-flex overflow-auto">
+            {columns.map(col => (
+              <Droppable droppableId={col} key={col}>
+                {(provided) => (
+                  <div
+                    className="border rounded p-2 me-2" style={{ minWidth: 250 }}
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    <h6 className="text-center">{col}</h6>
+                    {tasks.filter(t => t.status === col && !t.sprintId).map((t, idx) => (
+                      <Draggable key={t.id} draggableId={t.id} index={idx}>
+                        {(p) => (
+                          <div ref={p.innerRef} {...p.draggableProps} {...p.dragHandleProps} className="mb-2 p-2 bg-light border rounded">
+                            {t.title}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            ))}
+            {sprints.map(s => (
+              <Droppable droppableId={`sprint-${s.id}`} key={s.id}>
+                {(provided) => (
+                  <div
+                    className="border rounded p-2 me-2" style={{ minWidth: 250 }}
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    <h6 className="text-center">{s.name}</h6>
+                    {tasks.filter(t => t.sprintId === s.id).map((t, idx) => (
+                      <Draggable key={t.id} draggableId={t.id} index={idx}>
+                        {(p) => (
+                          <div ref={p.innerRef} {...p.draggableProps} {...p.dragHandleProps} className="mb-2 p-2 bg-light border rounded">
+                            {t.title}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            ))}
+          </div>
+        </DragDropContext>
+      </div>
+    </div>
+  );
+};
+
+export default TaskBoard;

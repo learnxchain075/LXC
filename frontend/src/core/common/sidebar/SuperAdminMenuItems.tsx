@@ -285,6 +285,18 @@ const SuperAdminMenuItems = () => {
               <span>Project Dashboard</span>
             </Link>
           </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.taskBoard}
+              onClick={() =>
+                handleClick("Task Board", undefined, getLayoutClass("Task Board"))
+              }
+              className={`${subOpen === "Task Board" ? "subdrop" : ""} ${all_routes.taskBoard === location.pathname ? "active" : ""}`}
+            >
+              <i className="ti ti-layout-kanban"></i>
+              <span>Task Board</span>
+            </Link>
+          </li>
         </ul>
       </li>
 

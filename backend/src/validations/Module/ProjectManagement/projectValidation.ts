@@ -18,6 +18,7 @@ export const taskSchema = z.object({
   status: z.nativeEnum(TaskStatus).optional(),
   deadline: z.coerce.date().optional(),
   createdById: z.string().cuid('Invalid user id'),
+  sprintId: z.string().cuid('Invalid sprint id').optional(),
 });
 
 export const taskStatusSchema = z.object({
@@ -51,4 +52,21 @@ export const githubBranchSchema = z.object({
   name: z.string().min(1, 'Branch name is required'),
   prUrl: z.string().url('Invalid PR url').optional(),
   status: z.string().optional(),
+});
+
+export const sprintSchema = z.object({
+  name: z.string().min(1, 'Sprint name is required'),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  projectId: z.string().cuid('Invalid project id'),
+});
+
+export const updateSprintSchema = sprintSchema.partial();
+
+export const sprintIdParamSchema = z.object({
+  id: z.string().cuid('Invalid sprint id'),
+});
+
+export const assignSprintSchema = z.object({
+  sprintId: z.string().cuid('Invalid sprint id').nullable(),
 });
