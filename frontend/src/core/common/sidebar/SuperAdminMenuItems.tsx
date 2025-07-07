@@ -285,7 +285,7 @@ const SuperAdminMenuItems = () => {
               <span>Project Dashboard</span>
             </Link>
           </li>
-          <li className="submenu">
+          {/* <li className="submenu">
             <Link
               to={all_routes.taskBoard}
               onClick={() =>
@@ -368,7 +368,7 @@ const SuperAdminMenuItems = () => {
               <i className="ti ti-presentation"></i>
               <span>Project Demo</span>
             </Link>
-          </li>
+          </li> */}
         </ul>
       </li>
 
