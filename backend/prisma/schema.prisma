@@ -2338,3 +2338,33 @@ model TaskLabel {
   @@id([taskId, labelId])
 }
 
+
+enum TaskNotificationType {
+  UPDATED
+  COMMENTED
+  COMPLETED
+}
+
+model TaskWatcher {
+  id        String   @id @default(cuid())
+  taskId    String   @map("task_id")
+  userId    String   @map("user_id")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([taskId, userId])
+}
+
+model TaskNotification {
+  id        String               @id @default(cuid())
+  userId    String               @map("user_id")
+  taskId    String               @map("task_id")
+  type      TaskNotificationType @map("notification_type")
+  message   String               @map("message")
+  read      Boolean              @default(false) @map("is_read")
+  createdAt DateTime             @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}

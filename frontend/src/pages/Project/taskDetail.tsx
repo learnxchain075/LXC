@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Form, ProgressBar } from 'react-bootstrap';
-import { getTask, getTaskTimeline, updateTask } from '../../services/projectService';
+import { getTask, getTaskTimeline, updateTask, watchTask } from '../../services/projectService';
 
 interface Log {
   id: string;
@@ -14,6 +14,13 @@ const TaskDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [task, setTask] = useState<any>(null);
   const [logs, setLogs] = useState<Log[]>([]);
+
+  const handleWatch = () => {
+    if (id) {
+      const uid = localStorage.getItem('userId') || '';
+      watchTask(id, uid);
+    }
+  };
 
   const handleToggle = (idx: number) => {
     if (!task) return;
@@ -35,7 +42,10 @@ const TaskDetail = () => {
       <div className="container mt-3">
         {task && (
           <>
-            <h4>{task.title}</h4>
+            <div className="d-flex align-items-center mb-2">
+              <h4 className="me-2">{task.title}</h4>
+              <button className="btn btn-sm btn-outline-primary" onClick={handleWatch}>Watch</button>
+            </div>
             <p>{task.description}</p>
             {Array.isArray(task.checklist) && task.checklist.length > 0 && (
               <div className="mb-3">

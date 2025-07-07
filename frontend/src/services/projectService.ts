@@ -117,3 +117,10 @@ export const createLabel = (projectId: string, data: any) =>
 export const updateLabel = (id: string, data: any) =>
   BaseApi.putRequest(`/label/${id}`, data);
 export const deleteLabel = (id: string) => BaseApi.deleteRequest(`/label/${id}`);
+
+export const watchTask = (taskId: string, userId: string) =>
+  BaseApi.postRequest(`/task/${taskId}/watch`, { userId });
+export const unwatchTask = (taskId: string, userId: string) =>
+  BaseApi.deleteRequest(`/task/${taskId}/watch`, { data: { userId } });
+export const getNotifications = (userId: string) =>
+  BaseApi.getRequest(`/users/${userId}/notifications`);

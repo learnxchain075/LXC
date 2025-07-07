@@ -18,6 +18,7 @@ import useMobileDetection from "../mobileDetection";
 import BaseApi from "../../../services/BaseApi";
 import { toast, ToastContainer } from "react-toastify";
 
+import NotificationsDropdown from "../../components/notifications/NotificationsDropdown";
 
 
 
@@ -163,14 +164,7 @@ const Header = () => {
                 <i className={dataTheme === "default_data_theme" ? "ti ti-moon" : "ti ti-brightness-up"} />
               </Link>
             )}
-            {/* <Link onClick={toggleNotification} to="#" className="btn btn-outline-light bg-white btn-icon position-relative me-1">
-              <i className="ti ti-bell" />
-              <span className="notification-status-dot" />
-            </Link>
-            <Link to={routes.chat} className="btn btn-outline-light bg-white btn-icon position-relative me-1">
-              <i className="ti ti-brand-hipchat" />
-              <span className="chat-status-dot" />
-            </Link> */}
+            <NotificationsDropdown userId={String(localStorage.getItem('userId') || '')} />
             {/* Added direct logout button for cases where dropdown fails */}
          
             {/* <div className="dropdown btn btn-outline-light bg-white btn-icon me-2  "> */}
