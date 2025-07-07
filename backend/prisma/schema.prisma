@@ -297,6 +297,10 @@ model User {
   Comment Comment[]
 
   ProjectMember ProjectMember[]
+
+  TaskWatcher TaskWatcher[]
+
+  TaskNotification TaskNotification[]
 }
 
 model PasswordResetToken {
@@ -2184,6 +2188,8 @@ model Project {
   Epic Epic[]
 
   ProjectMember ProjectMember[]
+
+  Label Label[]
 }
 
 model Task {
@@ -2221,6 +2227,10 @@ model Task {
   epicId   String? @map("epic_id")
   epic     Epic?   @relation(fields: [epicId], references: [id], onDelete: SetNull)
   labels   TaskLabel[]
+
+  TaskWatcher TaskWatcher[]
+
+  TaskNotification TaskNotification[]
 }
 
 model Comment {
