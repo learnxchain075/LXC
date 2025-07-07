@@ -7,7 +7,12 @@ const DevView = () => {
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const [tasks, setTasks] = useState<any[]>([]);
   useEffect(() => {
-    getTasks().then((res) => setTasks(res.data || []));
+    const fetchTasks = () => {
+      getTasks().then((res) => setTasks(res.data || []));
+    };
+    fetchTasks();
+    const intervalId = setInterval(fetchTasks, 30000);
+    return () => clearInterval(intervalId);
   }, []);
   return (
     <div className={`page-wrapper ${

@@ -83,6 +83,8 @@ const ProjectDashboard = () => {
 
   useEffect(() => {
     fetchProjects();
+    const intervalId = setInterval(fetchProjects, 30000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const userId = localStorage.getItem("userId") || "";
