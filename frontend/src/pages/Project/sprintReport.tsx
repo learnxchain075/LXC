@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -15,6 +16,7 @@ import {
   getSprints,
   getSprintBurndown,
 } from '../../services/projectService';
+import ProjectNav from './ProjectNav';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -24,6 +26,7 @@ interface DataPoint {
 }
 
 const SprintReport = () => {
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const [projects, setProjects] = useState<any[]>([]);
   const [projectId, setProjectId] = useState('');
   const [sprints, setSprints] = useState<any[]>([]);
@@ -60,7 +63,10 @@ const SprintReport = () => {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${
+      dataTheme === 'dark_data_theme' ? 'bg-dark text-white' : ''
+    }`}>
+      <ProjectNav />
       <div className="container mt-3">
         <h4>Sprint Report</h4>
         <select

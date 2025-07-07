@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { getProjects, getTasks, updateTask, getLabels } from '../../services/projectService';
+import ProjectNav from './ProjectNav';
 
 const priorities = ['HIGH', 'MEDIUM', 'LOW'];
 
 const Backlog = () => {
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const [projectId, setProjectId] = useState('');
   const [projects, setProjects] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -31,7 +34,10 @@ const Backlog = () => {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${
+      dataTheme === 'dark_data_theme' ? 'bg-dark text-white' : ''
+    }`}>
+      <ProjectNav />
       <div className="container mt-3">
         <h4>Backlog</h4>
         <select className="form-select mb-3" value={projectId} onChange={e => setProjectId(e.target.value)}>

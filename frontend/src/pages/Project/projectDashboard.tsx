@@ -1,4 +1,5 @@
 import React, { useEffect, useState, JSX } from "react";
+import { useSelector } from "react-redux";
 import TaskModal, { ISSUE_OPTIONS, IssueType } from "./TaskModal";
 import {
   getProjects,
@@ -13,6 +14,7 @@ import {
   fetchCIStatus,
   getProjectRole,
 } from "../../services/projectService";
+import ProjectNav from "./ProjectNav";
 
 interface GitHubRepo {
   id: string;
@@ -50,6 +52,7 @@ interface Project {
 }
 
 const ProjectDashboard = () => {
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const [projects, setProjects] = useState<Project[]>([]);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -164,7 +167,10 @@ const ProjectDashboard = () => {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${
+      dataTheme === "dark_data_theme" ? "bg-dark text-white" : ""
+    }`}>
+      <ProjectNav />
       <div className="container mt-4">
         <h3>Projects</h3>
         <div className="mb-3">
