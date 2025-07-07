@@ -88,6 +88,9 @@ const CommonRouteWrapper = () => {
           case "accounts":
             navigate(redirectPath ? redirectPath : all_routes.accountsDashboard, { replace: true });
             break;
+          case "employee":
+            navigate(redirectPath ? redirectPath : all_routes.employeeDashboard, { replace: true });
+            break;
           default:
             navigate("/", { replace: true });
             break;
