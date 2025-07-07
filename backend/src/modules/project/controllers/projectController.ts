@@ -21,6 +21,8 @@ import {
   labelIdParamSchema,
 } from "../../../validations/Module/ProjectManagement/projectValidation";
 
+import { notifyWatchers } from "../helpers/notificationHelper";
+import { TaskNotificationType } from "@prisma/client";
 export const createProject = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = projectSchema.safeParse(req.body);
@@ -237,6 +239,7 @@ export const updateTaskStatus = async (req: Request, res: Response, next: NextFu
         details: `Moved to ${task.stage?.name ?? ""}`,
       },
     });
+    await notifyWatchers(id, TaskNotificationType.UPDATED, `Task moved to ${task.stage?.name ?? ''}`);
     res.json(task);
   } catch (error) {
     next(handlePrismaError(error));
@@ -251,6 +254,7 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
     }
     const { id, authorId, content } = parsed.data;
     const comment = await prisma.comment.create({ data: { taskId: id, authorId, content } });
+    await notifyWatchers(id, TaskNotificationType.COMMENTED, 'New comment added');
     res.status(201).json(comment);
   } catch (error) {
     next(handlePrismaError(error));
@@ -398,6 +402,7 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
         data: { taskId: id, action: "EDIT", details: "Task updated" },
       });
     }
+    await notifyWatchers(id, TaskNotificationType.UPDATED, 'Task updated');
     res.json(task);
   } catch (error) {
     next(handlePrismaError(error));
@@ -589,6 +594,55 @@ export const deleteLabel = async (req: Request, res: Response, next: NextFunctio
     if (!params.success) return res.status(400).json({ errors: params.error.errors });
     await prisma.label.delete({ where: { id: params.data.id } });
     res.json({ message: 'Label deleted successfully' });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+
+export const watchTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const params = taskIdParamSchema.safeParse(req.params);
+    const userId = req.body.userId as string;
+    if (!params.success || !userId) {
+      return res.status(400).json({ message: 'Invalid request' });
+    }
+    const watcher = await prisma.taskWatcher.upsert({
+      where: { taskId_userId: { taskId: params.data.id, userId } },
+      update: {},
+      create: { taskId: params.data.id, userId },
+    });
+    res.status(201).json(watcher);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const unwatchTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const params = taskIdParamSchema.safeParse(req.params);
+    const userId = req.body.userId as string;
+    if (!params.success || !userId) {
+      return res.status(400).json({ message: 'Invalid request' });
+    }
+    await prisma.taskWatcher.delete({ where: { taskId_userId: { taskId: params.data.id, userId } } });
+    res.json({ message: 'Unwatched' });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const getNotifications = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const userId = req.params.userId;
+    if (!userId) return res.status(400).json({ message: 'userId required' });
+    const notes = await prisma.taskNotification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: { task: { select: { id: true, title: true } } },
+    });
+    res.json(notes);
   } catch (error) {
     next(handlePrismaError(error));
   }
