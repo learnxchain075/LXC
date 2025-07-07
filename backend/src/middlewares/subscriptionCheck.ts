@@ -1,32 +1,3 @@
-// import { Request, Response, NextFunction } from 'express';
-// import { prisma } from '../db/prisma';
-
-// export const checkSubscription = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ): Promise<any> => {
-//   try {
-//     const user: any = (req as any).user;
-//     if (!user || !user.schoolId) {
-//       return res.status(403).json({ message: 'Subscription required' });
-//     }
-//     const active = await prisma.subscription.findFirst({
-//       where: {
-//         schoolId: user.schoolId,
-//         isActive: true,
-//         endDate: { gte: new Date() },
-//       },
-//     });
-//     if (!active) {
-//       return res.status(403).json({ message: 'Subscription expired' });
-//     }
-//     next();
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../db/prisma";
 
