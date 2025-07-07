@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { addGitHubRepo } from "../../services/projectService";
+import { addGitHubRepo, setGitHubToken, getGitHubToken } from "../../services/projectService";
 
 const ProjectSettings = () => {
   const { id } = useParams<{ id: string }>();
@@ -8,8 +8,19 @@ const ProjectSettings = () => {
   const [token, setToken] = useState("");
   const [info, setInfo] = useState<any>(null);
 
+  useEffect(() => {
+    getGitHubToken().then((res) => {
+      if (res.data.hasToken) {
+        setToken("saved");
+      }
+    });
+  }, []);
+
   const handleSave = async () => {
     if (!id) return;
+    if (token && token !== "saved") {
+      await setGitHubToken({ token });
+    }
     const res = await addGitHubRepo(id, { repoName, token });
     setInfo(res.data);
   };
@@ -30,6 +41,7 @@ const ProjectSettings = () => {
         <input
           className="form-control"
           value={token}
+          placeholder={token === "saved" ? "Token saved" : ""}
           onChange={(e) => setToken(e.target.value)}
         />
       </div>

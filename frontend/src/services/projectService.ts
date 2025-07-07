@@ -74,6 +74,14 @@ export const addGitHubRepo = (projectId: string, data: any) =>
 export const createGitHubBranch = (taskId: string, data: any) =>
   BaseApi.postRequest(`/task/${taskId}/github-branch`, data);
 
+export const setGitHubToken = (data: any) =>
+  BaseApi.postRequest('/github/token', data);
+
+export const getGitHubToken = () => BaseApi.getRequest('/github/token');
+
+export const fetchCIStatus = (taskId: string) =>
+  BaseApi.getRequest(`/task/${taskId}/ci-status`);
+
 export const getSprints = (projectId: string) =>
   BaseApi.getRequest(`/project/${projectId}/sprints`);
 

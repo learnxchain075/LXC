@@ -31,6 +31,9 @@ import {
   unwatchTask,
   getNotifications,
   handleGitHubWebhook,
+  setGitHubToken,
+  getGitHubToken,
+  fetchTaskCIStatus,
 } from '../controllers/projectController';
 import { getWorkflow } from '../controllers/projectController';
 import { requireProjectRole, requireTaskAdmin, requireSprintAdmin } from '../../../middlewares/projectRole';
@@ -49,6 +52,7 @@ import {
   updateEpic,
   deleteEpic,
 } from '../controllers/epicController';
+import { authenticateToken } from '../../utils/jwt_utils';
 
 const router = express.Router();
 const upload = multer();
@@ -85,6 +89,9 @@ router.post('/task/:id/watch', watchTask);
 router.delete('/task/:id/watch', unwatchTask);
 router.get('/users/:userId/notifications', getNotifications);
 router.post('/webhook/github', handleGitHubWebhook);
+router.post('/github/token', authenticateToken, setGitHubToken);
+router.get('/github/token', authenticateToken, getGitHubToken);
+router.get('/task/:id/ci-status', authenticateToken, fetchTaskCIStatus);
 
 router.get('/epics', getEpics);
 router.post('/epic', createEpic);
