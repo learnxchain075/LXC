@@ -26,7 +26,7 @@ interface GitHubBranch {
 interface Task {
   id: string;
   title: string;
-  status: string;
+  stage?: { id: string; name: string } | null;
   priority: string;
   deadline?: string;
   githubBranches?: GitHubBranch[];
@@ -38,6 +38,7 @@ interface Project {
   description?: string;
   tasks: Task[];
   githubRepos?: GitHubRepo[];
+  workflow?: { stages: { id: string; name: string; order: number }[] } | null;
 }
 
 const ProjectDashboard = () => {
@@ -59,7 +60,13 @@ const ProjectDashboard = () => {
 
   const handleCreateProject = async () => {
     if (!newName) return;
-    await createProject({ name: newName, description: newDesc, createdBy: userId });
+    const defaultWorkflow = [
+      { name: 'Design', order: 1 },
+      { name: 'Dev', order: 2 },
+      { name: 'QA', order: 3 },
+      { name: 'Done', order: 4 },
+    ];
+    await createProject({ name: newName, description: newDesc, createdBy: userId, workflow: defaultWorkflow });
     setNewName('');
     setNewDesc('');
     fetchProjects();
@@ -86,8 +93,7 @@ const ProjectDashboard = () => {
 
   const handleUpdateTask = async (t: Task) => {
     const title = prompt('Task title', t.title) || t.title;
-    const status = prompt('Status', t.status) || t.status;
-    await updateTask(t.id, { title, status });
+    await updateTask(t.id, { title });
     fetchProjects();
   };
 
@@ -168,11 +174,11 @@ const ProjectDashboard = () => {
             Add Task
           </button>
           <div className="row">
-            {['OPEN', 'IN_PROGRESS', 'REVIEW', 'DONE'].map(status => (
-              <div className="col-md-3" key={status}>
-                <h6 className="text-center">{status}</h6>
+            {p.workflow?.stages.sort((a,b) => a.order - b.order).map(stage => (
+              <div className="col-md-3" key={stage.id}>
+                <h6 className="text-center">{stage.name}</h6>
                 <ul className="list-unstyled min-vh-25">
-                  {p.tasks.filter(t => t.status === status).map(t => (
+                  {p.tasks.filter(t => t.stage?.id === stage.id).map(t => (
                     <li key={t.id} className="mb-2 p-2 border rounded">
                       <div className="d-flex justify-content-between">
                         <span>{t.title}</span>

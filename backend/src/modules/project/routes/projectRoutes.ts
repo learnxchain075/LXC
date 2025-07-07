@@ -13,6 +13,7 @@ import {
   updateTask,
   deleteTask,
 } from '../controllers/projectController';
+import { getWorkflow } from '../controllers/projectController';
 import {
   createSprint,
   getSprints,
@@ -42,5 +43,6 @@ router.get('/project/:id/sprints', getSprints);
 router.post('/project/:id/sprints', createSprint);
 router.put('/sprint/:id', updateSprint);
 router.delete('/sprint/:id', deleteSprint);
+router.get('/project/:id/workflow', getWorkflow);
 
 export default router;
