@@ -301,6 +301,8 @@ model User {
   TaskWatcher TaskWatcher[]
 
   TaskNotification TaskNotification[]
+
+  GitHubToken GitHubToken[]
 }
 
 model PasswordResetToken {
