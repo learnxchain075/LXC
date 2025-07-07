@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TaskPriority, TaskStatus } from '@prisma/client';
+import { TaskPriority, TaskStatus, IssueType } from '@prisma/client';
 
 export const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -25,6 +25,9 @@ export const taskSchema = z.object({
   priority: z.nativeEnum(TaskPriority).optional(),
   stageId: z.string().cuid('Invalid stage id').optional(),
   deadline: z.coerce.date().optional(),
+  issueType: z.nativeEnum(IssueType).optional(),
+  severity: z.number().int().min(1).max(5).optional(),
+  storyPoints: z.number().int().min(1).optional(),
   createdById: z.string().cuid('Invalid user id'),
   sprintId: z.string().cuid('Invalid sprint id').optional(),
 });
