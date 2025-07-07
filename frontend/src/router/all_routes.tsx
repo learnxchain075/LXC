@@ -340,6 +340,7 @@ addsection:"/student/add-section",
   taskBoard: "/task-board",
   backlog: "/backlog",
   sprintPlanning: "/sprint-planning",
+  tasksList: "/tasks",
 
   layoutDefault: "/layout-default",
   layoutMini: "/layout-mini",

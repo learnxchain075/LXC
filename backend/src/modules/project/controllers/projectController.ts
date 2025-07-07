@@ -59,7 +59,10 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
       description: parsed.data.description ?? "", // ✅ Ensure string
     };
 
-    const task = await prisma.task.create({ data: taskData, include: { stage: true } });
+    const task = await prisma.task.create({
+      data: taskData,
+      include: { stage: true, parent: true, epic: true },
+    });
     res.status(201).json(task);
   } catch (error) {
     next(handlePrismaError(error));
@@ -71,7 +74,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
     const projectId = req.query.projectId as string | undefined;
     const tasks = await prisma.task.findMany({
       where: projectId ? { projectId } : undefined,
-      include: { comments: true, sprint: true, stage: true },
+      include: { comments: true, sprint: true, stage: true, subtasks: true, parent: true, epic: true },
     });
     res.json(tasks);
   } catch (error) {
