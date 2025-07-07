@@ -16,6 +16,8 @@ import {
   deleteProject,
   updateTask,
   deleteTask,
+  getTask,
+  getTimelineLogs,
 } from '../controllers/projectController';
 import { getWorkflow } from '../controllers/projectController';
 import {
@@ -42,6 +44,8 @@ router.delete('/project/:id', deleteProject);
 router.post('/project/:id/github-repo', addGitHubRepo);
 
 router.get('/tasks', getTasks);
+router.get('/task/:id', getTask);
+router.get('/task/:id/timeline', getTimelineLogs);
 router.post('/task', createTask);
 router.put('/task/:id', updateTask);
 router.delete('/task/:id', deleteTask);

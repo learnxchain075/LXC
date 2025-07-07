@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ProgressBar } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import { all_routes } from '../../router/all_routes';
 import { getProjects, getTasks, getEpics } from '../../services/projectService';
 
 interface Task {
@@ -47,10 +49,16 @@ const TasksList = () => {
           <div className="col-md-8">
             {rootTasks.map(t => (
               <div key={t.id} className="mb-2">
-                <strong>{t.title}</strong>
+                <strong>
+                  <Link to={all_routes.taskDetail.replace(':id', t.id)}>{t.title}</Link>
+                </strong>
                 <ul className="list-unstyled ms-3">
                   {tasks.filter(st => st.parentId === t.id).map(st => (
-                    <li key={st.id}>{st.title} - {st.status}</li>
+                    <li key={st.id}>
+                      <Link to={all_routes.taskDetail.replace(':id', st.id)}>
+                        {st.title}
+                      </Link> - {st.status}
+                    </li>
                   ))}
                 </ul>
               </div>

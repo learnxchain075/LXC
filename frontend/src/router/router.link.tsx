@@ -121,6 +121,7 @@ import TaskBoard from "../pages/Project/taskBoard";
 import Backlog from "../pages/Project/backlog";
 import SprintPlanning from "../pages/Project/sprintPlanning";
 import TasksList from "../pages/Project/tasksList";
+import TaskDetail from "../pages/Project/taskDetail";
 
 import CollectFees from "../pages/SuperAdmin/management/feescollection/collectFees";
 
@@ -1565,6 +1566,12 @@ export const publicRoutes = [
   {
     path: routes.tasksList,
     element: <TasksList />,
+    route: Route,
+    role: ["employee", "superadmin"],
+  },
+  {
+    path: routes.taskDetail,
+    element: <TaskDetail />,
     route: Route,
     role: ["employee", "superadmin"],
   },
