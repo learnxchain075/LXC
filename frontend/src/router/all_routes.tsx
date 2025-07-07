@@ -338,6 +338,8 @@ addsection:"/student/add-section",
   employeeTickets: "/employee/tickets",
   projectDashboard: "/projects",
   taskBoard: "/task-board",
+  backlog: "/backlog",
+  sprintPlanning: "/sprint-planning",
 
   layoutDefault: "/layout-default",
   layoutMini: "/layout-mini",
