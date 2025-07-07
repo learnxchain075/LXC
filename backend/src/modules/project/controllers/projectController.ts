@@ -19,6 +19,7 @@ import {
   labelSchema,
   updateLabelSchema,
   labelIdParamSchema,
+  githubTokenSchema,
 } from "../../../validations/Module/ProjectManagement/projectValidation";
 
 import { notifyWatchers } from "../helpers/notificationHelper";
@@ -783,4 +784,99 @@ export const handleGitHubWebhook = async (req: Request, res: Response): Promise<
     }
   }
   res.json({ ok: true });
+};
+
+export const setGitHubToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<any> => {
+  try {
+    const body = githubTokenSchema.safeParse(req.body);
+    const userId = req.user?.id;
+    if (!userId || !body.success) {
+      return res.status(400).json({
+        errors: body.success ? [] : body.error.errors,
+      });
+    }
+    const encrypted = encrypt(body.data.token);
+    await prisma.gitHubToken.upsert({
+      where: { userId },
+      update: { token: encrypted },
+      create: { userId, token: encrypted },
+    });
+    res.status(201).json({ message: "Token saved" });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const getGitHubToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<any> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const record = await prisma.gitHubToken.findUnique({ where: { userId } });
+    res.json({ hasToken: !!record });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const fetchTaskCIStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<any> => {
+  try {
+    const params = taskIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ errors: params.error.errors });
+    }
+    const task = await prisma.task.findUnique({
+      where: { id: params.data.id },
+      include: {
+        githubBranches: true,
+        project: { include: { githubRepos: true } },
+      },
+    });
+    if (!task || !task.project.githubRepos[0]) {
+      return res.status(404).json({ message: "GitHub data not found" });
+    }
+    const repo = task.project.githubRepos[0];
+    const tokenRec = await prisma.gitHubToken.findUnique({ where: { userId: req.user?.id || "" } });
+    const token = tokenRec ? decrypt(tokenRec.token) : decrypt(repo.token);
+    const [owner, repoName] = repo.repoName.split("/");
+    const headers: any = {
+      "User-Agent": "LXC-App",
+      Authorization: `token ${token}`,
+      Accept: "application/vnd.github+json",
+    };
+    const statuses: any[] = [];
+    for (const b of task.githubBranches) {
+      const commitRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repoName}/commits/${b.name}`,
+        { headers },
+      );
+      if (!commitRes.ok) continue;
+      const commitJson: any = await commitRes.json();
+      const sha = commitJson.sha;
+      const statusRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repoName}/commits/${sha}/status`,
+        { headers },
+      );
+      if (statusRes.ok) {
+        const statusJson: any = await statusRes.json();
+        const state = statusJson.state;
+        statuses.push({ branchId: b.id, state });
+        await prisma.gitHubBranch.update({ where: { id: b.id }, data: { status: state } });
+      }
+    }
+    res.json(statuses);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
 };

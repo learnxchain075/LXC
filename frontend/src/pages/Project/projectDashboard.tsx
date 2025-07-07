@@ -10,6 +10,7 @@ import {
   deleteTask,
   addGitHubRepo,
   createGitHubBranch,
+  fetchCIStatus,
   getProjectRole,
 } from "../../services/projectService";
 
@@ -158,6 +159,7 @@ const ProjectDashboard = () => {
     if (!name) return;
     const prUrl = prompt("PR URL (optional)") || undefined;
     await createGitHubBranch(taskId, { name, prUrl });
+    await fetchCIStatus(taskId);
     fetchProjects();
   };
 
@@ -289,7 +291,12 @@ const ProjectDashboard = () => {
                                   </>
                                 )}
                                 {b.status && (
-                                  <span className="badge bg-secondary ms-1">{b.status}</span>
+                                  <span
+                                    className={`badge ms-1 bg-$
+                                      {b.status === "success" ? "success" : b.status === "failed" ? "danger" : "secondary"}`}
+                                  >
+                                    {b.status}
+                                  </span>
                                 )}
                               </div>
                             ))}
