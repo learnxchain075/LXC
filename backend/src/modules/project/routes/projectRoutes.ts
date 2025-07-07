@@ -18,6 +18,7 @@ import {
   deleteTask,
   getTask,
   getTimelineLogs,
+  getTaskCalendar,
   updateWorkflow,
   addProjectMember,
   removeProjectMember,
@@ -54,6 +55,7 @@ router.delete('/project/:id/users/:userId', requireProjectRole('id', [ProjectRol
 router.get('/project/:id/role', getCurrentProjectRole);
 
 router.get('/tasks', getTasks);
+router.get('/tasks/calendar', getTaskCalendar);
 router.get('/task/:id', getTask);
 router.get('/task/:id/timeline', getTimelineLogs);
 router.post('/task', createTask);

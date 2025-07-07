@@ -24,6 +24,8 @@ export const taskSchema = z.object({
   assignedToId: z.string().cuid('Invalid user id').optional(),
   priority: z.nativeEnum(TaskPriority).optional(),
   stageId: z.string().cuid('Invalid stage id').optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
   deadline: z.coerce.date().optional(),
   issueType: z.nativeEnum(IssueType).optional(),
   severity: z.number().int().min(1).max(5).optional(),

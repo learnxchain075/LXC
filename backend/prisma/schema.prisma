@@ -2185,6 +2185,8 @@ model Task {
   id          String       @id @default(cuid()) @map("task_id")
   title       String       @map("task_title")
   description String       @map("task_description")
+  startDate   DateTime?    @map("start_date")
+  endDate     DateTime?    @map("end_date")
   status      TaskStatus   @default(OPEN) @map("task_status")
   stageId     String?      @map("stage_id")
   stage       WorkflowStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
