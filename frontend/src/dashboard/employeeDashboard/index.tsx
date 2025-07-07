@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ProgressBar } from 'react-bootstrap';
 import { getTasks } from '../../services/projectService';
 
 interface Task {
@@ -6,6 +7,7 @@ interface Task {
   title: string;
   status: string;
   priority: string;
+  checklist?: { text: string; done: boolean }[];
 }
 
 const EmployeeDashboard = () => {
@@ -26,6 +28,14 @@ const EmployeeDashboard = () => {
           {tasks.map((t) => (
             <li key={t.id}>
               {t.title} - {t.status}
+              {Array.isArray(t.checklist) && t.checklist.length > 0 && (
+                <ProgressBar
+                  now={Math.round(
+                    (t.checklist.filter((c) => c.done).length / t.checklist.length) * 100,
+                  )}
+                  className="my-1"
+                />
+              )}
             </li>
           ))}
         </ul>

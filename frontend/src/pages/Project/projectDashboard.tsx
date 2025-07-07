@@ -35,6 +35,7 @@ interface Task {
   storyPoints?: number;
   deadline?: string;
   githubBranches?: GitHubBranch[];
+  checklist?: { text: string; done: boolean }[];
 }
 
 interface Project {

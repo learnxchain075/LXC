@@ -2190,6 +2190,7 @@ model Task {
   id          String       @id @default(cuid()) @map("task_id")
   title       String       @map("task_title")
   description String       @map("task_description")
+  checklist   Json?        @map("checklist")
   startDate   DateTime?    @map("start_date")
   endDate     DateTime?    @map("end_date")
   status      TaskStatus   @default(OPEN) @map("task_status")

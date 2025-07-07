@@ -15,6 +15,7 @@ interface Task {
   title: string;
   parentId?: string | null;
   status: string;
+  checklist?: { text: string; done: boolean }[];
 }
 interface Epic {
   id: string;
@@ -97,6 +98,14 @@ const TasksList = () => {
                     {t.title}
                   </Link>
                 </strong>
+                {Array.isArray(t.checklist) && t.checklist.length > 0 && (
+                  <ProgressBar
+                    now={Math.round(
+                      (t.checklist.filter((c) => c.done).length / t.checklist.length) * 100,
+                    )}
+                    className="my-1"
+                  />
+                )}
                 <ul className="list-unstyled ms-3">
                   {tasks
                     .filter((st) => st.parentId === t.id)
