@@ -17,6 +17,8 @@ export const getTasks = (projectId?: string, sprintId?: string | null) => {
   const query = params.toString();
   return BaseApi.getRequest(`/tasks${query ? `?${query}` : ""}`);
 };
+export const getTask = (id: string) => BaseApi.getRequest(`/task/${id}`);
+export const getTaskTimeline = (id: string) => BaseApi.getRequest(`/task/${id}/timeline`);
 export const createTask = (data: any) => BaseApi.postRequest("/task", data);
 export const updateTask = (id: string, data: any) =>
   BaseApi.putRequest(`/task/${id}`, data);

@@ -104,14 +104,50 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
   }
 };
 
+export const getTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const params = taskIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ errors: params.error.errors });
+    }
+    const task = await prisma.task.findUnique({
+      where: { id: params.data.id },
+      include: { stage: true, subtasks: true, parent: true, epic: true, timelineLogs: true, comments: true, attachments: true },
+    });
+    res.json(task);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const getTimelineLogs = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const params = taskIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ errors: params.error.errors });
+    }
+    const logs = await prisma.timelineLog.findMany({ where: { taskId: params.data.id }, orderBy: { timestamp: 'asc' } });
+    res.json(logs);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
 export const updateTaskStatus = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = taskStatusSchema.safeParse({ ...req.params, ...req.body });
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
     }
-    const { id, stageId } = parsed.data;
+  const { id, stageId } = parsed.data;
     const task = await prisma.task.update({ where: { id }, data: { stageId }, include: { stage: true } });
+    await prisma.timelineLog.create({
+      data: {
+        taskId: id,
+        action: 'STATUS_CHANGE',
+        details: `Moved to ${task.stage?.name ?? ''}`,
+      },
+    });
     res.json(task);
   } catch (error) {
     next(handlePrismaError(error));
@@ -261,7 +297,21 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
     }
 
     const { id } = paramsResult.data;
+    const existing = await prisma.task.findUnique({ where: { id } });
     const task = await prisma.task.update({ where: { id }, data: bodyResult.data });
+    if (bodyResult.data.assignedToId && bodyResult.data.assignedToId !== existing?.assignedToId) {
+      await prisma.timelineLog.create({
+        data: {
+          taskId: id,
+          action: 'ASSIGNEE_CHANGE',
+          details: `Assigned to ${bodyResult.data.assignedToId}`,
+        },
+      });
+    } else {
+      await prisma.timelineLog.create({
+        data: { taskId: id, action: 'EDIT', details: 'Task updated' },
+      });
+    }
     res.json(task);
   } catch (error) {
     next(handlePrismaError(error));

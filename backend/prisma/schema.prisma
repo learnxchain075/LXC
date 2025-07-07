@@ -2150,6 +2150,12 @@ enum IssueType {
   IMPROVEMENT
 }
 
+enum TimelineAction {
+  STATUS_CHANGE
+  ASSIGNEE_CHANGE
+  EDIT
+}
+
 
 model Project {
   id          String   @id @default(cuid()) @map("project_id")
@@ -2252,7 +2258,8 @@ model TimelineLog {
   id        String     @id @default(cuid()) @map("timeline_log_id")
   taskId    String     @map("task_id")
   task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  status    TaskStatus @map("task_status")
+  action    TimelineAction @map("action")
+  details   String?   @map("details")
   timestamp DateTime   @default(now())
 }
 

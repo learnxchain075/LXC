@@ -341,6 +341,7 @@ addsection:"/student/add-section",
   backlog: "/backlog",
   sprintPlanning: "/sprint-planning",
   tasksList: "/tasks",
+  taskDetail: "/task/:id",
 
   layoutDefault: "/layout-default",
   layoutMini: "/layout-mini",
