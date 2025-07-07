@@ -30,6 +30,7 @@ import {
   watchTask,
   unwatchTask,
   getNotifications,
+  handleGitHubWebhook,
 } from '../controllers/projectController';
 import { getWorkflow } from '../controllers/projectController';
 import { requireProjectRole, requireTaskAdmin, requireSprintAdmin } from '../../../middlewares/projectRole';
@@ -83,6 +84,7 @@ router.patch('/task/:id/sprint', assignTaskSprint);
 router.post('/task/:id/watch', watchTask);
 router.delete('/task/:id/watch', unwatchTask);
 router.get('/users/:userId/notifications', getNotifications);
+router.post('/webhook/github', handleGitHubWebhook);
 
 router.get('/epics', getEpics);
 router.post('/epic', createEpic);

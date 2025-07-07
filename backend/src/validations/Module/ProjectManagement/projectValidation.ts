@@ -83,7 +83,9 @@ export const githubRepoSchema = z.object({
 
 export const githubBranchSchema = z.object({
   name: z.string().min(1, "Branch name is required"),
+  base: z.string().optional(),
   prUrl: z.string().url("Invalid PR url").optional(),
+  url: z.string().url("Invalid branch url").optional(),
   status: z.string().optional(),
 });
 
