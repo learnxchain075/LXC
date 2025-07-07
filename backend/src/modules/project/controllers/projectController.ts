@@ -24,8 +24,15 @@ import {
 
 import { notifyWatchers } from "../helpers/notificationHelper";
 import { TaskNotificationType, TaskStatus, ProjectRole } from "@prisma/client";
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 import { encrypt, decrypt } from "../../../utils/encryption";
+
+
+// node-fetch is ESM-only. Use a dynamic import to access it from this
+// CommonJS module so calls to `fetch` work as expected.
+const fetch = (...args: [input: string, init?: any]) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+
 
 const slugify = (str: string): string =>
   str
