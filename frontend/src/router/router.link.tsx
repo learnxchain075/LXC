@@ -118,6 +118,8 @@ import EmployeeTickets from "../pages/Employee/tickets";
 import EmployeeDashboard from "../dashboard/employeeDashboard";
 import ProjectDashboard from "../pages/Project/projectDashboard";
 import TaskBoard from "../pages/Project/taskBoard";
+import Backlog from "../pages/Project/backlog";
+import SprintPlanning from "../pages/Project/sprintPlanning";
 
 import CollectFees from "../pages/SuperAdmin/management/feescollection/collectFees";
 
@@ -1544,6 +1546,18 @@ export const publicRoutes = [
   {
     path: routes.taskBoard,
     element: <TaskBoard />,
+    route: Route,
+    role: ["employee", "superadmin"],
+  },
+  {
+    path: routes.backlog,
+    element: <Backlog />,
+    route: Route,
+    role: ["employee", "superadmin"],
+  },
+  {
+    path: routes.sprintPlanning,
+    element: <SprintPlanning />,
     route: Route,
     role: ["employee", "superadmin"],
   },
