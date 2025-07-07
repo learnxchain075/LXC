@@ -211,6 +211,7 @@ export const getUserPermissions = async (userId: string) => {
       Role.parent,
       Role.hostel,
       Role.library,
+      Role.employee,
     ];
 
     // 👇 If no permissions in DB, and role is in default allowed list
