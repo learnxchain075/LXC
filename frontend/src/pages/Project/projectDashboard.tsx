@@ -10,6 +10,7 @@ import {
   deleteTask,
   addGitHubRepo,
   createGitHubBranch,
+  getProjectRole,
 } from '../../services/projectService';
 
 interface GitHubRepo {
@@ -49,6 +50,7 @@ const ProjectDashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [roles, setRoles] = useState<Record<string, string>>({});
   const issueMap = ISSUE_OPTIONS.reduce((acc, cur) => {
     acc[cur.value as IssueType] = cur;
     return acc;
@@ -56,7 +58,17 @@ const ProjectDashboard = () => {
 
   const fetchProjects = () => {
     getProjects()
-      .then(res => setProjects(res.data || []))
+      .then(async res => {
+        setProjects(res.data || []);
+        const rolesMap: Record<string, string> = {};
+        for (const p of res.data || []) {
+          try {
+            const r = await getProjectRole(p.id);
+            rolesMap[p.id] = r.data.role;
+          } catch {}
+        }
+        setRoles(rolesMap);
+      })
       .catch(() => {});
   };
 
@@ -158,24 +170,28 @@ const ProjectDashboard = () => {
           <div className="d-flex justify-content-between align-items-center">
             <h5>{p.name}</h5>
             <div>
-              <button
-                className="btn btn-sm btn-secondary me-2"
-                onClick={() => handleUpdateProject(p)}
-              >
-                Edit
-              </button>
-              <button
-                className="btn btn-sm btn-danger"
-                onClick={() => handleDeleteProject(p.id)}
-              >
-                Delete
-              </button>
-              <button
-                className="btn btn-sm btn-outline-primary ms-2"
-                onClick={() => handleAddRepo(p.id)}
-              >
-                Add Repo
-              </button>
+              {roles[p.id] === 'ADMIN' && (
+                <>
+                  <button
+                    className="btn btn-sm btn-secondary me-2"
+                    onClick={() => handleUpdateProject(p)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => handleDeleteProject(p.id)}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-primary ms-2"
+                    onClick={() => handleAddRepo(p.id)}
+                  >
+                    Add Repo
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <p className="text-muted">{p.description}</p>
@@ -214,12 +230,14 @@ const ProjectDashboard = () => {
                           >
                             Branch
                           </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDeleteTask(t.id)}
-                          >
-                            Delete
-                          </button>
+                          {roles[p.id] === 'ADMIN' && (
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDeleteTask(t.id)}
+                            >
+                              Delete
+                            </button>
+                          )}
                         </span>
                       </div>
                     </li>

@@ -6,9 +6,11 @@ import { prisma } from '../src/db/prisma';
 
 jest.mock('../src/db/prisma', () => {
   const project = { create: jest.fn(), findMany: jest.fn() };
-  const task = { create: jest.fn(), findMany: jest.fn(), update: jest.fn() };
+  const task = { create: jest.fn(), findMany: jest.fn(), update: jest.fn(), findUnique: jest.fn() };
   const comment = { create: jest.fn() };
-  return { prisma: { project, task, comment } };
+  const projectMember = { findUnique: jest.fn() };
+  const sprint = { findUnique: jest.fn() };
+  return { prisma: { project, task, comment, projectMember, sprint } };
 });
 
 jest.mock('../src/utils/jwt_utils', () => {
@@ -35,5 +37,12 @@ describe('Project routes e2e', () => {
     const res = await request(app).post('/project').send({ name: 'P', createdBy: 'u1' });
     expect(res.status).toBe(201);
     expect(prisma.project.create).toHaveBeenCalled();
+  });
+
+  it('denies deleting task for non admin', async () => {
+    (prisma.task.findUnique as jest.Mock).mockResolvedValue({ projectId: 'p1' });
+    (prisma.projectMember.findUnique as jest.Mock).mockResolvedValue({ role: 'DEVELOPER' });
+    const res = await request(app).delete('/task/1');
+    expect(res.status).toBe(403);
   });
 });
