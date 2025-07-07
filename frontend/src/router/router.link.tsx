@@ -117,6 +117,7 @@ import StaffsAttendance from "../pages/SuperAdmin/hrm/staff-list/staffs-attendan
 import EmployeeTickets from "../pages/Employee/tickets";
 import EmployeeDashboard from "../dashboard/employeeDashboard";
 import ProjectDashboard from "../pages/Project/projectDashboard";
+import ProjectSettings from "../pages/Project/projectSettings";
 import TaskBoard from "../pages/Project/taskBoard";
 import Backlog from "../pages/Project/backlog";
 import SprintPlanning from "../pages/Project/sprintPlanning";
@@ -191,7 +192,6 @@ import UnderMaintenance from "../pages/Common/underMaintenance";
 
 import Calendar from "../apps/calendar";
 
-
 import Storage from "../pages/SuperAdmin/settings/otherSettings/storage";
 
 // super admin pages
@@ -262,102 +262,95 @@ import RefundPolicyPage from "../lxc-home/pages/RefundPolicyPage";
 import AddSectionModal from "../pages/Admin/AddSectionModal";
 import StudentIdCardGenerator from "../pages/Admin/peoples/students/student-id-card";
 
-
 const routes = all_routes;
 
 export const publicRoutes = [
-
-
-
   // ************************************ Super Admin Routes *********************************************************
   {
     path: routes.superAdminDashboard,
-    element: < SuperAdminDashboard />,
+    element: <SuperAdminDashboard />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.addSchools,
     element: <RegisterSchool />,
     route: Route,
-    role: ["superadmin"]
-
+    role: ["superadmin"],
   },
 
   {
     path: routes.schoolProfile,
     element: <SchoolProfilePage />,
     route: Route,
-    role: ["superadmin"]
-
+    role: ["superadmin"],
   },
   {
     path: routes.CouponManager,
     element: <CouponManager />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.getSchools,
     element: <GetSchools />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.setSchoolLocation,
     element: <SetSchoolLocation />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.featuresRequestList,
     element: <SuperAdminFetauresRequestListPage />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.logs,
     element: <Logs />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.schoolPlanSubscription,
     element: <PlansAccessPage />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
-   {
+  {
     path: routes.addsection,
-    element: < AddSectionModal/>,
+    element: <AddSectionModal />,
     route: Route,
-    role: []
+    role: [],
   },
   {
     path: routes.demoRequest,
     element: <DemoBookingList />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.companyAccounts,
     element: <AllTransactions />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.companyAccountsAdd,
     element: <AddTransaction />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   {
     path: routes.companyAccountsSummary,
     element: <Summary />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
-
 
   // ************************************  Admin Routes *********************************************************
 
@@ -365,35 +358,34 @@ export const publicRoutes = [
     path: routes.adminDashboard,
     element: <AdminDashboard />,
     route: Route,
-    role: ["admin"]
+    role: ["admin"],
   },
   {
     path: routes.requestFeatures,
     element: <AdminRequestFetauresPage />,
     route: Route,
-    role: ["admin"]
+    role: ["admin"],
   },
   {
     path: routes.adminFeedback,
     element: <AdminFeedbackPage />,
     route: Route,
-    role: ["admin"]
+    role: ["admin"],
   },
   {
     path: routes.studentIdCard,
     element: <StudentIdCardGenerator />,
     route: Route,
-    role: ["admin"]
+    role: ["admin"],
   },
 
   // ************************************  Teacher Routes *********************************************************
 
   {
-
     path: routes.teacherDashboard,
     element: <TeacherDashboard />,
     route: Route,
-    role: ["teacher"]
+    role: ["teacher"],
   },
 
   // ************************************  Student Routes *********************************************************
@@ -401,51 +393,51 @@ export const publicRoutes = [
     path: routes.studentDashboard,
     element: <StudentDasboard />,
     route: Route,
-    role: ["student"]
-  }, {
+    role: ["student"],
+  },
+  {
     path: routes.studenthomedashboard,
     element: <HomeDashboard />,
     route: Route,
-    role: ["student"]
+    role: ["student"],
   },
   {
     path: routes.studentlearderboard,
     element: <Leaderboard />,
     route: Route,
-    role: ["student"]
+    role: ["student"],
   },
   {
     path: routes.Attendancechartstudent,
     element: <Attendancechartstudent />,
     route: Route,
-    role: ["student"]
+    role: ["student"],
   },
   {
     path: routes.FeesOverviewstudent,
     element: <FeesOverview />,
     route: Route,
-    role: ["student"]
+    role: ["student"],
   },
   {
     path: routes.noticeBoardstudent,
     element: <NoticeBoardstudent />,
     route: Route,
-    role: ["student"]
+    role: ["student"],
   },
   {
     path: routes.AcademicResourcesstudent,
     element: <AcademicResources />,
     route: Route,
-    role: ["student"]
+    role: ["student"],
   },
   // ************************************  Parents Routes *********************************************************
   {
     path: routes.parentDashboard,
     element: <ParentDashboard />,
     route: Route,
-    role: ["parent"]
+    role: ["parent"],
   },
-
 
   // ************************************  Accounts Routes *********************************************************
 
@@ -453,8 +445,17 @@ export const publicRoutes = [
     path: routes.accountsDashboard,
     element: <AccountDashboard />,
     route: Route,
-    role: ["superadmin", "admin", "accounts", "teacher", "student", "parent", "hostel", "transport", "library"]
-
+    role: [
+      "superadmin",
+      "admin",
+      "accounts",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+    ],
   },
 
   // ************************************  Hostel Routes *********************************************************
@@ -463,7 +464,17 @@ export const publicRoutes = [
     path: routes.hostelDashboard,
     element: <HostelDashboard />,
     route: Route,
-    role: ["superadmin", "admin", "hostel", "teacher", "student", "parent", "accounts", "transport", "library"]
+    role: [
+      "superadmin",
+      "admin",
+      "hostel",
+      "teacher",
+      "student",
+      "parent",
+      "accounts",
+      "transport",
+      "library",
+    ],
   },
 
   // ************************************  Library Routes *********************************************************
@@ -472,17 +483,35 @@ export const publicRoutes = [
     path: routes.libraryDashboard,
     element: <LibraryDashboard />,
     route: Route,
-    role: ["superadmin", "admin", "library", "teacher", "student", "parent", "accounts", "hostel", "transport"]
+    role: [
+      "superadmin",
+      "admin",
+      "library",
+      "teacher",
+      "student",
+      "parent",
+      "accounts",
+      "hostel",
+      "transport",
+    ],
   },
   // ************************************  Transport Routes *********************************************************
-
-
 
   {
     path: routes.transportDashboard,
     element: <TransportDashboard />,
     route: Route,
-    role: ["superadmin", "admin", "transport", "teacher", "student", "parent", "accounts", "hostel", "library"]
+    role: [
+      "superadmin",
+      "admin",
+      "transport",
+      "teacher",
+      "student",
+      "parent",
+      "accounts",
+      "hostel",
+      "library",
+    ],
   },
 
   // ************************************  Common  Routes *********************************************************
@@ -491,15 +520,14 @@ export const publicRoutes = [
     path: routes.vistor,
     element: <Vistor />,
     route: Route,
-    role: ["admin", "teacher"]
+    role: ["admin", "teacher"],
   },
-
 
   {
     path: routes.vistordetails,
     element: <VistorDetails />,
     route: Route,
-    role: ["admin", "teacher"]
+    role: ["admin", "teacher"],
   },
   // {
   //   path: routes.vistorsdetails,
@@ -507,106 +535,179 @@ export const publicRoutes = [
   //   route: Route,
   // },
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   {
     path: routes.audioCall,
     element: <AudioCall />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.callHistory,
     element: <CallHistory />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.callHistory,
     element: <CallHistory />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
 
   {
     path: routes.connectedApps,
     element: <ConnectedApps />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.countries,
     element: <Countries />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.blankPage,
     element: <BlankPage />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.calendar,
     element: <Calendar />,
     route: Route,
-    role: []
+    role: [],
   },
 
   {
     path: routes.membershipplan,
     element: <Membershipplan />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
-
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.membershipAddon,
     element: <MembershipAddon />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.membershipTransaction,
     element: <MembershipTransaction />,
     route: Route,
-    role: ["superadmin"]
-
+    role: ["superadmin"],
   },
   {
     path: routes.membershipcard,
     element: <Membershipplancard />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.notes,
     element: <Notes />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.countries,
@@ -621,26 +722,23 @@ export const publicRoutes = [
     role: [],
   },
 
-
-
   {
     path: routes.deleteRequest,
     element: <DeleteRequest />,
     route: Route,
-    role: []
-
+    role: [],
   },
   {
     path: routes.cities,
     element: <Cities />,
     route: Route,
-    role: []
+    role: [],
   },
   {
     path: routes.banIpAddress,
     element: <BanIpAddress />,
     route: Route,
-    role: ["superadmin"]
+    role: ["superadmin"],
   },
   // {
   //   path: routes.localization,
@@ -651,64 +749,163 @@ export const publicRoutes = [
     path: routes.preference,
     element: <Preference />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.todo,
     element: <Todo />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.email,
     element: <Email />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.videoCall,
     element: <Videocall />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.chat,
     element: <Chat />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.pages,
     element: <Pages />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
 
   {
     path: routes.fileManager,
     element: <FileManager />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.faq,
     element: <Faq />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
-
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
 
   {
     path: routes.states,
     element: <States />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.testimonials,
     element: <Testimonials />,
     route: Route,
-    role: ["superadmin", "admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "superadmin",
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   // {
   //   path: routes.clipboard,
@@ -917,89 +1114,94 @@ export const publicRoutes = [
   //   route: Route,
   // },
 
-
   // Peoples Module
   {
     path: routes.studentGrid,
     element: <StudentGrid />,
     route: Route,
-    role: ["admin", "teacher"]
+    role: ["admin", "teacher"],
   },
   {
     path: routes.studentList,
     element: <StudentList />,
     route: Route,
-    role: ["admin", "teacher"]
+    role: ["admin", "teacher"],
   },
   {
     path: routes.addStudent,
     element: <AddStudent />,
     route: Route,
-    role: ["admin", "teacher"]
+    role: ["admin", "teacher"],
   },
   {
     path: routes.editStudent,
     element: <AddStudent />,
     route: Route,
-    role: ["admin", "teacher"]
-
+    role: ["admin", "teacher"],
   },
   {
     path: routes.studentLibrary,
     element: <StudentLibrary />,
     route: Route,
-    role: ["admin", "teacher", "library", "parent", "student",]
+    role: ["admin", "teacher", "library", "parent", "student"],
   },
   {
     path: routes.studentDetail,
     element: <StudentDetails />,
     route: Route,
-    role: ["admin", "teacher", "accounts", "parent", "student"]
+    role: ["admin", "teacher", "accounts", "parent", "student"],
   },
   {
     path: routes.addbustopadmin,
-    element: <AddBusStop/>,
+    element: <AddBusStop />,
     route: Route,
-    role: ["admin", "teacher",]
+    role: ["admin", "teacher"],
   },
   {
     path: routes.studentFees,
     element: <StudentFees />,
     route: Route,
-    role: ["admin", "teacher", "accounts", "parent", "student"]
+    role: ["admin", "teacher", "accounts", "parent", "student"],
   },
   {
     path: routes.studentLeaves,
     element: <StudentLeaves />,
     route: Route,
-    role: ["admin", "teacher", "accounts", "parent", "student"]
-
+    role: ["admin", "teacher", "accounts", "parent", "student"],
   },
   {
     path: routes.studentResult,
     element: <StudentResult />,
     route: Route,
-    role: ["admin", "teacher", "parent", "student"]
-
+    role: ["admin", "teacher", "parent", "student"],
   },
   {
     path: routes.studentTimeTable,
     element: <StudentTimeTable />,
     route: Route,
-    role: ["admin", "teacher", "parent", "student"]
+    role: ["admin", "teacher", "parent", "student"],
   },
   {
     path: routes.studentPromotion,
     element: <StudentPromotion />,
     route: Route,
-    role: ["admin", "teacher", "parent", "student", "accounts"]
+    role: ["admin", "teacher", "parent", "student", "accounts"],
   },
   {
     path: routes.AcademicReason,
     element: <AcademicReason />,
 
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.classSyllabus,
@@ -1022,18 +1224,27 @@ export const publicRoutes = [
   {
     path: routes.DoubtForum,
     element: <DoubtForum />,
-    role: []
+    role: [],
   },
-   {
+  {
     path: routes.resetPassword,
     element: <ResetPassword />,
-    role: []
+    role: [],
   },
   {
     path: routes.AcademicUploads,
     element: <AcademicUploads />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.SelfEnhancement,
@@ -1045,13 +1256,22 @@ export const publicRoutes = [
     path: routes.AssignTeacherToClass,
     element: <AssignTeacherToClass />,
     route: Route,
-    role: ["admin", "staff"]
+    role: ["admin", "staff"],
   },
   {
     path: routes.homeclasses,
     element: <Classeshome />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"]
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.classSubject,
@@ -1103,13 +1323,31 @@ export const publicRoutes = [
     path: routes.classRoutine,
     element: <ClassRoutine />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.sheduleClasses,
     element: <ScheduleClasses />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.exam,
@@ -1133,7 +1371,16 @@ export const publicRoutes = [
     path: routes.staff,
     element: <Staff />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.departments,
@@ -1145,20 +1392,28 @@ export const publicRoutes = [
     path: routes.classes,
     element: <Classes />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.classHomeWork,
     element: <ClassHomeWork />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent"]
+    role: ["admin", "teacher", "student", "parent"],
   },
   {
     path: routes.assignment,
     element: <Assignment />,
     route: Route,
     role: ["admin", "teacher", "student", "parent"],
-
   },
   {
     path: routes.examResult,
@@ -1183,7 +1438,6 @@ export const publicRoutes = [
     element: <Teachershow />,
     route: Route,
     role: ["admin", "teacher", "accounts"],
-
   },
   {
     path: routes.teacherList,
@@ -1200,17 +1454,15 @@ export const publicRoutes = [
   {
     path: routes.addExam,
 
-    element: <AddExam />,  //added
+    element: <AddExam />, //added
     route: Route,
-    role: ["admin", "teacher",]
-
+    role: ["admin", "teacher"],
   },
   {
     path: routes.uplaodPyq,
-    element: <PyqUpload />,  //added
+    element: <PyqUpload />, //added
     route: Route,
-    role: ["admin", "teacher",],
-
+    role: ["admin", "teacher"],
   },
   {
     path: routes.editTeacher,
@@ -1271,25 +1523,43 @@ export const publicRoutes = [
     path: routes.classTimetable,
     element: <ClassTimetable />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel",],
+    role: ["admin", "teacher", "student", "parent", "hostel"],
   },
   {
     path: routes.payroll,
     element: <Payroll />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.holidays,
     element: <Holiday />,
     route: Route,
-    role: []
+    role: [],
   },
   {
     path: routes.designation,
     element: <Designation />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.listLeaves,
@@ -1301,7 +1571,7 @@ export const publicRoutes = [
     path: routes.staffDetails,
     element: <StaffDetails />,
     route: Route,
-    role: ["admin",]
+    role: ["admin"],
   },
   {
     path: routes.staffPayroll,
@@ -1320,27 +1590,27 @@ export const publicRoutes = [
     path: routes.layoutDefault,
     element: <AdminDashboard />,
     route: Route,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.layoutMini,
     element: <AdminDashboard />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.layoutRtl,
     element: <AdminDashboard />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.layoutBox,
     element: <AdminDashboard />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.layoutDark,
     element: <AdminDashboard />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.guardiansGrid,
@@ -1352,7 +1622,7 @@ export const publicRoutes = [
     path: routes.guardiansList,
     element: <GuardianList />,
     route: Route,
-    role: ["admin",]
+    role: ["admin"],
   },
   {
     path: routes.feesGroup,
@@ -1371,14 +1641,12 @@ export const publicRoutes = [
     element: <FeesMaster />,
     route: Route,
     role: [],
-
   },
   {
     path: routes.ClassesRegisteradmin,
     element: <ClassesRegister />,
     route: Route,
     role: [],
-
   },
   {
     path: routes.FeesManagements,
@@ -1431,7 +1699,16 @@ export const publicRoutes = [
     path: routes.sportsList,
     element: <SportsList />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.playerList,
@@ -1443,19 +1720,19 @@ export const publicRoutes = [
     path: routes.hostelRoom,
     element: <HostelRooms />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel",],
+    role: ["admin", "teacher", "student", "parent", "hostel"],
   },
   {
     path: routes.hostelType,
     element: <HostelType />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel",],
+    role: ["admin", "teacher", "student", "parent", "hostel"],
   },
   {
     path: routes.hostelList,
     element: <HostelList />,
     route: Route,
-    role: ["admin", "hostel",],
+    role: ["admin", "hostel"],
   },
   {
     path: routes.transportRoutes,
@@ -1467,7 +1744,7 @@ export const publicRoutes = [
     path: routes.transportAssignVehicle,
     element: <TransportAssignVehicle />,
     route: Route,
-    role: ["admin", "transport",],
+    role: ["admin", "transport"],
   },
   {
     path: routes.transportPickupPoints,
@@ -1479,19 +1756,28 @@ export const publicRoutes = [
     path: routes.transportVehicleDrivers,
     element: <TransportVehicleDrivers />,
     route: Route,
-    role: ["admin", "transport",],
+    role: ["admin", "transport"],
   },
   {
     path: routes.transportVehicle,
     element: <TransportVehicle />,
     route: Route,
-    role: ["admin", "transport",],
+    role: ["admin", "transport"],
   },
   {
     path: routes.approveRequest,
     element: <ApproveRequest />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.studentAttendance,
@@ -1545,6 +1831,12 @@ export const publicRoutes = [
   {
     path: routes.projectDashboard,
     element: <ProjectDashboard />,
+    route: Route,
+    role: ["employee", "superadmin"],
+  },
+  {
+    path: routes.projectSettings,
+    element: <ProjectSettings />,
     route: Route,
     role: ["employee", "superadmin"],
   },
@@ -1655,37 +1947,64 @@ export const publicRoutes = [
     path: routes.guardiansList,
     element: <GuardianList />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.expense,
     element: <Expense />,
     route: Route,
-    role: ["admin",],
+    role: ["admin"],
   },
   {
     path: routes.expenseCategory,
     element: <ExpensesCategory />,
     route: Route,
-    role: ["admin",],
+    role: ["admin"],
   },
   {
     path: routes.invoice,
     element: <Invoice />,
     route: Route,
-    role: []
+    role: [],
   },
   {
     path: routes.events,
     element: <Events />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
   {
     path: routes.noticeBoard,
     element: <NoticeBoard />,
     route: Route,
-    role: ["admin", "teacher", "student", "parent", "hostel", "transport", "library", "accounts"],
+    role: [
+      "admin",
+      "teacher",
+      "student",
+      "parent",
+      "hostel",
+      "transport",
+      "library",
+      "accounts",
+    ],
   },
 
   //Settings
@@ -1693,164 +2012,163 @@ export const publicRoutes = [
   {
     path: routes.profilesettings,
     element: <Profilesettings />,
-    role: []
-
+    role: [],
   },
   {
     path: routes.securitysettings,
     element: <Securitysettings />,
-    role: []
+    role: [],
   },
   {
     path: routes.notificationssettings,
     element: <Notificationssettings />,
-    role: []
+    role: [],
   },
   {
     path: routes.connectedApps,
     element: <ConnectedApps />,
-    role: []
+    role: [],
   },
   {
     path: routes.companySettings,
     element: <CompanySettings />,
-    role: []
+    role: [],
   },
   {
     path: routes.localization,
     element: <Localization />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.prefixes,
     element: <Prefixes />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.socialAuthentication,
     element: <Socialauthentication />,
-    role: []
+    role: [],
   },
   {
     path: routes.language,
     element: <Languagesettings />,
-    role: []
+    role: [],
   },
   {
     path: routes.invoiceSettings,
     element: <InvoiceSettings />,
-    role: []
+    role: [],
   },
   {
     path: routes.customFields,
     element: <CustomFields />,
-    role: []
+    role: [],
   },
   {
     path: routes.emailSettings,
     element: <EmailSettings />,
-    role: []
+    role: [],
   },
   {
     path: routes.emailTemplates,
     element: <Emailtemplates />,
-    role: []
+    role: [],
   },
   {
     path: routes.smsSettings,
     element: <SmsSettings />,
-    role: []
+    role: [],
   },
   {
     path: routes.optSettings,
     element: <OtpSettings />,
-    role: []
+    role: [],
   },
   {
     path: routes.gdprCookies,
     element: <GdprCookies />,
-    role: []
+    role: [],
   },
 
   {
     path: routes.paymentGateways,
     element: <PaymentGateways />,
-    role: []
+    role: [],
   },
   {
     path: routes.taxRates,
     element: <TaxRates />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.schoolSettings,
     element: <SchoolSettings />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.religion,
     element: <Religion />,
-    role: []
+    role: [],
   },
   {
     path: routes.storage,
     element: <Storage />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.rolesPermissions,
     element: <RolesPermissions />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.permissions,
     element: <Permission />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.manageusers,
     element: <Manageusers />,
-    role: ["superadmin", "admin"]
+    role: ["superadmin", "admin"],
   },
   {
     path: routes.allBlogs,
     element: <AllBlogs />,
-    role: []
+    role: [],
   },
   {
     path: routes.blogCategories,
     element: <BlogCategories />,
-    role: []
+    role: [],
   },
   {
     path: routes.blogComments,
     element: <BlogComments />,
-    role: []
+    role: [],
   },
   {
     path: routes.blogTags,
     element: <BlogTags />,
-    role: []
+    role: [],
   },
   {
     path: routes.tickets,
     element: <Tickets />,
-    role: []
+    role: [],
   },
   {
     path: routes.ticketGrid,
     element: <TicketGrid />,
-    role: []
+    role: [],
   },
   {
     path: routes.ticketDetails,
     element: <TicketDetails />,
-    role: []
+    role: [],
   },
   {
     path: `${routes.ticketDetail}/:id`,
     element: <TicketDetail />,
-    role: []
+    role: [],
   },
   {
     path: routes.feesReport,
@@ -1865,7 +2183,7 @@ export const publicRoutes = [
   {
     path: routes.gradeReport,
     element: <GradeReport />,
-    role: ["admin", "teacher", "student", "parent",],
+    role: ["admin", "teacher", "student", "parent"],
   },
   {
     path: routes.studentReport,
@@ -1900,12 +2218,12 @@ export const publicRoutes = [
   {
     path: routes.teacherDayWise,
     element: <TeacherDayWise />,
-    role: ["admin", "teacher",],
+    role: ["admin", "teacher"],
   },
   {
     path: routes.staffDayWise,
     element: <StaffDayWise />,
-    role: ["admin", "staff",],
+    role: ["admin", "staff"],
   },
   {
     path: routes.teacherReport,
@@ -1920,28 +2238,28 @@ export const publicRoutes = [
   {
     path: routes.contactMessages,
     element: <ContactMessages />,
-    role: []
+    role: [],
   },
   {
     path: routes.events,
     element: <Events />,
-    role: []
+    role: [],
   },
   {
     path: routes.profile,
     element: <Profile />,
-    role: []
+    role: [],
   },
   {
     path: routes.activity,
     element: <NotificationActivities />,
-    role: []
+    role: [],
   },
   {
     path: routes.comingSoon,
     element: <ComingSoon />,
     route: Route,
-    role: []
+    role: [],
   },
   { path: routes.home, element: <HomePage /> },
   { path: routes.aboutUs, element: <AboutUs /> },
@@ -1954,63 +2272,53 @@ export const publicRoutes = [
   { path: routes.blog, element: <Blog /> },
   { path: routes.blogDetails, element: <BlogDetails /> },
   { path: routes.contactus, element: <ContactUs /> },
-  { path: routes.RefundPolicyPage, element: <RefundPolicyPage /> }
-
-
+  { path: routes.RefundPolicyPage, element: <RefundPolicyPage /> },
 ];
 export const authRoutes = [
-
   {
     path: routes.login,
     element: <Login />,
     route: Route,
-    role: []
+    role: [],
   },
-
-
-
 
   {
     path: routes.emailVerification,
     element: <EmailVerification />,
     route: Route,
-    role: []
+    role: [],
   },
-
 
   {
     path: routes.forgotPassword,
     element: <ForgotPassword />,
     route: Route,
-    role: []
+    role: [],
   },
 
   {
     path: routes.error404,
     element: <Error404 />,
     route: Route,
-    role: []
+    role: [],
   },
   {
     path: routes.error500,
     element: <Error500 />,
     route: Route,
-    role: []
+    role: [],
   },
   {
     path: routes.underMaintenance,
     element: <UnderMaintenance />,
     route: Route,
-    role: []
+    role: [],
   },
-
 
   {
     path: routes.schoolProfilePage,
     element: <SchoolProfilePage />,
 
-    role: []
-  }
-
+    role: [],
+  },
 ];
-
