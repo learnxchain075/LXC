@@ -17,6 +17,8 @@ export interface TaskFilters {
   priority?: string;
   label?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export const getTasks = (filters: TaskFilters = {}) => {
@@ -34,6 +36,8 @@ export const getTasks = (filters: TaskFilters = {}) => {
   if (filters.priority) params.append("priority", filters.priority);
   if (filters.label) params.append("label", filters.label);
   if (filters.search) params.append("search", filters.search);
+  if (filters.page) params.append("page", filters.page.toString());
+  if (filters.pageSize) params.append("pageSize", filters.pageSize.toString());
   const query = params.toString();
   return BaseApi.getRequest(`/tasks${query ? `?${query}` : ""}`);
 };
