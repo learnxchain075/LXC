@@ -6,22 +6,22 @@ import {
   updateTaskStatus,
   getSprints,
   assignTaskSprint,
+  getWorkflow,
 } from '../../services/projectService';
 
 interface Task {
   id: string;
   title: string;
-  status: string;
+  stage?: { id: string; name: string } | null;
   sprintId?: string | null;
 }
-
-const columns = ['OPEN', 'IN_PROGRESS', 'REVIEW', 'DONE'];
 
 const TaskBoard = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projectId, setProjectId] = useState('');
   const [projects, setProjects] = useState<any[]>([]);
   const [sprints, setSprints] = useState<any[]>([]);
+  const [columns, setColumns] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     getProjects().then(res => setProjects(res.data || []));
@@ -31,17 +31,18 @@ const TaskBoard = () => {
     if (projectId) {
       getTasks(projectId).then(res => setTasks(res.data || []));
       getSprints(projectId).then(res => setSprints(res.data || []));
+      getWorkflow(projectId).then(res => setColumns(res.data?.stages || []));
     }
   }, [projectId]);
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
     const taskId = result.draggableId;
-    const newStatus = result.destination.droppableId;
-    const sprintId = result.destination.droppableId.startsWith('sprint-')
-      ? result.destination.droppableId.replace('sprint-', '')
-      : undefined;
-    await updateTaskStatus(taskId, { status: newStatus });
+    const dest = result.destination.droppableId;
+    const sprintId = dest.startsWith('sprint-') ? dest.replace('sprint-', '') : undefined;
+    if (!dest.startsWith('sprint-')) {
+      await updateTaskStatus(taskId, { stageId: dest });
+    }
     if (sprintId !== undefined) {
       await assignTaskSprint(taskId, { sprintId });
     }
@@ -61,15 +62,15 @@ const TaskBoard = () => {
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="d-flex overflow-auto">
             {columns.map(col => (
-              <Droppable droppableId={col} key={col}>
+              <Droppable droppableId={col.id} key={col.id}>
                 {(provided) => (
                   <div
                     className="border rounded p-2 me-2" style={{ minWidth: 250 }}
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                   >
-                    <h6 className="text-center">{col}</h6>
-                    {tasks.filter(t => t.status === col && !t.sprintId).map((t, idx) => (
+                    <h6 className="text-center">{col.name}</h6>
+                    {tasks.filter(t => t.stage?.id === col.id && !t.sprintId).map((t, idx) => (
                       <Draggable key={t.id} draggableId={t.id} index={idx}>
                         {(p) => (
                           <div ref={p.innerRef} {...p.draggableProps} {...p.dragHandleProps} className="mb-2 p-2 bg-light border rounded">

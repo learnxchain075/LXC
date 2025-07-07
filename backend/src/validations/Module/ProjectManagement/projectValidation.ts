@@ -7,6 +7,14 @@ export const projectSchema = z.object({
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   createdBy: z.string().cuid('Invalid user id'),
+  workflow: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Stage name is required'),
+        order: z.number().int(),
+      })
+    )
+    .optional(),
 });
 
 export const taskSchema = z.object({
@@ -15,7 +23,7 @@ export const taskSchema = z.object({
   projectId: z.string().cuid('Invalid project id'),
   assignedToId: z.string().cuid('Invalid user id').optional(),
   priority: z.nativeEnum(TaskPriority).optional(),
-  status: z.nativeEnum(TaskStatus).optional(),
+  stageId: z.string().cuid('Invalid stage id').optional(),
   deadline: z.coerce.date().optional(),
   createdById: z.string().cuid('Invalid user id'),
   sprintId: z.string().cuid('Invalid sprint id').optional(),
@@ -23,7 +31,7 @@ export const taskSchema = z.object({
 
 export const taskStatusSchema = z.object({
   id: z.string().cuid('Invalid task id'),
-  status: z.nativeEnum(TaskStatus),
+  stageId: z.string().cuid('Invalid stage id'),
 });
 
 export const commentSchema = z.object({
@@ -41,6 +49,13 @@ export const taskIdParamSchema = z.object({
 });
 
 export const updateProjectSchema = projectSchema.partial();
+
+export const workflowSchema = z.array(
+  z.object({
+    name: z.string().min(1, 'Stage name is required'),
+    order: z.number().int(),
+  })
+);
 
 export const updateTaskSchema = taskSchema.partial();
 
@@ -69,4 +84,8 @@ export const sprintIdParamSchema = z.object({
 
 export const assignSprintSchema = z.object({
   sprintId: z.string().cuid('Invalid sprint id').nullable(),
+});
+
+export const stageIdParamSchema = z.object({
+  id: z.string().cuid('Invalid stage id'),
 });
