@@ -49,16 +49,30 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const getProjects = async (_req: Request, res: Response, next: NextFunction): Promise<any> => {
+export const getProjects = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
-    const projects = await prisma.project.findMany({
-      include: {
-        tasks: { include: { stage: true } },
-        githubRepos: true,
-        workflow: { include: { stages: true } },
-      },
-    });
-    res.json(projects);
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 10;
+    const skip = (page - 1) * pageSize;
+
+    const [projects, total] = await prisma.$transaction([
+      prisma.project.findMany({
+        skip,
+        take: pageSize,
+        include: {
+          tasks: { include: { stage: true } },
+          githubRepos: true,
+          workflow: { include: { stages: true } },
+        },
+      }),
+      prisma.project.count(),
+    ]);
+
+    if (req.query.page) {
+      res.json({ data: projects, total });
+    } else {
+      res.json(projects);
+    }
   } catch (error) {
     next(handlePrismaError(error));
   }
@@ -132,19 +146,33 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
       ];
     }
 
-    const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        comments: true,
-        sprint: true,
-        stage: true,
-        subtasks: true,
-        parent: true,
-        epic: true,
-        labels: { include: { label: true } },
-      },
-    });
-    res.json(tasks);
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 10;
+    const skip = (page - 1) * pageSize;
+
+    const [tasks, total] = await prisma.$transaction([
+      prisma.task.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: {
+          comments: true,
+          sprint: true,
+          stage: true,
+          subtasks: true,
+          parent: true,
+          epic: true,
+          labels: { include: { label: true } },
+        },
+      }),
+      prisma.task.count({ where }),
+    ]);
+
+    if (req.query.page) {
+      res.json({ data: tasks, total });
+    } else {
+      res.json(tasks);
+    }
   } catch (error) {
     next(handlePrismaError(error));
   }

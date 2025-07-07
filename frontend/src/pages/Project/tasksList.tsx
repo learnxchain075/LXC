@@ -28,6 +28,10 @@ const TasksList = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [epics, setEpics] = useState<Epic[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 10;
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<TaskFilters>(() => {
     try {
       const saved = localStorage.getItem("taskFilters");
@@ -40,17 +44,25 @@ const TasksList = () => {
   const [showFilter, setShowFilter] = useState(false);
 
   useEffect(() => {
+    setPage(1);
+  }, [filters, search]);
+
+  useEffect(() => {
     getProjects().then((res) => setProjects(res.data || []));
   }, []);
 
   useEffect(() => {
     if (projectId) {
-      getTasks({ projectId, ...filters, search }).then((res) =>
-        setTasks(res.data || []),
-      );
+      setLoading(true);
+      getTasks({ projectId, ...filters, search, page, pageSize }).then((res) => {
+        const data = res.data.data || res.data || [];
+        setTasks(data);
+        setTotal(res.data.total || data.length);
+        setLoading(false);
+      });
       getEpics(projectId).then((res) => setEpics(res.data || []));
     }
-  }, [projectId, filters, search]);
+  }, [projectId, filters, search, page]);
 
   useEffect(() => {
     localStorage.setItem("taskFilters", JSON.stringify(filters));
@@ -91,7 +103,12 @@ const TasksList = () => {
         </div>
         <div className="row">
           <div className="col-md-8">
-            {rootTasks.map((t) => (
+            {loading && (
+              <div className="text-center my-3">
+                <div className="spinner-border" role="status" />
+              </div>
+            )}
+            {!loading && rootTasks.map((t) => (
               <div key={t.id} className="mb-2">
                 <strong>
                   <Link to={all_routes.taskDetail.replace(":id", t.id)}>
@@ -135,6 +152,29 @@ const TasksList = () => {
             ))}
           </div>
         </div>
+        {!loading && total > pageSize && (
+          <nav className="d-flex justify-content-center">
+            <ul className="pagination">
+              <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>\
+                <button className="page-link" onClick={() => setPage(page - 1)}>
+                  Previous
+                </button>
+              </li>
+              {Array.from({ length: Math.ceil(total / pageSize) }, (_, i) => i + 1).map((n) => (
+                <li key={n} className={`page-item ${n === page ? 'active' : ''}`}>\
+                  <button className="page-link" onClick={() => setPage(n)}>{n}</button>
+                </li>
+              ))}
+              <li className={`page-item ${page >= Math.ceil(total / pageSize) ? 'disabled' : ''}`}>\
+                <button className="page-link" onClick={() => setPage(page + 1)}>
+                  Next
+                </button>
+              </li>
+            </ul>
+          </nav>
+        )}
+        
+        <Transition.Root show={showFilter} as={Fragment}>
         <Transition.Root show={showFilter} as={Fragment}>
           <Dialog as="div" className="relative z-10" onClose={setShowFilter}>
             <Transition.Child

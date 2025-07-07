@@ -11,6 +11,7 @@
     "tsc": "tsc",
     "prepare": "husky install",
     "test": "jest",
+    "seed": "ts-node prisma/seed.ts",
     "download-models": "bash ./scripts/download-face-models.sh"
   },
   "postinstall": "npm run download-models",
