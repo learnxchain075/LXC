@@ -295,6 +295,8 @@ model User {
   createdTasks Task[] @relation("TaskCreator")
 
   Comment Comment[]
+
+  ProjectMember ProjectMember[]
 }
 
 model PasswordResetToken {
@@ -2178,7 +2180,10 @@ model Project {
 
   Sprint Sprint[]
   githubRepos GitHubRepo[]
-  members    ProjectMember[]
+
+  Epic Epic[]
+
+  ProjectMember ProjectMember[]
 }
 
 model Task {
