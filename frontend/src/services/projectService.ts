@@ -17,6 +17,13 @@ export const getTasks = (projectId?: string, sprintId?: string | null) => {
   const query = params.toString();
   return BaseApi.getRequest(`/tasks${query ? `?${query}` : ""}`);
 };
+export const getCalendarTasks = (projectId?: string, userId?: string) => {
+  const params = new URLSearchParams();
+  if (projectId) params.append('projectId', projectId);
+  if (userId) params.append('userId', userId);
+  const query = params.toString();
+  return BaseApi.getRequest(`/tasks/calendar${query ? `?${query}` : ''}`);
+};
 export const getTask = (id: string) => BaseApi.getRequest(`/task/${id}`);
 export const getTaskTimeline = (id: string) => BaseApi.getRequest(`/task/${id}/timeline`);
 export const createTask = (data: any) => BaseApi.postRequest("/task", data);

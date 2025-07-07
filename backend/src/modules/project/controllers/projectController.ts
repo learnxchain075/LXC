@@ -104,6 +104,39 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
   }
 };
 
+export const getTaskCalendar = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const projectId = req.query.projectId as string | undefined;
+    const userId = req.query.userId as string | undefined;
+
+    const where: any = {};
+    if (projectId) where.projectId = projectId;
+    if (userId) where.assignedToId = userId;
+
+    const tasks = await prisma.task.findMany({
+      where,
+      select: { id: true, title: true, startDate: true, endDate: true, deadline: true }
+    });
+
+    const now = new Date();
+    const soon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const result = tasks.map(t => {
+      const end = t.endDate || t.deadline || undefined;
+      return {
+        id: t.id,
+        title: t.title,
+        startDate: t.startDate,
+        endDate: end,
+        dueSoon: end ? end > now && end <= soon : false,
+        overdue: end ? end < now : false,
+      };
+    });
+    res.json(result);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
 export const getTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = taskIdParamSchema.safeParse(req.params);
