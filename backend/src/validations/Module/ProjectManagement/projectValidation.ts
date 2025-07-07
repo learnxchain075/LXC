@@ -6,7 +6,7 @@ export const projectSchema = z.object({
   description: z.string().optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
-  createdBy: z.string().cuid("Invalid user id").optional(), // Fixed here
+  createdBy: z.string().cuid("Invalid user id"),
   workflow: z
     .array(
       z.object({

@@ -23,7 +23,7 @@ import {
 } from "../../../validations/Module/ProjectManagement/projectValidation";
 
 import { notifyWatchers } from "../helpers/notificationHelper";
-import { TaskNotificationType, TaskStatus } from "@prisma/client";
+import { TaskNotificationType, TaskStatus, ProjectRole } from "@prisma/client";
 import fetch from "node-fetch";
 import { encrypt, decrypt } from "../../../utils/encryption";
 
@@ -369,7 +369,8 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
     }
 
     const { id } = paramsResult.data;
-    const project = await prisma.project.update({ where: { id }, data: bodyResult.data });
+    const { workflow: wf, ...updateData } = bodyResult.data as any;
+    const project = await prisma.project.update({ where: { id }, data: updateData });
     res.json(project);
   } catch (error) {
     next(handlePrismaError(error));
@@ -489,22 +490,33 @@ export const addGitHubRepo = async (req: Request, res: Response, next: NextFunct
 
     const encryptedToken = encrypt(body.data.token);
 
-    const repoRecord = await prisma.gitHubRepo.upsert({
+    const existing = await prisma.gitHubRepo.findFirst({
       where: { projectId: params.data.id },
-      update: {
-        repoName: body.data.repoName,
-        repoUrl: repoJson.html_url,
-        defaultBranch: repoJson.default_branch,
-        token: encryptedToken,
-      },
-      create: {
-        projectId: params.data.id,
-        repoName: body.data.repoName,
-        repoUrl: repoJson.html_url,
-        defaultBranch: repoJson.default_branch,
-        token: encryptedToken,
-      },
     });
+
+    let repoRecord;
+    if (existing) {
+      repoRecord = await prisma.gitHubRepo.update({
+        where: { id: existing.id },
+        data: {
+          repoName: body.data.repoName,
+          repoUrl: repoJson.html_url,
+          defaultBranch: repoJson.default_branch,
+          token: encryptedToken,
+        },
+      });
+    } else {
+      repoRecord = await prisma.gitHubRepo.create({
+        data: {
+          projectId: params.data.id,
+          repoName: body.data.repoName,
+          repoUrl: repoJson.html_url,
+          defaultBranch: repoJson.default_branch,
+          token: encryptedToken,
+        },
+      });
+    }
+
     res.status(201).json({ repo: repoRecord, branches });
   } catch (error) {
     next(handlePrismaError(error));
@@ -609,8 +621,10 @@ export const addProjectMember = async (req: Request, res: Response, next: NextFu
     if (!params.success) {
       return res.status(400).json({ errors: params.error.errors });
     }
-    const { userId, role } = req.body as { userId: string; role: string };
-    const member = await prisma.projectMember.create({ data: { projectId: params.data.id, userId, role } });
+    const { userId, role } = req.body as { userId: string; role: ProjectRole };
+    const member = await prisma.projectMember.create({
+      data: { projectId: params.data.id, userId, role },
+    });
     res.status(201).json(member);
   } catch (error) {
     next(handlePrismaError(error));
