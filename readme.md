@@ -63,6 +63,7 @@ Academics Pro is an **AI-powered, all-in-one school management system** designed
 - **Exam Repository & Previous Year Questions (PYQs).**
 - **Gamification & Student Rankings.**
 - **Skill-Building & Government Exam Preparation.**
+- **Project Management module with Jira-like board and dark mode UI.**
 
 ## 🛠 Technology Stack
 | Component       | Technology |

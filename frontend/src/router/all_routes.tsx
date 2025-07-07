@@ -344,6 +344,7 @@ addsection:"/student/add-section",
   tasksList: "/tasks",
   taskCalendar: "/task-calendar",
   taskDetail: "/task/:id",
+  projectDemo: "/project-management-demo",
 
   layoutDefault: "/layout-default",
   layoutMini: "/layout-mini",
