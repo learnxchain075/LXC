@@ -8,24 +8,45 @@ export const updateProject = (id: string, data: any) =>
 export const deleteProject = (id: string) =>
   BaseApi.deleteRequest(`/project/${id}`);
 
-export const getTasks = (projectId?: string, sprintId?: string | null) => {
+export interface TaskFilters {
+  projectId?: string;
+  sprintId?: string | null;
+  assigneeId?: string;
+  status?: string;
+  issueType?: string;
+  priority?: string;
+  label?: string;
+  search?: string;
+}
+
+export const getTasks = (filters: TaskFilters = {}) => {
   const params = new URLSearchParams();
-  if (projectId) params.append("projectId", projectId);
-  if (typeof sprintId !== "undefined") {
-    params.append("sprintId", sprintId === null ? "null" : sprintId);
+  if (filters.projectId) params.append("projectId", filters.projectId);
+  if (typeof filters.sprintId !== "undefined") {
+    params.append(
+      "sprintId",
+      filters.sprintId === null ? "null" : filters.sprintId,
+    );
   }
+  if (filters.assigneeId) params.append("assigneeId", filters.assigneeId);
+  if (filters.status) params.append("status", filters.status);
+  if (filters.issueType) params.append("issueType", filters.issueType);
+  if (filters.priority) params.append("priority", filters.priority);
+  if (filters.label) params.append("label", filters.label);
+  if (filters.search) params.append("search", filters.search);
   const query = params.toString();
   return BaseApi.getRequest(`/tasks${query ? `?${query}` : ""}`);
 };
 export const getCalendarTasks = (projectId?: string, userId?: string) => {
   const params = new URLSearchParams();
-  if (projectId) params.append('projectId', projectId);
-  if (userId) params.append('userId', userId);
+  if (projectId) params.append("projectId", projectId);
+  if (userId) params.append("userId", userId);
   const query = params.toString();
-  return BaseApi.getRequest(`/tasks/calendar${query ? `?${query}` : ''}`);
+  return BaseApi.getRequest(`/tasks/calendar${query ? `?${query}` : ""}`);
 };
 export const getTask = (id: string) => BaseApi.getRequest(`/task/${id}`);
-export const getTaskTimeline = (id: string) => BaseApi.getRequest(`/task/${id}/timeline`);
+export const getTaskTimeline = (id: string) =>
+  BaseApi.getRequest(`/task/${id}/timeline`);
 export const createTask = (data: any) => BaseApi.postRequest("/task", data);
 export const updateTask = (id: string, data: any) =>
   BaseApi.putRequest(`/task/${id}`, data);
@@ -40,7 +61,7 @@ export const deleteComment = (id: string) =>
   BaseApi.deleteRequest(`/comment/${id}`);
 export const addAttachment = (id: string, data: FormData) =>
   BaseApi.postRequest(`/task/${id}/attachment`, data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { "Content-Type": "multipart/form-data" },
   });
 
 export const addGitHubRepo = (projectId: string, data: any) =>
