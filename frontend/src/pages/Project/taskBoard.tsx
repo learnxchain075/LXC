@@ -11,6 +11,7 @@ import {
   updateTaskStatus,
   getSprints,
   getWorkflow,
+  getLabels,
 } from "../../services/projectService";
 
 interface Task {
@@ -27,6 +28,8 @@ const TaskBoard = () => {
   const [sprints, setSprints] = useState<any[]>([]);
   const [sprintId, setSprintId] = useState<string | null>(null);
   const [columns, setColumns] = useState<{ id: string; name: string }[]>([]);
+  const [labels, setLabels] = useState<any[]>([]);
+  const [labelId, setLabelId] = useState<string>("");
 
   useEffect(() => {
     getProjects().then((res) => setProjects(res.data || []));
@@ -36,14 +39,15 @@ const TaskBoard = () => {
     if (projectId) {
       getSprints(projectId).then((res) => setSprints(res.data || []));
       getWorkflow(projectId).then((res) => setColumns(res.data?.stages || []));
+      getLabels(projectId).then((res) => setLabels(res.data || []));
     }
   }, [projectId]);
 
   useEffect(() => {
     if (projectId) {
-      getTasks(projectId, sprintId).then((res) => setTasks(res.data || []));
+      getTasks({ projectId, sprintId, label: labelId }).then((res) => setTasks(res.data || []));
     }
-  }, [projectId, sprintId]);
+  }, [projectId, sprintId, labelId]);
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
@@ -51,7 +55,7 @@ const TaskBoard = () => {
     const dest = result.destination.droppableId;
 
     await updateTaskStatus(taskId, { stageId: dest });
-    getTasks(projectId, sprintId).then((res) => setTasks(res.data || []));
+    getTasks({ projectId, sprintId, label: labelId }).then((res) => setTasks(res.data || []));
   };
 
   return (
@@ -80,6 +84,20 @@ const TaskBoard = () => {
             {sprints.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {projectId && (
+          <select
+            className="form-select mb-3"
+            value={labelId}
+            onChange={(e) => setLabelId(e.target.value)}
+          >
+            <option value="">All Labels</option>
+            {labels.map((l: any) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
               </option>
             ))}
           </select>

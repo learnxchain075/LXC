@@ -23,6 +23,10 @@ import {
   addProjectMember,
   removeProjectMember,
   getCurrentProjectRole,
+  createLabel,
+  getLabels,
+  updateLabel,
+  deleteLabel,
 } from '../controllers/projectController';
 import { getWorkflow } from '../controllers/projectController';
 import { requireProjectRole, requireTaskAdmin, requireSprintAdmin } from '../../../middlewares/projectRole';
@@ -54,6 +58,10 @@ router.put('/project/:id/workflow', requireProjectRole('id', [ProjectRole.ADMIN]
 router.post('/project/:id/users', requireProjectRole('id', [ProjectRole.ADMIN]), addProjectMember);
 router.delete('/project/:id/users/:userId', requireProjectRole('id', [ProjectRole.ADMIN]), removeProjectMember);
 router.get('/project/:id/role', getCurrentProjectRole);
+router.get('/project/:id/labels', getLabels);
+router.post('/project/:id/labels', requireProjectRole('id', [ProjectRole.ADMIN]), createLabel);
+router.put('/label/:id', updateLabel);
+router.delete('/label/:id', deleteLabel);
 
 router.get('/tasks', getTasks);
 router.get('/tasks/calendar', getTaskCalendar);

@@ -34,6 +34,7 @@ export const taskSchema = z.object({
   sprintId: z.string().cuid('Invalid sprint id').optional(),
   parentId: z.string().cuid('Invalid task id').optional(),
   epicId: z.string().cuid('Invalid epic id').optional(),
+  labelIds: z.array(z.string().cuid('Invalid label id')).optional(),
 });
 
 export const taskStatusSchema = z.object({
@@ -116,4 +117,16 @@ export const updateEpicSchema = epicSchema.partial();
 
 export const epicIdParamSchema = z.object({
   id: z.string().cuid('Invalid epic id'),
+});
+
+export const labelSchema = z.object({
+  name: z.string().min(1, 'Label name is required'),
+  color: z.string().min(1, 'Color is required'),
+  projectId: z.string().cuid('Invalid project id'),
+});
+
+export const updateLabelSchema = labelSchema.partial();
+
+export const labelIdParamSchema = z.object({
+  id: z.string().cuid('Invalid label id'),
 });

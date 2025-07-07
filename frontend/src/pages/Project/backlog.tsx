@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { getProjects, getTasks, updateTask } from '../../services/projectService';
+import { getProjects, getTasks, updateTask, getLabels } from '../../services/projectService';
 
 const priorities = ['HIGH', 'MEDIUM', 'LOW'];
 
@@ -8,6 +8,8 @@ const Backlog = () => {
   const [projectId, setProjectId] = useState('');
   const [projects, setProjects] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [labels, setLabels] = useState<any[]>([]);
+  const [labelId, setLabelId] = useState<string>('');
 
   useEffect(() => {
     getProjects().then(res => setProjects(res.data || []));
@@ -15,16 +17,17 @@ const Backlog = () => {
 
   useEffect(() => {
     if (projectId) {
-      getTasks(projectId).then(res => setTasks(res.data || []));
+      getLabels(projectId).then(res => setLabels(res.data || []));
+      getTasks({ projectId, label: labelId }).then(res => setTasks(res.data || []));
     }
-  }, [projectId]);
+  }, [projectId, labelId]);
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
     const taskId = result.draggableId;
     const priority = result.destination.droppableId;
     await updateTask(taskId, { priority });
-    getTasks(projectId).then(res => setTasks(res.data || []));
+    getTasks({ projectId, label: labelId }).then(res => setTasks(res.data || []));
   };
 
   return (
@@ -37,6 +40,14 @@ const Backlog = () => {
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
+        {projectId && (
+          <select className="form-select mb-3" value={labelId} onChange={e => setLabelId(e.target.value)}>
+            <option value="">All Labels</option>
+            {labels.map((l: any) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
+        )}
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="d-flex overflow-auto">
             {priorities.map(p => (
