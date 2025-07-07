@@ -5,6 +5,7 @@ import {
   Draggable,
   DropResult,
 } from "react-beautiful-dnd";
+import { ProgressBar } from "react-bootstrap";
 import {
   getProjects,
   getTasks,
@@ -19,6 +20,7 @@ interface Task {
   title: string;
   stage?: { id: string; name: string } | null;
   sprintId?: string | null;
+  checklist?: { text: string; done: boolean }[];
 }
 
 const TaskBoard = () => {
@@ -125,7 +127,17 @@ const TaskBoard = () => {
                               {...p.dragHandleProps}
                               className="mb-2 p-2 bg-light border rounded"
                             >
-                              {t.title}
+                              <div>{t.title}</div>
+                              {Array.isArray(t.checklist) && t.checklist.length > 0 && (
+                                <ProgressBar
+                                  now={Math.round(
+                                    (t.checklist.filter((c) => c.done).length /
+                                      t.checklist.length) * 100,
+                                  )}
+                                  className="mt-1"
+                                  style={{ height: 4 }}
+                                />
+                              )}
                             </div>
                           )}
                         </Draggable>

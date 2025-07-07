@@ -24,6 +24,7 @@ const TaskModal = ({ show, onHide, onSave }: Props) => {
   const [issueType, setIssueType] = useState<IssueType>('TASK');
   const [severity, setSeverity] = useState(1);
   const [storyPoints, setStoryPoints] = useState(1);
+  const [checklistText, setChecklistText] = useState('');
 
   useEffect(() => {
     if (!show) {
@@ -32,6 +33,7 @@ const TaskModal = ({ show, onHide, onSave }: Props) => {
       setIssueType('TASK');
       setSeverity(1);
       setStoryPoints(1);
+      setChecklistText('');
     }
   }, [show]);
 
@@ -39,6 +41,13 @@ const TaskModal = ({ show, onHide, onSave }: Props) => {
     const data: any = { title, description, issueType };
     if (issueType === 'BUG') data.severity = severity;
     if (issueType === 'STORY') data.storyPoints = storyPoints;
+    if (checklistText.trim()) {
+      data.checklist = checklistText
+        .split('\n')
+        .map(t => t.trim())
+        .filter(Boolean)
+        .map(t => ({ text: t, done: false }));
+    }
     onSave(data);
   };
 
@@ -56,6 +65,15 @@ const TaskModal = ({ show, onHide, onSave }: Props) => {
           <Form.Group className="mb-2">
             <Form.Label>Description</Form.Label>
             <Form.Control as="textarea" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label>Checklist (one item per line)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={checklistText}
+              onChange={(e) => setChecklistText(e.target.value)}
+            />
           </Form.Group>
           <Form.Group className="mb-2">
             <Form.Label>Issue Type</Form.Label>
