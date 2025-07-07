@@ -21,6 +21,12 @@ import {
   deleteSprint,
   assignTaskSprint,
 } from '../controllers/sprintController';
+import {
+  createEpic,
+  getEpics,
+  updateEpic,
+  deleteEpic,
+} from '../controllers/epicController';
 
 const router = express.Router();
 
@@ -38,6 +44,11 @@ router.patch('/task/:id/status', updateTaskStatus);
 router.post('/task/:id/comment', addComment);
 router.post('/task/:id/github-branch', createGitHubBranch);
 router.patch('/task/:id/sprint', assignTaskSprint);
+
+router.get('/epics', getEpics);
+router.post('/epic', createEpic);
+router.put('/epic/:id', updateEpic);
+router.delete('/epic/:id', deleteEpic);
 
 router.get('/project/:id/sprints', getSprints);
 router.post('/project/:id/sprints', createSprint);
