@@ -25,6 +25,14 @@ export const updateTaskStatus = (id: string, data: any) =>
   BaseApi.patchRequest(`/task/${id}/status`, data);
 export const addComment = (id: string, data: any) =>
   BaseApi.postRequest(`/task/${id}/comment`, data);
+export const updateComment = (id: string, data: any) =>
+  BaseApi.putRequest(`/comment/${id}`, data);
+export const deleteComment = (id: string) =>
+  BaseApi.deleteRequest(`/comment/${id}`);
+export const addAttachment = (id: string, data: FormData) =>
+  BaseApi.postRequest(`/task/${id}/attachment`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 
 export const addGitHubRepo = (projectId: string, data: any) =>
   BaseApi.postRequest(`/project/${projectId}/github-repo`, data);
