@@ -74,6 +74,16 @@ const EmployeeMenuItems = () => {
               <span>Projects</span>
             </Link>
           </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.taskBoard}
+              onClick={() => handleClick('Task Board')}
+              className={`${subOpen === 'Task Board' ? 'subdrop' : ''} ${location.pathname === all_routes.taskBoard ? 'active' : ''}`}
+            >
+              <i className="ti ti-layout-kanban"></i>
+              <span>Task Board</span>
+            </Link>
+          </li>
         </ul>
       </li>
     </ul>

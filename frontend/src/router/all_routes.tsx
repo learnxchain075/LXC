@@ -337,6 +337,7 @@ addsection:"/student/add-section",
   employeeDashboard: "/employee-dashboard",
   employeeTickets: "/employee/tickets",
   projectDashboard: "/projects",
+  taskBoard: "/task-board",
 
   layoutDefault: "/layout-default",
   layoutMini: "/layout-mini",

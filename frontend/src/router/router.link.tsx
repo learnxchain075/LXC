@@ -117,6 +117,7 @@ import StaffsAttendance from "../pages/SuperAdmin/hrm/staff-list/staffs-attendan
 import EmployeeTickets from "../pages/Employee/tickets";
 import EmployeeDashboard from "../dashboard/employeeDashboard";
 import ProjectDashboard from "../pages/Project/projectDashboard";
+import TaskBoard from "../pages/Project/taskBoard";
 
 import CollectFees from "../pages/SuperAdmin/management/feescollection/collectFees";
 
@@ -1537,6 +1538,12 @@ export const publicRoutes = [
   {
     path: routes.projectDashboard,
     element: <ProjectDashboard />,
+    route: Route,
+    role: ["employee", "superadmin"],
+  },
+  {
+    path: routes.taskBoard,
+    element: <TaskBoard />,
     route: Route,
     role: ["employee", "superadmin"],
   },

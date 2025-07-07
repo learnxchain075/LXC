@@ -20,3 +20,18 @@ export const addGitHubRepo = (projectId: string, data: any) =>
 
 export const createGitHubBranch = (taskId: string, data: any) =>
   BaseApi.postRequest(`/task/${taskId}/github-branch`, data);
+
+export const getSprints = (projectId: string) =>
+  BaseApi.getRequest(`/project/${projectId}/sprints`);
+
+export const createSprint = (projectId: string, data: any) =>
+  BaseApi.postRequest(`/project/${projectId}/sprints`, data);
+
+export const updateSprint = (id: string, data: any) =>
+  BaseApi.putRequest(`/sprint/${id}`, data);
+
+export const deleteSprint = (id: string) =>
+  BaseApi.deleteRequest(`/sprint/${id}`);
+
+export const assignTaskSprint = (taskId: string, data: any) =>
+  BaseApi.patchRequest(`/task/${taskId}/sprint`, data);

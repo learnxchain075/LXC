@@ -52,7 +52,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
     const projectId = req.query.projectId as string | undefined;
     const tasks = await prisma.task.findMany({
       where: projectId ? { projectId } : undefined,
-      include: { comments: true },
+      include: { comments: true, sprint: true },
     });
     res.json(tasks);
   } catch (error) {
@@ -68,6 +68,7 @@ export const updateTaskStatus = async (req: Request, res: Response, next: NextFu
     }
     const { id, status } = parsed.data;
     const task = await prisma.task.update({ where: { id }, data: { status } });
+    await prisma.timelineLog.create({ data: { taskId: id, status } });
     res.json(task);
   } catch (error) {
     next(handlePrismaError(error));

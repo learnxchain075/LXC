@@ -13,6 +13,13 @@ import {
   updateTask,
   deleteTask,
 } from '../controllers/projectController';
+import {
+  createSprint,
+  getSprints,
+  updateSprint,
+  deleteSprint,
+  assignTaskSprint,
+} from '../controllers/sprintController';
 
 const router = express.Router();
 
@@ -29,5 +36,11 @@ router.delete('/task/:id', deleteTask);
 router.patch('/task/:id/status', updateTaskStatus);
 router.post('/task/:id/comment', addComment);
 router.post('/task/:id/github-branch', createGitHubBranch);
+router.patch('/task/:id/sprint', assignTaskSprint);
+
+router.get('/project/:id/sprints', getSprints);
+router.post('/project/:id/sprints', createSprint);
+router.put('/sprint/:id', updateSprint);
+router.delete('/sprint/:id', deleteSprint);
 
 export default router;
