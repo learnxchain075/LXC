@@ -297,6 +297,78 @@ const SuperAdminMenuItems = () => {
               <span>Task Board</span>
             </Link>
           </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.backlog}
+              onClick={() =>
+                handleClick("Backlog", undefined, getLayoutClass("Backlog"))
+              }
+              className={`${subOpen === "Backlog" ? "subdrop" : ""} ${all_routes.backlog === location.pathname ? "active" : ""}`}
+            >
+              <i className="ti ti-list"></i>
+              <span>Backlog</span>
+            </Link>
+          </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.sprintPlanning}
+              onClick={() =>
+                handleClick("Sprint Planning", undefined, getLayoutClass("Sprint Planning"))
+              }
+              className={`${subOpen === "Sprint Planning" ? "subdrop" : ""} ${all_routes.sprintPlanning === location.pathname ? "active" : ""}`}
+            >
+              <i className="ti ti-calendar-event"></i>
+              <span>Sprint Planning</span>
+            </Link>
+          </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.sprintReport}
+              onClick={() =>
+                handleClick("Sprint Report", undefined, getLayoutClass("Sprint Report"))
+              }
+              className={`${subOpen === "Sprint Report" ? "subdrop" : ""} ${all_routes.sprintReport === location.pathname ? "active" : ""}`}
+            >
+              <i className="ti ti-report"></i>
+              <span>Sprint Report</span>
+            </Link>
+          </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.tasksList}
+              onClick={() =>
+                handleClick("Tasks", undefined, getLayoutClass("Tasks"))
+              }
+              className={`${subOpen === "Tasks" ? "subdrop" : ""} ${all_routes.tasksList === location.pathname ? "active" : ""}`}
+            >
+              <i className="ti ti-checklist"></i>
+              <span>Tasks</span>
+            </Link>
+          </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.taskCalendar}
+              onClick={() =>
+                handleClick("Task Calendar", undefined, getLayoutClass("Task Calendar"))
+              }
+              className={`${subOpen === "Task Calendar" ? "subdrop" : ""} ${all_routes.taskCalendar === location.pathname ? "active" : ""}`}
+            >
+              <i className="ti ti-calendar"></i>
+              <span>Task Calendar</span>
+            </Link>
+          </li>
+          <li className="submenu">
+            <Link
+              to={all_routes.projectDemo}
+              onClick={() =>
+                handleClick("Project Demo", undefined, getLayoutClass("Project Demo"))
+              }
+              className={`${subOpen === "Project Demo" ? "subdrop" : ""} ${all_routes.projectDemo === location.pathname ? "active" : ""}`}
+            >
+              <i className="ti ti-presentation"></i>
+              <span>Project Demo</span>
+            </Link>
+          </li>
         </ul>
       </li>
 
