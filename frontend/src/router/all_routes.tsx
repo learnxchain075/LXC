@@ -310,6 +310,7 @@ export const all_routes = {
   taskCalendar: "/task-calendar",
   taskDetail: "/task/:id",
   projectDemo: "/project-management-demo",
+  devView: "/dev-view",
 
   layoutDefault: "/layout-default",
   layoutMini: "/layout-mini",

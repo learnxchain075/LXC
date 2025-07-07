@@ -124,6 +124,7 @@ import SprintPlanning from "../pages/Project/sprintPlanning";
 import TasksList from "../pages/Project/tasksList";
 import TaskCalendar from "../pages/Project/taskCalendar";
 import TaskDetail from "../pages/Project/taskDetail";
+import DevView from "../pages/Project/DevView";
 import SprintReport from "../pages/Project/sprintReport";
 
 import ProjectDemo from "../pages/Project/projectDemo";
@@ -1885,6 +1886,12 @@ export const publicRoutes = [
   {
     path: routes.projectDemo,
     element: <ProjectDemo />,
+    route: Route,
+    role: ["employee", "superadmin"],
+  },
+  {
+    path: routes.devView,
+    element: <DevView />,
     route: Route,
     role: ["employee", "superadmin"],
   },

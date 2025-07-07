@@ -81,6 +81,10 @@ export const githubRepoSchema = z.object({
   token: z.string().min(1, "Token is required"),
 });
 
+export const githubTokenSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+});
+
 export const githubBranchSchema = z.object({
   name: z.string().min(1, "Branch name is required"),
   base: z.string().optional(),
