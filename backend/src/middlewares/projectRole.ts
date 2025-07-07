@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../db/prisma';
 import { ProjectRole } from '@prisma/client';
 
-export const requireProjectRole = (paramName: string, roles: ProjectRole[]) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export const requireProjectRole = (paramName: string, roles: ProjectRole[])  => {
+  return async (req: Request, res: Response, next: NextFunction) :Promise<any> => {
     try {
       const projectId = req.params[paramName];
       const userId = req.user?.id;
@@ -19,7 +19,7 @@ export const requireProjectRole = (paramName: string, roles: ProjectRole[]) => {
   };
 };
 
-export const requireTaskAdmin = async (req: Request, res: Response, next: NextFunction) => {
+export const requireTaskAdmin = async (req: Request, res: Response, next: NextFunction) :Promise<any> => {
   try {
     const taskId = req.params.id;
     const userId = req.user?.id;
@@ -36,7 +36,7 @@ export const requireTaskAdmin = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const requireSprintAdmin = async (req: Request, res: Response, next: NextFunction) => {
+export const requireSprintAdmin = async (req: Request, res: Response, next: NextFunction) :Promise<any> => {
   try {
     const sprintId = req.params.id;
     const userId = req.user?.id;

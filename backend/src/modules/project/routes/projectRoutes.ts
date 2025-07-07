@@ -52,7 +52,10 @@ import {
   updateEpic,
   deleteEpic,
 } from '../controllers/epicController';
-import { authenticateToken } from '../../utils/jwt_utils';
+import { authenticateToken } from '../../../utils/jwt_utils';
+// import { authenticateToken } from '../../utils/jwt_utils';
+
+
 
 const router = express.Router();
 const upload = multer();

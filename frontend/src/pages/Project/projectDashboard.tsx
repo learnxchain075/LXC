@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, JSX } from "react";
 import TaskModal, { ISSUE_OPTIONS, IssueType } from "./TaskModal";
 import {
   getProjects,
