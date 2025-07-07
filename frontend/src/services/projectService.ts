@@ -61,6 +61,9 @@ export const updateSprint = (id: string, data: any) =>
 export const deleteSprint = (id: string) =>
   BaseApi.deleteRequest(`/sprint/${id}`);
 
+export const getSprintBurndown = (id: string) =>
+  BaseApi.getRequest(`/sprint/${id}/burndown`);
+
 export const assignTaskSprint = (taskId: string, data: any) =>
   BaseApi.patchRequest(`/task/${taskId}/sprint`, data);
 
