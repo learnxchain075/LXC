@@ -175,7 +175,6 @@ const TasksList = () => {
         )}
         
         <Transition.Root show={showFilter} as={Fragment}>
-        <Transition.Root show={showFilter} as={Fragment}>
           <Dialog as="div" className="relative z-10" onClose={setShowFilter}>
             <Transition.Child
               as={Fragment}
