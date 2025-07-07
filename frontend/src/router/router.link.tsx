@@ -125,6 +125,7 @@ import TaskCalendar from "../pages/Project/taskCalendar";
 import TaskDetail from "../pages/Project/taskDetail";
 import SprintReport from "../pages/Project/sprintReport";
 
+import ProjectDemo from "../pages/Project/projectDemo";
 import CollectFees from "../pages/SuperAdmin/management/feescollection/collectFees";
 
 import FeesAssign from "../pages/SuperAdmin/management/feescollection/feesAssign";
@@ -1586,6 +1587,12 @@ export const publicRoutes = [
   {
     path: routes.taskDetail,
     element: <TaskDetail />,
+    route: Route,
+    role: ["employee", "superadmin"],
+  },
+  {
+    path: routes.projectDemo,
+    element: <ProjectDemo />,
     route: Route,
     role: ["employee", "superadmin"],
   },
