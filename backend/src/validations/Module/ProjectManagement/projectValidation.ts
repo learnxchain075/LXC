@@ -30,6 +30,8 @@ export const taskSchema = z.object({
   storyPoints: z.number().int().min(1).optional(),
   createdById: z.string().cuid('Invalid user id'),
   sprintId: z.string().cuid('Invalid sprint id').optional(),
+  parentId: z.string().cuid('Invalid task id').optional(),
+  epicId: z.string().cuid('Invalid epic id').optional(),
 });
 
 export const taskStatusSchema = z.object({
@@ -91,4 +93,17 @@ export const assignSprintSchema = z.object({
 
 export const stageIdParamSchema = z.object({
   id: z.string().cuid('Invalid stage id'),
+});
+
+export const epicSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+  projectId: z.string().cuid('Invalid project id'),
+  createdById: z.string().cuid('Invalid user id'),
+});
+
+export const updateEpicSchema = epicSchema.partial();
+
+export const epicIdParamSchema = z.object({
+  id: z.string().cuid('Invalid epic id'),
 });

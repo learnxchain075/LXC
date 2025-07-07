@@ -38,3 +38,10 @@ export const assignTaskSprint = (taskId: string, data: any) =>
 
 export const getWorkflow = (projectId: string) =>
   BaseApi.getRequest(`/project/${projectId}/workflow`);
+
+export const getEpics = (projectId?: string) =>
+  BaseApi.getRequest(`/epics${projectId ? `?projectId=${projectId}` : ''}`);
+export const createEpic = (data: any) => BaseApi.postRequest('/epic', data);
+export const updateEpic = (id: string, data: any) =>
+  BaseApi.putRequest(`/epic/${id}`, data);
+export const deleteEpic = (id: string) => BaseApi.deleteRequest(`/epic/${id}`);
