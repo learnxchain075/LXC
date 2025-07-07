@@ -385,3 +385,83 @@ export const getWorkflow = async (req: Request, res: Response, next: NextFunctio
     next(handlePrismaError(error));
   }
 };
+
+export const updateWorkflow = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = projectIdParamSchema.safeParse(req.params);
+    const body = workflowSchema.safeParse(req.body);
+    if (!params.success || !body.success) {
+      return res.status(400).json({ errors: [ ...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors) ] });
+    }
+    await prisma.workflow.deleteMany({ where: { projectId: params.data.id } });
+    const wf = await prisma.workflow.create({
+      data: {
+        projectId: params.data.id,
+        stages: { create: body.data.map((s) => ({ name: s.name, order: s.order })) },
+      },
+      include: { stages: true },
+    });
+    res.json(wf);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const addProjectMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = projectIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ errors: params.error.errors });
+    }
+    const { userId, role } = req.body as { userId: string; role: string };
+    const member = await prisma.projectMember.create({ data: { projectId: params.data.id, userId, role } });
+    res.status(201).json(member);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const removeProjectMember = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = projectIdParamSchema.safeParse({ id: req.params.id });
+    const userId = req.params.userId;
+    if (!params.success || !userId) {
+      return res.status(400).json({ errors: params.success ? [{ message: 'userId required' }] : params.error.errors });
+    }
+    await prisma.projectMember.delete({ where: { projectId_userId: { projectId: params.data.id, userId } } });
+    res.json({ message: 'Removed' });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const getCurrentProjectRole = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = projectIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ errors: params.error.errors });
+    }
+    const userId = req.user?.id;
+    if (!userId) return res.status(403).json({ message: 'Forbidden' });
+    const member = await prisma.projectMember.findUnique({ where: { projectId_userId: { projectId: params.data.id, userId } } });
+    res.json({ role: member?.role || null });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
