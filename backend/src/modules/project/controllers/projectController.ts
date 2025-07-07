@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../../db/prisma';
 import { handlePrismaError } from '../../../utils/prismaErrorHandler';
-import { projectSchema, taskSchema, taskStatusSchema, commentSchema, updateProjectSchema, updateTaskSchema, projectIdParamSchema, taskIdParamSchema, githubRepoSchema, githubBranchSchema } from '../../../validations/Module/ProjectManagement/projectValidation';
+import { projectSchema, taskSchema, taskStatusSchema, commentSchema, updateProjectSchema, updateTaskSchema, projectIdParamSchema, taskIdParamSchema, githubRepoSchema, githubBranchSchema, workflowSchema } from '../../../validations/Module/ProjectManagement/projectValidation';
 
 export const createProject = async (req: Request, res: Response, next: NextFunction) : Promise<any> => {
   try {
@@ -9,7 +9,20 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
     if (!parsed.success) {
       return res.status(400).json({ message: 'Validation error', errors: parsed.error.errors });
     }
-    const project = await prisma.project.create({ data: parsed.data });
+    const { workflow, ...projData } = parsed.data;
+    const project = await prisma.project.create({ data: projData });
+    if (workflow && workflow.length > 0) {
+      const wf = await prisma.workflow.create({
+        data: {
+          projectId: project.id,
+          stages: {
+            create: workflow.map(s => ({ name: s.name, order: s.order })),
+          },
+        },
+        include: { stages: true },
+      });
+      return res.status(201).json({ ...project, workflow: wf });
+    }
     res.status(201).json(project);
   } catch (error) {
     next(handlePrismaError(error));
@@ -18,7 +31,13 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
 
 export const getProjects = async (_req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
-    const projects = await prisma.project.findMany({ include: { tasks: true, githubRepos: true } });
+    const projects = await prisma.project.findMany({
+      include: {
+        tasks: { include: { stage: true } },
+        githubRepos: true,
+        workflow: { include: { stages: true } },
+      },
+    });
     res.json(projects);
   } catch (error) {
     next(handlePrismaError(error));
@@ -40,7 +59,7 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
       description: parsed.data.description ?? "", // ✅ Ensure string
     };
 
-    const task = await prisma.task.create({ data: taskData });
+    const task = await prisma.task.create({ data: taskData, include: { stage: true } });
     res.status(201).json(task);
   } catch (error) {
     next(handlePrismaError(error));
@@ -52,7 +71,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
     const projectId = req.query.projectId as string | undefined;
     const tasks = await prisma.task.findMany({
       where: projectId ? { projectId } : undefined,
-      include: { comments: true, sprint: true },
+      include: { comments: true, sprint: true, stage: true },
     });
     res.json(tasks);
   } catch (error) {
@@ -60,15 +79,18 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
   }
 };
 
-export const updateTaskStatus = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+export const updateTaskStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
   try {
     const parsed = taskStatusSchema.safeParse({ ...req.params, ...req.body });
     if (!parsed.success) {
       return res.status(400).json({ message: 'Validation error', errors: parsed.error.errors });
     }
-    const { id, status } = parsed.data;
-    const task = await prisma.task.update({ where: { id }, data: { status } });
-    await prisma.timelineLog.create({ data: { taskId: id, status } });
+    const { id, stageId } = parsed.data;
+    const task = await prisma.task.update({ where: { id }, data: { stageId }, include: { stage: true } });
     res.json(task);
   } catch (error) {
     next(handlePrismaError(error));
@@ -222,6 +244,26 @@ export const createGitHubBranch = async (
       data: { taskId: params.data.id, ...body.data },
     });
     res.status(201).json(branch);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const getWorkflow = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = projectIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ errors: params.error.errors });
+    }
+    const workflow = await prisma.workflow.findUnique({
+      where: { projectId: params.data.id },
+      include: { stages: true },
+    });
+    res.json(workflow);
   } catch (error) {
     next(handlePrismaError(error));
   }

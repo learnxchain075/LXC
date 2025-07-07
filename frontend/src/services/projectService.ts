@@ -35,3 +35,6 @@ export const deleteSprint = (id: string) =>
 
 export const assignTaskSprint = (taskId: string, data: any) =>
   BaseApi.patchRequest(`/task/${taskId}/sprint`, data);
+
+export const getWorkflow = (projectId: string) =>
+  BaseApi.getRequest(`/project/${projectId}/workflow`);
