@@ -1,13 +1,25 @@
-import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../../db/prisma';
-import { handlePrismaError } from '../../../utils/prismaErrorHandler';
-import { projectSchema, taskSchema, taskStatusSchema, commentSchema, updateProjectSchema, updateTaskSchema, projectIdParamSchema, taskIdParamSchema, githubRepoSchema, githubBranchSchema, workflowSchema } from '../../../validations/Module/ProjectManagement/projectValidation';
+import { Request, Response, NextFunction } from "express";
+import { prisma } from "../../../db/prisma";
+import { handlePrismaError } from "../../../utils/prismaErrorHandler";
+import {
+  projectSchema,
+  taskSchema,
+  taskStatusSchema,
+  commentSchema,
+  updateProjectSchema,
+  updateTaskSchema,
+  projectIdParamSchema,
+  taskIdParamSchema,
+  githubRepoSchema,
+  githubBranchSchema,
+  workflowSchema,
+} from "../../../validations/Module/ProjectManagement/projectValidation";
 
-export const createProject = async (req: Request, res: Response, next: NextFunction) : Promise<any> => {
+export const createProject = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = projectSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ message: 'Validation error', errors: parsed.error.errors });
+      return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
     }
     const { workflow, ...projData } = parsed.data;
     const project = await prisma.project.create({ data: projData });
@@ -16,7 +28,7 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
         data: {
           projectId: project.id,
           stages: {
-            create: workflow.map(s => ({ name: s.name, order: s.order })),
+            create: workflow.map((s) => ({ name: s.name, order: s.order })),
           },
         },
         include: { stages: true },
@@ -44,13 +56,12 @@ export const getProjects = async (_req: Request, res: Response, next: NextFuncti
   }
 };
 
-
 export const createTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = taskSchema.safeParse(req.body);
 
     if (!parsed.success) {
-      return res.status(400).json({ message: 'Validation error', errors: parsed.error.errors });
+      return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
     }
 
     // Ensure no undefined values are sent to Prisma
@@ -72,8 +83,16 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
 export const getTasks = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const projectId = req.query.projectId as string | undefined;
+    const sprintParam = req.query.sprintId as string | undefined;
+
+    const where: any = {};
+    if (projectId) where.projectId = projectId;
+    if (typeof sprintParam !== "undefined") {
+      where.sprintId = sprintParam === "null" ? null : sprintParam;
+    }
+
     const tasks = await prisma.task.findMany({
-      where: projectId ? { projectId } : undefined,
+      where,
       include: { comments: true, sprint: true, stage: true, subtasks: true, parent: true, epic: true },
     });
     res.json(tasks);
@@ -82,15 +101,11 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
   }
 };
 
-export const updateTaskStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const updateTaskStatus = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const parsed = taskStatusSchema.safeParse({ ...req.params, ...req.body });
     if (!parsed.success) {
-      return res.status(400).json({ message: 'Validation error', errors: parsed.error.errors });
+      return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
     }
     const { id, stageId } = parsed.data;
     const task = await prisma.task.update({ where: { id }, data: { stageId }, include: { stage: true } });
@@ -104,7 +119,7 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
   try {
     const parsed = commentSchema.safeParse({ ...req.params, ...req.body });
     if (!parsed.success) {
-      return res.status(400).json({ message: 'Validation error', errors: parsed.error.errors });
+      return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
     }
     const { id, authorId, content } = parsed.data;
     const comment = await prisma.comment.create({ data: { taskId: id, authorId, content } });
@@ -114,11 +129,7 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const updateProject = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const updateProject = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const paramsResult = projectIdParamSchema.safeParse(req.params);
     const bodyResult = updateProjectSchema.safeParse(req.body);
@@ -150,17 +161,13 @@ export const deleteProject = async (req: Request, res: Response, next: NextFunct
 
     const { id } = paramsResult.data;
     await prisma.project.delete({ where: { id } });
-    res.json({ message: 'Project deleted successfully' });
+    res.json({ message: "Project deleted successfully" });
   } catch (error) {
     next(handlePrismaError(error));
   }
 };
 
-export const updateTask = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const updateTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const paramsResult = taskIdParamSchema.safeParse(req.params);
     const bodyResult = updateTaskSchema.safeParse(req.body);
@@ -182,11 +189,7 @@ export const updateTask = async (
   }
 };
 
-export const deleteTask = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const deleteTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const paramsResult = taskIdParamSchema.safeParse(req.params);
 
@@ -196,26 +199,19 @@ export const deleteTask = async (
 
     const { id } = paramsResult.data;
     await prisma.task.delete({ where: { id } });
-    res.json({ message: 'Task deleted successfully' });
+    res.json({ message: "Task deleted successfully" });
   } catch (error) {
     next(handlePrismaError(error));
   }
 };
 
-export const addGitHubRepo = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const addGitHubRepo = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = projectIdParamSchema.safeParse(req.params);
     const body = githubRepoSchema.safeParse(req.body);
     if (!params.success || !body.success) {
       return res.status(400).json({
-        errors: [
-          ...(params.success ? [] : params.error.errors),
-          ...(body.success ? [] : body.error.errors),
-        ],
+        errors: [...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors)],
       });
     }
     const repo = await prisma.gitHubRepo.create({
@@ -227,20 +223,13 @@ export const addGitHubRepo = async (
   }
 };
 
-export const createGitHubBranch = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const createGitHubBranch = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = taskIdParamSchema.safeParse(req.params);
     const body = githubBranchSchema.safeParse(req.body);
     if (!params.success || !body.success) {
       return res.status(400).json({
-        errors: [
-          ...(params.success ? [] : params.error.errors),
-          ...(body.success ? [] : body.error.errors),
-        ],
+        errors: [...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors)],
       });
     }
     const branch = await prisma.gitHubBranch.create({
@@ -252,11 +241,7 @@ export const createGitHubBranch = async (
   }
 };
 
-export const getWorkflow = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const getWorkflow = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = projectIdParamSchema.safeParse(req.params);
     if (!params.success) {
