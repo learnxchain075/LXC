@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getTask, getTaskTimeline } from '../../services/projectService';
+import { Form, ProgressBar } from 'react-bootstrap';
+import { getTask, getTaskTimeline, updateTask } from '../../services/projectService';
 
 interface Log {
   id: string;
@@ -13,6 +14,14 @@ const TaskDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [task, setTask] = useState<any>(null);
   const [logs, setLogs] = useState<Log[]>([]);
+
+  const handleToggle = (idx: number) => {
+    if (!task) return;
+    const updated = [...(task.checklist || [])];
+    updated[idx] = { ...updated[idx], done: !updated[idx].done };
+    setTask({ ...task, checklist: updated });
+    updateTask(task.id, { checklist: updated });
+  };
 
   useEffect(() => {
     if (id) {
@@ -28,6 +37,32 @@ const TaskDetail = () => {
           <>
             <h4>{task.title}</h4>
             <p>{task.description}</p>
+            {Array.isArray(task.checklist) && task.checklist.length > 0 && (
+              <div className="mb-3">
+                <h5>Checklist</h5>
+                {task.checklist.map((item: any, idx: number) => (
+                  <Form.Check
+                    type="checkbox"
+                    key={idx}
+                    label={item.text}
+                    checked={item.done}
+                    onChange={() => handleToggle(idx)}
+                    className="mb-1"
+                  />
+                ))}
+                <ProgressBar
+                  now={Math.round(
+                    (task.checklist.filter((i: any) => i.done).length /
+                      task.checklist.length) * 100,
+                  )}
+                  label={`${Math.round(
+                    (task.checklist.filter((i: any) => i.done).length /
+                      task.checklist.length) * 100,
+                  )}%`}
+                  className="mt-2"
+                />
+              </div>
+            )}
           </>
         )}
         <h5>Timeline</h5>

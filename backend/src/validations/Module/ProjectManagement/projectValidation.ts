@@ -35,6 +35,9 @@ export const taskSchema = z.object({
   parentId: z.string().cuid('Invalid task id').optional(),
   epicId: z.string().cuid('Invalid epic id').optional(),
   labelIds: z.array(z.string().cuid('Invalid label id')).optional(),
+  checklist: z
+    .array(z.object({ text: z.string(), done: z.boolean() }))
+    .optional(),
 });
 
 export const taskStatusSchema = z.object({

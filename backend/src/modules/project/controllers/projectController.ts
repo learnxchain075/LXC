@@ -73,13 +73,16 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
     // Ensure no undefined values are sent to Prisma
     const { labelIds, ...rest } = parsed.data;
 
-    const taskData = {
+    const taskData: any = {
       ...rest,
       description: parsed.data.description ?? "",
       labels: labelIds
         ? { create: labelIds.map((id) => ({ labelId: id })) }
         : undefined,
     };
+    if (typeof rest.checklist !== "undefined") {
+      taskData.checklist = rest.checklist;
+    }
 
     const task = await prisma.task.create({
       data: taskData,
@@ -365,17 +368,21 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
     const { id } = paramsResult.data;
     const existing = await prisma.task.findUnique({ where: { id } });
     const { labelIds, ...data } = bodyResult.data;
+    const updateData: any = {
+      ...data,
+      labels: labelIds
+        ? {
+            deleteMany: {},
+            create: labelIds.map((lid) => ({ labelId: lid })),
+          }
+        : undefined,
+    };
+    if (typeof data.checklist !== "undefined") {
+      updateData.checklist = data.checklist;
+    }
     const task = await prisma.task.update({
       where: { id },
-      data: {
-        ...data,
-        labels: labelIds
-          ? {
-              deleteMany: {},
-              create: labelIds.map((lid) => ({ labelId: lid })),
-            }
-          : undefined,
-      },
+      data: updateData,
       include: { stage: true, parent: true, epic: true, labels: { include: { label: true } } },
     });
     if (bodyResult.data.assignedToId && bodyResult.data.assignedToId !== existing?.assignedToId) {

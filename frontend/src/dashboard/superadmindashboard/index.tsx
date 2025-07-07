@@ -25,6 +25,7 @@ const SuperAdminDashboard = () => {
     title: string;
     status: string;
     priority: string;
+    checklist?: { text: string; done: boolean }[];
   }
   const [tasks, setTasks] = useState<Task[]>([]);
 
