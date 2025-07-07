@@ -1,11 +1,7 @@
 export const all_routes = {
-
-
-
   // ************************************ Super Admin Routes *********************************************************
 
   superAdminDashboard: "/super-dashboard",
-
 
   // membership routes
   membershipplan: "/membership-plans",
@@ -13,7 +9,6 @@ export const all_routes = {
   membershipTransaction: "/membership-transactions",
   membershipcard: "/membership-card",
   CouponManager: "/coupon-manager",
-
 
   addSchools: "/super-admin/add-schools",
   getSchools: "/super-admin/get-schools",
@@ -27,22 +22,14 @@ export const all_routes = {
   companyAccountsAdd: "/super-admin/company-accounts/add",
   companyAccountsSummary: "/super-admin/company-accounts/summary",
 
-
-
   // ************************************  Admin Routes *********************************************************
 
   adminDashboard: "/admin-dashboard",
 
-
-
-
   requestFeatures: "/admin/request-features",
   adminFeedback: "/admin/feedback",
 
-
-
   schoolProfilePage: "/school-profile-page/:schoolId",
-
 
   // ************************************  Teacher Routes *********************************************************
   teacherDashboard: "/teacher-dashboard",
@@ -72,15 +59,11 @@ export const all_routes = {
   studentlearderboard: "/student/leaderboard",
   // ************************************ Parents  Routes *********************************************************
 
-
   parentDashboard: "/parent-dashboard",
-
 
   // ************************************ Accounts Routes *********************************************************
 
   accountsDashboard: "/accounts-dashboard",
-
-
 
   // ************************************ Hostel Routes *********************************************************
 
@@ -88,18 +71,11 @@ export const all_routes = {
 
   // ************************************ Library Routes *********************************************************
 
-
   libraryDashboard: "/library-dashboard",
-
 
   // ************************************ Trnasport Routes *********************************************************
 
-
-
   transportDashboard: "/transport-dashboard",
-
-
-
 
   // ************************************ Common  Routes *********************************************************
 
@@ -113,7 +89,7 @@ export const all_routes = {
   vistordetails: "/vistorsdetails",
 
   // auth routes routes
-  login: "/",  //for logout
+  login: "/", //for logout
   login2: "/login-2",
   login3: "/login-3",
   register: "/register",
@@ -137,7 +113,6 @@ export const all_routes = {
   resetPasswordSuccess2: "/reset-password-success-2",
   resetPasswordSuccess3: "/reset-password-success-3",
 
-
   // pages routes
   error404: "/error-404",
   error500: "/error-500",
@@ -156,8 +131,6 @@ export const all_routes = {
   profile: "/pages/profile",
   activity: "/pages/activities",
 
-
-
   //lxc-home
   home: "/home",
   aboutUs: "/about-us",
@@ -169,12 +142,9 @@ export const all_routes = {
   privacyPolicy: "/privacy-policy",
   blog: "/blog",
   blogDetails: "/blog-details",
- 
-addbustopadmin: "/add-bus-stop-admin",
+
+  addbustopadmin: "/add-bus-stop-admin",
   RefundPolicyPage: "/refund-policy",
-
-
-
 
   // settings routes
   customFields: "/app-settings/custom-fields",
@@ -208,8 +178,6 @@ addbustopadmin: "/add-bus-stop-admin",
   preference: "/website-settings/preference",
   prefixes: "/website-settings/prefixes",
 
-
-
   //content routes
   pages: "/content/pages",
   cities: "/content/cities",
@@ -237,7 +205,6 @@ addbustopadmin: "/add-bus-stop-admin",
   ticketDetail: "/support/ticket-detail",
   demoRequest: "/demo-requests",
 
-
   // Peoples Module
   studentGrid: "/student/student-grid",
   studentPromotion: "/student/student-promotion",
@@ -264,9 +231,7 @@ addbustopadmin: "/add-bus-stop-admin",
   parentList: "/parent/parent-list",
   guardiansGrid: "/parent/guardians-grid",
   guardiansList: "/parent/guardians-list",
-addsection:"/student/add-section",
-
-
+  addsection: "/student/add-section",
 
   // Management
   feesGroup: "/management/fees-group",
@@ -293,7 +258,6 @@ addsection:"/student/add-section",
   addhostel: "/people/AddHostelForm",
   addlibrary: "/people/addlibrary",
   addtransport: "/people/addtransport",
-
 
   //Academic module
   AssignTeacherToClass: "/academic/assign-teacher-to-class",
@@ -337,6 +301,7 @@ addsection:"/student/add-section",
   employeeDashboard: "/employee-dashboard",
   employeeTickets: "/employee/tickets",
   projectDashboard: "/projects",
+  projectSettings: "/project/:id/settings",
   taskBoard: "/task-board",
   backlog: "/backlog",
   sprintPlanning: "/sprint-planning",
@@ -380,6 +345,4 @@ addsection:"/student/add-section",
   studentDayWise: "/report/student-day-wise",
   teacherDayWise: "/report/teacher-day-wise",
   staffDayWise: "/report/staff-day-wise",
-
-
 };
