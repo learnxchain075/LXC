@@ -2,6 +2,7 @@ import { useEffect, useState, Fragment } from 'react';
 import { Badge, Offcanvas } from 'react-bootstrap';
 import { Dialog, Transition } from '@headlessui/react';
 import { getProjects, getSprints, getTasks, TaskFilters } from '../../services/projectService';
+import ProjectNav from './ProjectNav';
 
 interface Task {
   id: string;
@@ -34,6 +35,7 @@ const ProjectDemo = () => {
 
   return (
     <div className={`page-wrapper ${darkMode ? 'bg-dark text-white' : ''}`}>
+      <ProjectNav />
       <button className="btn btn-secondary m-2" onClick={() => setShowSidebar(true)}>
         Filters
       </button>

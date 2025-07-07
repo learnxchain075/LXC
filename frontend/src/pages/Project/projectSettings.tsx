@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { addGitHubRepo, setGitHubToken, getGitHubToken } from "../../services/projectService";
+import ProjectNav from "./ProjectNav";
 
 const ProjectSettings = () => {
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const { id } = useParams<{ id: string }>();
   const [repoName, setRepoName] = useState("");
   const [token, setToken] = useState("");
@@ -26,7 +29,11 @@ const ProjectSettings = () => {
   };
 
   return (
-    <div className="container mt-4">
+    <div className={`page-wrapper ${
+      dataTheme === "dark_data_theme" ? "bg-dark text-white" : ""
+    }`}>
+      <ProjectNav />
+      <div className="container mt-4">
       <h4>GitHub Integration</h4>
       <div className="mb-3">
         <label className="form-label">Repository (owner/repo)</label>
@@ -48,14 +55,17 @@ const ProjectSettings = () => {
       <button className="btn btn-primary" onClick={handleSave}>
         Link Repo
       </button>
-      {info && (
-        <div className="mt-3">
-          <p>Default Branch: {info.repo.defaultBranch}</p>
-          <ul>
-            {info.branches?.map((b: any) => <li key={b.name}>{b.name}</li>)}
-          </ul>
-        </div>
-      )}
+        {info && (
+          <div className="mt-3">
+            <p>Default Branch: {info.repo.defaultBranch}</p>
+            <ul>
+              {info.branches?.map((b: any) => (
+                <li key={b.name}>{b.name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

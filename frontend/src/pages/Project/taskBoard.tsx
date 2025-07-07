@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import {
   DragDropContext,
   Droppable,
@@ -14,6 +15,7 @@ import {
   getWorkflow,
   getLabels,
 } from "../../services/projectService";
+import ProjectNav from "./ProjectNav";
 
 interface Task {
   id: string;
@@ -24,6 +26,7 @@ interface Task {
 }
 
 const TaskBoard = () => {
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projectId, setProjectId] = useState("");
   const [projects, setProjects] = useState<any[]>([]);
@@ -61,7 +64,10 @@ const TaskBoard = () => {
   };
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${
+      dataTheme === "dark_data_theme" ? "bg-dark text-white" : ""
+    }`}>
+      <ProjectNav />
       <div className="container mt-3">
         <h4>Task Board</h4>
         <select

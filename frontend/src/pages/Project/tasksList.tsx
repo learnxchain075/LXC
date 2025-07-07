@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { ProgressBar } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { Dialog, Transition } from "@headlessui/react";
@@ -9,6 +10,7 @@ import {
   getEpics,
   TaskFilters,
 } from "../../services/projectService";
+import ProjectNav from "./ProjectNav";
 
 interface Task {
   id: string;
@@ -24,6 +26,7 @@ interface Epic {
 }
 
 const TasksList = () => {
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const [projectId, setProjectId] = useState("");
   const [projects, setProjects] = useState<any[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -71,7 +74,10 @@ const TasksList = () => {
   const rootTasks = tasks.filter((t) => !t.parentId);
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${
+      dataTheme === 'dark_data_theme' ? 'bg-dark text-white' : ''
+    }`}>
+      <ProjectNav />
       <div className="container mt-3">
         <h4>Tasks & Epics</h4>
         <select
