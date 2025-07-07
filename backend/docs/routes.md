@@ -811,6 +811,17 @@
 | PUT | /student/:studentId/guardian |  |
 | DELETE | /student/:studentId/guardian |  |
 
+## Project Management
+
+### [src/modules/project/routes/projectRoutes.ts](src/modules/project/routes/projectRoutes.ts)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | /project/:id/labels | Get labels for a project |
+| POST | /project/:id/labels | Create a new label |
+| PUT | /label/:id | Update a label |
+| DELETE | /label/:id | Delete a label |
+
 ## Logs
 
 ### [src/routes/logRoutes.ts](src/routes/logRoutes.ts)

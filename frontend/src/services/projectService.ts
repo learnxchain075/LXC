@@ -109,3 +109,11 @@ export const removeProjectMemberApi = (projectId: string, userId: string) =>
 
 export const getProjectRole = (projectId: string) =>
   BaseApi.getRequest(`/project/${projectId}/role`);
+
+export const getLabels = (projectId: string) =>
+  BaseApi.getRequest(`/project/${projectId}/labels`);
+export const createLabel = (projectId: string, data: any) =>
+  BaseApi.postRequest(`/project/${projectId}/labels`, data);
+export const updateLabel = (id: string, data: any) =>
+  BaseApi.putRequest(`/label/${id}`, data);
+export const deleteLabel = (id: string) => BaseApi.deleteRequest(`/label/${id}`);

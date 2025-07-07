@@ -16,6 +16,9 @@ import {
   githubRepoSchema,
   githubBranchSchema,
   workflowSchema,
+  labelSchema,
+  updateLabelSchema,
+  labelIdParamSchema,
 } from "../../../validations/Module/ProjectManagement/projectValidation";
 
 export const createProject = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -61,21 +64,26 @@ export const getProjects = async (_req: Request, res: Response, next: NextFuncti
 
 export const createTask = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
-    const parsed = taskSchema.safeParse(req.body);
+  const parsed = taskSchema.safeParse(req.body);
 
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
     }
 
     // Ensure no undefined values are sent to Prisma
+    const { labelIds, ...rest } = parsed.data;
+
     const taskData = {
-      ...parsed.data,
-      description: parsed.data.description ?? "", // ✅ Ensure string
+      ...rest,
+      description: parsed.data.description ?? "",
+      labels: labelIds
+        ? { create: labelIds.map((id) => ({ labelId: id })) }
+        : undefined,
     };
 
     const task = await prisma.task.create({
       data: taskData,
-      include: { stage: true, parent: true, epic: true },
+      include: { stage: true, parent: true, epic: true, labels: { include: { label: true } } },
     });
     res.status(201).json(task);
   } catch (error) {
@@ -104,10 +112,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
     if (issueType) where.issueType = issueType;
     if (priority) where.priority = priority;
     if (label) {
-      where.OR = [
-        { title: { contains: label, mode: "insensitive" } },
-        { description: { contains: label, mode: "insensitive" } },
-      ];
+      where.labels = { some: { labelId: label } };
     }
     if (search) {
       where.AND = [
@@ -131,6 +136,7 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
         subtasks: true,
         parent: true,
         epic: true,
+        labels: { include: { label: true } },
       },
     });
     res.json(tasks);
@@ -188,6 +194,7 @@ export const getTask = async (req: Request, res: Response, next: NextFunction): 
         timelineLogs: true,
         comments: true,
         attachments: true,
+        labels: { include: { label: true } },
       },
     });
     res.json(task);
@@ -357,7 +364,20 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
 
     const { id } = paramsResult.data;
     const existing = await prisma.task.findUnique({ where: { id } });
-    const task = await prisma.task.update({ where: { id }, data: bodyResult.data });
+    const { labelIds, ...data } = bodyResult.data;
+    const task = await prisma.task.update({
+      where: { id },
+      data: {
+        ...data,
+        labels: labelIds
+          ? {
+              deleteMany: {},
+              create: labelIds.map((lid) => ({ labelId: lid })),
+            }
+          : undefined,
+      },
+      include: { stage: true, parent: true, epic: true, labels: { include: { label: true } } },
+    });
     if (bodyResult.data.assignedToId && bodyResult.data.assignedToId !== existing?.assignedToId) {
       await prisma.timelineLog.create({
         data: {
@@ -508,6 +528,60 @@ export const getCurrentProjectRole = async (req: Request, res: Response, next: N
       where: { projectId_userId: { projectId: params.data.id, userId } },
     });
     res.json({ role: member?.role || null });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const createLabel = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const body = labelSchema.safeParse({ ...req.body, projectId: req.params.id });
+    const params = projectIdParamSchema.safeParse(req.params);
+    if (!params.success || !body.success) {
+      return res.status(400).json({
+        errors: [...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors)],
+      });
+    }
+    const label = await prisma.label.create({ data: body.data });
+    res.status(201).json(label);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const getLabels = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const params = projectIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ errors: params.error.errors });
+    const labels = await prisma.label.findMany({ where: { projectId: params.data.id } });
+    res.json(labels);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const updateLabel = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const params = labelIdParamSchema.safeParse(req.params);
+    const body = updateLabelSchema.safeParse(req.body);
+    if (!params.success || !body.success) {
+      return res.status(400).json({
+        errors: [...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors)],
+      });
+    }
+    const label = await prisma.label.update({ where: { id: params.data.id }, data: body.data });
+    res.json(label);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const deleteLabel = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  try {
+    const params = labelIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ errors: params.error.errors });
+    await prisma.label.delete({ where: { id: params.data.id } });
+    res.json({ message: 'Label deleted successfully' });
   } catch (error) {
     next(handlePrismaError(error));
   }
