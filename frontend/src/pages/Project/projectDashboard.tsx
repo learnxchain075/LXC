@@ -21,6 +21,7 @@ interface GitHubRepo {
 interface GitHubBranch {
   id: string;
   name: string;
+  url: string;
   prUrl?: string;
   status?: string;
 }
@@ -274,6 +275,24 @@ const ProjectDashboard = () => {
                                 )}
                               </span>
                             </div>
+                            {t.githubBranches?.map((b) => (
+                              <div key={b.id} className="mt-1">
+                                <a href={b.url} target="_blank" rel="noreferrer">
+                                  {b.name}
+                                </a>
+                                {b.prUrl && (
+                                  <>
+                                    {" - "}
+                                    <a href={b.prUrl} target="_blank" rel="noreferrer">
+                                      PR
+                                    </a>
+                                  </>
+                                )}
+                                {b.status && (
+                                  <span className="badge bg-secondary ms-1">{b.status}</span>
+                                )}
+                              </div>
+                            ))}
                           </li>
                         ))}
                     </ul>

@@ -2266,6 +2266,7 @@ model GitHubRepo {
 model GitHubBranch {
   id        String   @id @default(cuid()) @map("github_branch_id")
   name      String   @map("branch_name")
+  url       String   @map("branch_url")
   prUrl     String?  @map("pr_url")
   status    String?  @map("pr_status")
   taskId    String   @map("task_id")
