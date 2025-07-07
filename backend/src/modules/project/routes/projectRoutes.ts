@@ -33,6 +33,7 @@ import {
   updateSprint,
   deleteSprint,
   assignTaskSprint,
+  getSprintBurndown,
 } from '../controllers/sprintController';
 import {
   createEpic,
@@ -78,6 +79,7 @@ router.get('/project/:id/sprints', getSprints);
 router.post('/project/:id/sprints', requireProjectRole('id', [ProjectRole.ADMIN]), createSprint);
 router.put('/sprint/:id', requireSprintAdmin, updateSprint);
 router.delete('/sprint/:id', requireSprintAdmin, deleteSprint);
+router.get('/sprint/:id/burndown', getSprintBurndown);
 router.get('/project/:id/workflow', getWorkflow);
 
 export default router;
