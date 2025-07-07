@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import TaskModal, { ISSUE_OPTIONS, IssueType } from './TaskModal';
 import {
   getProjects,
   createProject,
@@ -28,6 +29,9 @@ interface Task {
   title: string;
   stage?: { id: string; name: string } | null;
   priority: string;
+  issueType: IssueType;
+  severity?: number;
+  storyPoints?: number;
   deadline?: string;
   githubBranches?: GitHubBranch[];
 }
@@ -45,6 +49,10 @@ const ProjectDashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const issueMap = ISSUE_OPTIONS.reduce((acc, cur) => {
+    acc[cur.value as IssueType] = cur;
+    return acc;
+  }, {} as Record<IssueType, { icon: JSX.Element; color: string }>);
 
   const fetchProjects = () => {
     getProjects()
@@ -84,10 +92,17 @@ const ProjectDashboard = () => {
     fetchProjects();
   };
 
-  const handleAddTask = async (projectId: string) => {
-    const title = prompt('Task title');
-    if (!title) return;
-    await createTask({ title, projectId, createdById: userId });
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [activeProjectId, setActiveProjectId] = useState('');
+
+  const handleAddTask = (projectId: string) => {
+    setActiveProjectId(projectId);
+    setShowTaskModal(true);
+  };
+
+  const saveTask = async (data: any) => {
+    await createTask({ ...data, projectId: activeProjectId, createdById: userId });
+    setShowTaskModal(false);
     fetchProjects();
   };
 
@@ -173,6 +188,7 @@ const ProjectDashboard = () => {
           >
             Add Task
           </button>
+          <TaskModal show={showTaskModal && activeProjectId === p.id} onHide={() => setShowTaskModal(false)} onSave={saveTask} />
           <div className="row">
             {p.workflow?.stages.sort((a,b) => a.order - b.order).map(stage => (
               <div className="col-md-3" key={stage.id}>
@@ -181,6 +197,9 @@ const ProjectDashboard = () => {
                   {p.tasks.filter(t => t.stage?.id === stage.id).map(t => (
                     <li key={t.id} className="mb-2 p-2 border rounded">
                       <div className="d-flex justify-content-between">
+                        <span className={`text-${issueMap[t.issueType as IssueType]?.color || 'secondary'} me-2`}>
+                          {issueMap[t.issueType as IssueType]?.icon}
+                        </span>
                         <span>{t.title}</span>
                         <span>
                           <button
