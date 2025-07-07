@@ -6,7 +6,7 @@ export const projectSchema = z.object({
   description: z.string().optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
-  createdBy: z.string().cuid("Invalid user id"),
+  createdBy: z.string().cuid("Invalid user id").optional(), // Fixed here
   workflow: z
     .array(
       z.object({
@@ -16,6 +16,7 @@ export const projectSchema = z.object({
     )
     .optional(),
 });
+
 
 export const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
