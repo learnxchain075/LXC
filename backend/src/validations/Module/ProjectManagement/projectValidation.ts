@@ -45,6 +45,14 @@ export const commentSchema = z.object({
   content: z.string().min(1, 'Comment cannot be empty'),
 });
 
+export const commentIdParamSchema = z.object({
+  id: z.string().cuid('Invalid comment id'),
+});
+
+export const updateCommentSchema = z.object({
+  content: z.string().min(1, 'Comment cannot be empty'),
+});
+
 export const projectIdParamSchema = z.object({
   id: z.string().cuid('Invalid project id'),
 });
