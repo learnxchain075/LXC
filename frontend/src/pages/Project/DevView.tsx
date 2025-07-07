@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { getTasks } from "../../services/projectService";
+import ProjectNav from "./ProjectNav";
 
 const DevView = () => {
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const [tasks, setTasks] = useState<any[]>([]);
   useEffect(() => {
     getTasks().then((res) => setTasks(res.data || []));
   }, []);
   return (
-    <div className="container mt-4">
+    <div className={`page-wrapper ${
+      dataTheme === 'dark_data_theme' ? 'bg-dark text-white' : ''
+    }`}>
+      <ProjectNav />
+      <div className="container mt-4">
       <h4>Developer View</h4>
       <table className="table">
         <thead>
@@ -60,6 +67,7 @@ const DevView = () => {
             ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };

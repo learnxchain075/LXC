@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Form, ProgressBar } from 'react-bootstrap';
 import { getTask, getTaskTimeline, updateTask, watchTask } from '../../services/projectService';
+import ProjectNav from './ProjectNav';
 
 interface Log {
   id: string;
@@ -11,6 +13,7 @@ interface Log {
 }
 
 const TaskDetail = () => {
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const { id } = useParams<{ id: string }>();
   const [task, setTask] = useState<any>(null);
   const [logs, setLogs] = useState<Log[]>([]);
@@ -38,7 +41,10 @@ const TaskDetail = () => {
   }, [id]);
 
   return (
-    <div className="page-wrapper">
+    <div className={`page-wrapper ${
+      dataTheme === 'dark_data_theme' ? 'bg-dark text-white' : ''
+    }`}>
+      <ProjectNav />
       <div className="container mt-3">
         {task && (
           <>
