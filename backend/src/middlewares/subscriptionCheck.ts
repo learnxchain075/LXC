@@ -41,6 +41,9 @@ export const checkSubscription = async (req: Request, res: Response, next: NextF
     if (user.role === "superadmin") {
       return next();
     }
+    if(user.role === "employee"){
+      return next();
+    }
 
     let schoolId: string | null = null;
 
