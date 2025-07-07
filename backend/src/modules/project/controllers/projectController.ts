@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../../db/prisma";
 import { handlePrismaError } from "../../../utils/prismaErrorHandler";
+import { uploadFile } from "../../../config/upload";
 import {
   projectSchema,
   taskSchema,
   taskStatusSchema,
   commentSchema,
+  commentIdParamSchema,
+  updateCommentSchema,
   updateProjectSchema,
   updateTaskSchema,
   projectIdParamSchema,
@@ -124,6 +127,82 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
     const { id, authorId, content } = parsed.data;
     const comment = await prisma.comment.create({ data: { taskId: id, authorId, content } });
     res.status(201).json(comment);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const updateComment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = commentIdParamSchema.safeParse(req.params);
+    const body = updateCommentSchema.safeParse(req.body);
+    if (!params.success || !body.success) {
+      return res.status(400).json({
+        errors: [
+          ...(params.success ? [] : params.error.errors),
+          ...(body.success ? [] : body.error.errors),
+        ],
+      });
+    }
+    const comment = await prisma.comment.update({
+      where: { id: params.data.id },
+      data: { content: body.data.content },
+    });
+    res.json(comment);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const deleteComment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = commentIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ errors: params.error.errors });
+    }
+    await prisma.comment.delete({ where: { id: params.data.id } });
+    res.json({ message: "Comment deleted successfully" });
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};
+
+export const addAttachment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  try {
+    const params = taskIdParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return res.status(400).json({ errors: params.error.errors });
+    }
+    const file = (req as any).file;
+    if (!file) {
+      return res.status(400).json({ message: "File is required" });
+    }
+    const uploaded = await uploadFile(
+      file.buffer,
+      "Task_Attachments",
+      "raw",
+      file.originalname
+    );
+    const attachment = await prisma.attachment.create({
+      data: {
+        taskId: params.data.id,
+        fileName: file.originalname,
+        url: uploaded.url,
+      },
+    });
+    res.status(201).json(attachment);
   } catch (error) {
     next(handlePrismaError(error));
   }

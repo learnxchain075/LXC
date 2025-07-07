@@ -1,10 +1,14 @@
 import express from 'express';
+import multer from 'multer';
 import {
   addComment,
+  updateComment,
+  deleteComment,
   createProject,
   createTask,
   getProjects,
   getTasks,
+  addAttachment,
   addGitHubRepo,
   createGitHubBranch,
   updateTaskStatus,
@@ -29,6 +33,7 @@ import {
 } from '../controllers/epicController';
 
 const router = express.Router();
+const upload = multer();
 
 router.get('/projects', getProjects);
 router.post('/project', createProject);
@@ -42,6 +47,9 @@ router.put('/task/:id', updateTask);
 router.delete('/task/:id', deleteTask);
 router.patch('/task/:id/status', updateTaskStatus);
 router.post('/task/:id/comment', addComment);
+router.put('/comment/:id', updateComment);
+router.delete('/comment/:id', deleteComment);
+router.post('/task/:id/attachment', upload.single('file'), addAttachment);
 router.post('/task/:id/github-branch', createGitHubBranch);
 router.patch('/task/:id/sprint', assignTaskSprint);
 
