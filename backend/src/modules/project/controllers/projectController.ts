@@ -87,16 +87,51 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
   try {
     const projectId = req.query.projectId as string | undefined;
     const sprintParam = req.query.sprintId as string | undefined;
+    const assigneeId = req.query.assigneeId as string | undefined;
+    const status = req.query.status as string | undefined;
+    const issueType = req.query.issueType as string | undefined;
+    const priority = req.query.priority as string | undefined;
+    const label = req.query.label as string | undefined;
+    const search = req.query.search as string | undefined;
 
     const where: any = {};
     if (projectId) where.projectId = projectId;
     if (typeof sprintParam !== "undefined") {
       where.sprintId = sprintParam === "null" ? null : sprintParam;
     }
+    if (assigneeId) where.assignedToId = assigneeId;
+    if (status) where.status = status;
+    if (issueType) where.issueType = issueType;
+    if (priority) where.priority = priority;
+    if (label) {
+      where.OR = [
+        { title: { contains: label, mode: "insensitive" } },
+        { description: { contains: label, mode: "insensitive" } },
+      ];
+    }
+    if (search) {
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { id: search },
+            { title: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+          ],
+        },
+      ];
+    }
 
     const tasks = await prisma.task.findMany({
       where,
-      include: { comments: true, sprint: true, stage: true, subtasks: true, parent: true, epic: true },
+      include: {
+        comments: true,
+        sprint: true,
+        stage: true,
+        subtasks: true,
+        parent: true,
+        epic: true,
+      },
     });
     res.json(tasks);
   } catch (error) {
@@ -115,12 +150,12 @@ export const getTaskCalendar = async (req: Request, res: Response, next: NextFun
 
     const tasks = await prisma.task.findMany({
       where,
-      select: { id: true, title: true, startDate: true, endDate: true, deadline: true }
+      select: { id: true, title: true, startDate: true, endDate: true, deadline: true },
     });
 
     const now = new Date();
     const soon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-    const result = tasks.map(t => {
+    const result = tasks.map((t) => {
       const end = t.endDate || t.deadline || undefined;
       return {
         id: t.id,
@@ -145,7 +180,15 @@ export const getTask = async (req: Request, res: Response, next: NextFunction): 
     }
     const task = await prisma.task.findUnique({
       where: { id: params.data.id },
-      include: { stage: true, subtasks: true, parent: true, epic: true, timelineLogs: true, comments: true, attachments: true },
+      include: {
+        stage: true,
+        subtasks: true,
+        parent: true,
+        epic: true,
+        timelineLogs: true,
+        comments: true,
+        attachments: true,
+      },
     });
     res.json(task);
   } catch (error) {
@@ -159,7 +202,10 @@ export const getTimelineLogs = async (req: Request, res: Response, next: NextFun
     if (!params.success) {
       return res.status(400).json({ errors: params.error.errors });
     }
-    const logs = await prisma.timelineLog.findMany({ where: { taskId: params.data.id }, orderBy: { timestamp: 'asc' } });
+    const logs = await prisma.timelineLog.findMany({
+      where: { taskId: params.data.id },
+      orderBy: { timestamp: "asc" },
+    });
     res.json(logs);
   } catch (error) {
     next(handlePrismaError(error));
@@ -172,13 +218,13 @@ export const updateTaskStatus = async (req: Request, res: Response, next: NextFu
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
     }
-  const { id, stageId } = parsed.data;
+    const { id, stageId } = parsed.data;
     const task = await prisma.task.update({ where: { id }, data: { stageId }, include: { stage: true } });
     await prisma.timelineLog.create({
       data: {
         taskId: id,
-        action: 'STATUS_CHANGE',
-        details: `Moved to ${task.stage?.name ?? ''}`,
+        action: "STATUS_CHANGE",
+        details: `Moved to ${task.stage?.name ?? ""}`,
       },
     });
     res.json(task);
@@ -201,20 +247,13 @@ export const addComment = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const updateComment = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const updateComment = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = commentIdParamSchema.safeParse(req.params);
     const body = updateCommentSchema.safeParse(req.body);
     if (!params.success || !body.success) {
       return res.status(400).json({
-        errors: [
-          ...(params.success ? [] : params.error.errors),
-          ...(body.success ? [] : body.error.errors),
-        ],
+        errors: [...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors)],
       });
     }
     const comment = await prisma.comment.update({
@@ -227,11 +266,7 @@ export const updateComment = async (
   }
 };
 
-export const deleteComment = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const deleteComment = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = commentIdParamSchema.safeParse(req.params);
     if (!params.success) {
@@ -244,11 +279,7 @@ export const deleteComment = async (
   }
 };
 
-export const addAttachment = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const addAttachment = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = taskIdParamSchema.safeParse(req.params);
     if (!params.success) {
@@ -258,12 +289,7 @@ export const addAttachment = async (
     if (!file) {
       return res.status(400).json({ message: "File is required" });
     }
-    const uploaded = await uploadFile(
-      file.buffer,
-      "Task_Attachments",
-      "raw",
-      file.originalname
-    );
+    const uploaded = await uploadFile(file.buffer, "Task_Attachments", "raw", file.originalname);
     const attachment = await prisma.attachment.create({
       data: {
         taskId: params.data.id,
@@ -336,13 +362,13 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
       await prisma.timelineLog.create({
         data: {
           taskId: id,
-          action: 'ASSIGNEE_CHANGE',
+          action: "ASSIGNEE_CHANGE",
           details: `Assigned to ${bodyResult.data.assignedToId}`,
         },
       });
     } else {
       await prisma.timelineLog.create({
-        data: { taskId: id, action: 'EDIT', details: 'Task updated' },
+        data: { taskId: id, action: "EDIT", details: "Task updated" },
       });
     }
     res.json(task);
@@ -419,16 +445,14 @@ export const getWorkflow = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const updateWorkflow = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const updateWorkflow = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = projectIdParamSchema.safeParse(req.params);
     const body = workflowSchema.safeParse(req.body);
     if (!params.success || !body.success) {
-      return res.status(400).json({ errors: [ ...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors) ] });
+      return res
+        .status(400)
+        .json({ errors: [...(params.success ? [] : params.error.errors), ...(body.success ? [] : body.error.errors)] });
     }
     await prisma.workflow.deleteMany({ where: { projectId: params.data.id } });
     const wf = await prisma.workflow.create({
@@ -444,11 +468,7 @@ export const updateWorkflow = async (
   }
 };
 
-export const addProjectMember = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const addProjectMember = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = projectIdParamSchema.safeParse(req.params);
     if (!params.success) {
@@ -462,37 +482,31 @@ export const addProjectMember = async (
   }
 };
 
-export const removeProjectMember = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const removeProjectMember = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = projectIdParamSchema.safeParse({ id: req.params.id });
     const userId = req.params.userId;
     if (!params.success || !userId) {
-      return res.status(400).json({ errors: params.success ? [{ message: 'userId required' }] : params.error.errors });
+      return res.status(400).json({ errors: params.success ? [{ message: "userId required" }] : params.error.errors });
     }
     await prisma.projectMember.delete({ where: { projectId_userId: { projectId: params.data.id, userId } } });
-    res.json({ message: 'Removed' });
+    res.json({ message: "Removed" });
   } catch (error) {
     next(handlePrismaError(error));
   }
 };
 
-export const getCurrentProjectRole = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const getCurrentProjectRole = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const params = projectIdParamSchema.safeParse(req.params);
     if (!params.success) {
       return res.status(400).json({ errors: params.error.errors });
     }
     const userId = req.user?.id;
-    if (!userId) return res.status(403).json({ message: 'Forbidden' });
-    const member = await prisma.projectMember.findUnique({ where: { projectId_userId: { projectId: params.data.id, userId } } });
+    if (!userId) return res.status(403).json({ message: "Forbidden" });
+    const member = await prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: params.data.id, userId } },
+    });
     res.json({ role: member?.role || null });
   } catch (error) {
     next(handlePrismaError(error));
