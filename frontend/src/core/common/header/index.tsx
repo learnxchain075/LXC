@@ -18,7 +18,9 @@ import useMobileDetection from "../mobileDetection";
 import BaseApi from "../../../services/BaseApi";
 import { toast, ToastContainer } from "react-toastify";
 
-import NotificationsDropdown from "../../components/notifications/NotificationsDropdown";
+// import NotificationsDropdown from "../../components/notifications/NotificationsDropdown";
+
+import NotificationsDropdown from "../../../components/notifications/NotificationsDropdown";
 
 
 
