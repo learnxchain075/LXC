@@ -19,6 +19,7 @@ export const requestOtp = async (req: Request, res: Response): Promise<void> => 
       res.status(404).json({ error: 'User not found' });
       return;
     }
+    await prisma.otpToken.deleteMany({ where: { userId: user.id, used: false } });
     const otp = await generateOTP();
     const otpHash = await bcrypt.hash(otp, 10);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -30,7 +31,9 @@ export const requestOtp = async (req: Request, res: Response): Promise<void> => 
       },
     });
     const message = `Your login OTP is ${otp}`;
-    await sendSMS(user.phone, message);
+    if (user.phone) {
+      await sendSMS(user.phone, message);
+    }
     await sendEmail(user.email, 'Your OTP Code', message);
     await renderAndSendEmail('send-otp', { otp }, 'Your OTP Code', user.email);
     res.status(200).json({ success: 'OTP sent' });
