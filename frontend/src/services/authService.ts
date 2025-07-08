@@ -16,6 +16,18 @@ export const login = async (
   return response;
 };
 
+export const requestOtp = async (email: string) => {
+  return await BaseApi.postRequest(`/auth/request-otp`, { email });
+};
+
+export const loginWithOtp = async (email: string, otp: string) => {
+  return await BaseApi.postRequest(`/auth/login-otp`, { email, otp });
+};
+
+export const googleLogin = async (idToken: string) => {
+  return await BaseApi.postRequest(`/auth/google-signin`, { idToken });
+};
+
 export const getUserProfile = async (): Promise<
   AxiosResponse<IGetUserProfileResponse>
 > => {

@@ -3,6 +3,7 @@
 // export default Signin;
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import ScrollAnimate from "../../Components/ScrollAnimate";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -13,7 +14,7 @@ import { Eye, EyeOff } from "react-feather";
 import AuthenticationStyleWrapper from "./Authentication.style";
 import AuthRightSection from "./AuthRightSection";
 import AuthFormWrapper from "./AuthFormWrapper";
-import { login } from "../../../services/authService";
+import { login, googleLogin } from "../../../services/authService";
 import AppConfig from "../../../config/config";
 import { useDispatch } from "react-redux";
 import { setIsLoggedIn } from "../../../Store/authSlice";
@@ -130,6 +131,35 @@ const [showPassword, setShowPassword] = useState(false);
             <button type="submit" className="form-primary-btn" disabled={isLoading}>
               {isLoading ? "Logging in..." : "Login"}
             </button>
+          </ScrollAnimate>
+
+          <ScrollAnimate delay={400}>
+            <div className="or-section">
+              <p className="mb-0">or</p>
+            </div>
+          </ScrollAnimate>
+
+          <ScrollAnimate delay={450}>
+            <GoogleOAuthProvider clientId={AppConfig.GOOGLE_CLIENT_ID}>
+              <GoogleLogin
+                onSuccess={async (cred) => {
+                  try {
+                    if (!cred.credential) return;
+                    await googleLogin(cred.credential);
+                    window.location.reload();
+                  } catch (err: any) {
+                    toast.error(err.message || "Google login failed");
+                  }
+                }}
+                onError={() => toast.error("Google Login Failed")}
+              />
+            </GoogleOAuthProvider>
+          </ScrollAnimate>
+
+          <ScrollAnimate delay={500}>
+            <NavLink to="/otp-login" className="auth-link">
+              Login with OTP
+            </NavLink>
           </ScrollAnimate>
 
           {/* <ScrollAnimate delay={400}>

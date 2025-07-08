@@ -240,6 +240,7 @@ import AcademicResources from "../pages/Admin/peoples/students/student-details/A
 import Logs from "../pages/SuperAdmin/logs/page";
 
 import SignIn from "../lxc-home/pages/sign-in";
+import OtpLogin from "../lxc-home/pages/otp-login";
 import SignUp from "../lxc-home/pages/schedule-demo";
 
 import Terms from "../lxc-home/pages/terms";
@@ -2286,6 +2287,7 @@ export const publicRoutes = [
   { path: routes.aboutUs, element: <AboutUs /> },
   { path: routes.ourServices, element: <OurServices /> },
   { path: routes.signIn, element: <SignIn /> },
+  { path: routes.otpLogin, element: <OtpLogin /> },
   { path: routes.signUp, element: <SignUp /> },
 
   { path: routes.terms, element: <Terms /> },

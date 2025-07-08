@@ -46,6 +46,7 @@ const AppConfig = {
   LOCAL_STORAGE_ACCESS_TOKEN_KEY: "proAccessToken",
   LOCAL_STORAGE_REFRESH_TOKEN_KEY: "proRefreshToken",
   LOCALSTORAGE_APP_CONFIG: "CASINO-APP-CONFIG",
+  GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
   ...baseConfig,
 };
 
