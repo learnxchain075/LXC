@@ -6,6 +6,8 @@ import AuthenticationStyleWrapper from './Authentication.style';
 import AuthRightSection from './AuthRightSection';
 import AuthFormWrapper from './AuthFormWrapper';
 import { requestOtp, loginWithOtp } from '../../../services/authService';
+import AppConfig from '../../../config/config';
+import { jwtDecode } from 'jwt-decode';
 
 const OtpSignin = () => {
   const [email, setEmail] = useState('');
@@ -17,6 +19,10 @@ const OtpSignin = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      if (!email.trim()) {
+        toast.error('Email is required');
+        return;
+      }
       await requestOtp(email);
       setOtpSent(true);
       toast.success('OTP sent');
@@ -32,7 +38,16 @@ const OtpSignin = () => {
     setLoading(true);
     try {
       const code = otp.join('');
-      await loginWithOtp(email, code);
+      if (code.length !== 4) {
+        toast.error('Enter valid OTP');
+        return;
+      }
+      const res = await loginWithOtp(email, code);
+      localStorage.setItem(AppConfig.LOCAL_STORAGE_ACCESS_TOKEN_KEY, res.data.accessToken);
+      localStorage.setItem(AppConfig.LOCAL_STORAGE_REFRESH_TOKEN_KEY, res.data.refreshToken);
+      const decoded: any = jwtDecode(res.data.accessToken);
+      localStorage.setItem('schoolId', decoded.schoolId);
+      localStorage.setItem('userId', decoded.userId);
       toast.success('Login Successful');
       window.location.reload();
     } catch (err: any) {

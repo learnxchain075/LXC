@@ -2,7 +2,7 @@
 
 // export default Signin;
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import ScrollAnimate from "../../Components/ScrollAnimate";
 import { ToastContainer, toast } from "react-toastify";
@@ -16,14 +16,9 @@ import AuthRightSection from "./AuthRightSection";
 import AuthFormWrapper from "./AuthFormWrapper";
 import { login, googleLogin } from "../../../services/authService";
 import AppConfig from "../../../config/config";
-import { useDispatch } from "react-redux";
-import { setIsLoggedIn } from "../../../Store/authSlice";
 
-import GoogleIcon from "../../assets/images/auth-and-utility/google.svg";
-import FacebookIcon from "../../assets/images/auth-and-utility/facebook.svg";
 
 const Signin = () => {
-  const dispatch = useDispatch();
 
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -49,9 +44,6 @@ const [showPassword, setShowPassword] = useState(false);
       const decoded: any = jwtDecode(token);
       localStorage.setItem("schoolId", decoded.schoolId);
       localStorage.setItem("userId", decoded.userId);
-      // if (res.status  >=200){
-      //   dispatch(setIsLoggedIn(true));
-      // }
 
       window.location.reload()
       toast.success("Login Successful!", {
@@ -145,13 +137,24 @@ const [showPassword, setShowPassword] = useState(false);
                 onSuccess={async (cred) => {
                   try {
                     if (!cred.credential) return;
-                    await googleLogin(cred.credential);
+                    const res = await googleLogin(cred.credential);
+                    localStorage.setItem(
+                      AppConfig.LOCAL_STORAGE_ACCESS_TOKEN_KEY,
+                      res.data.accessToken
+                    );
+                    localStorage.setItem(
+                      AppConfig.LOCAL_STORAGE_REFRESH_TOKEN_KEY,
+                      res.data.refreshToken
+                    );
+                    const decoded: any = jwtDecode(res.data.accessToken);
+                    localStorage.setItem('schoolId', decoded.schoolId);
+                    localStorage.setItem('userId', decoded.userId);
                     window.location.reload();
                   } catch (err: any) {
-                    toast.error(err.message || "Google login failed");
+                    toast.error(err.message || 'Google login failed');
                   }
                 }}
-                onError={() => toast.error("Google Login Failed")}
+                onError={() => toast.error('Google Login Failed')}
               />
             </GoogleOAuthProvider>
           </ScrollAnimate>
@@ -161,23 +164,6 @@ const [showPassword, setShowPassword] = useState(false);
               Login with OTP
             </NavLink>
           </ScrollAnimate>
-
-            <ScrollAnimate delay={400}>
-              <div className="or-section">
-                <p className="mb-0">or</p>
-              </div>
-            </ScrollAnimate>
-
-            <ScrollAnimate delay={450}>
-              <button className="secondary-btn">
-                <img src={GoogleIcon} alt="icon" /> Log in with Google
-              </button>
-            </ScrollAnimate>
-            <ScrollAnimate delay={500}>
-              <button className="secondary-btn">
-                <img src={FacebookIcon} alt="icon" /> Log in with Facebook
-              </button>
-            </ScrollAnimate>
 
           <ScrollAnimate delay={550}>
             <NavLink to="/forgot-password" className="auth-link">
