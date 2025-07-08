@@ -19,8 +19,8 @@ import AppConfig from "../../../config/config";
 import { useDispatch } from "react-redux";
 import { setIsLoggedIn } from "../../../Store/authSlice";
 
-// import GoogleIcon from "../../assets/images/auth-and-utility/google.svg";
-// import FacebookIcon from "../../assets/images/auth-and-utility/facebook.svg";
+import GoogleIcon from "../../assets/images/auth-and-utility/google.svg";
+import FacebookIcon from "../../assets/images/auth-and-utility/facebook.svg";
 
 const Signin = () => {
   const dispatch = useDispatch();
@@ -162,22 +162,22 @@ const [showPassword, setShowPassword] = useState(false);
             </NavLink>
           </ScrollAnimate>
 
-          {/* <ScrollAnimate delay={400}>
-            <div className="or-section">
-              <p className="mb-0">or</p>
-            </div>
-          </ScrollAnimate>
+            <ScrollAnimate delay={400}>
+              <div className="or-section">
+                <p className="mb-0">or</p>
+              </div>
+            </ScrollAnimate>
 
-          <ScrollAnimate delay={450}>
-            <button className="secondary-btn">
-              <img src={GoogleIcon} alt="icon" /> Log in with Google
-            </button>
-          </ScrollAnimate>
-          <ScrollAnimate delay={500}>
-            <button className="secondary-btn">
-              <img src={FacebookIcon} alt="icon" /> Log in with Facebook
-            </button>
-          </ScrollAnimate> */}
+            <ScrollAnimate delay={450}>
+              <button className="secondary-btn">
+                <img src={GoogleIcon} alt="icon" /> Log in with Google
+              </button>
+            </ScrollAnimate>
+            <ScrollAnimate delay={500}>
+              <button className="secondary-btn">
+                <img src={FacebookIcon} alt="icon" /> Log in with Facebook
+              </button>
+            </ScrollAnimate>
 
           <ScrollAnimate delay={550}>
             <NavLink to="/forgot-password" className="auth-link">
