@@ -21,10 +21,12 @@ export const all_routes = {
   companyAccounts: "/super-admin/company-accounts",
   companyAccountsAdd: "/super-admin/company-accounts/add",
   companyAccountsSummary: "/super-admin/company-accounts/summary",
+  superAdminUsageAnalytics: "/superadmin/usage-analytics",
 
   // ************************************  Admin Routes *********************************************************
 
   adminDashboard: "/admin-dashboard",
+  adminUsageAnalytics: "/admin/usage-analytics",
 
   requestFeatures: "/admin/request-features",
   adminFeedback: "/admin/feedback",

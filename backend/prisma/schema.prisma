@@ -2390,3 +2390,19 @@ model GitHubToken {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 }
+
+/// Logs each time a user logs in. Useful for tracking active users over time
+model UserLoginLog {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String
+  timestamp DateTime @default(now())
+}
+
+/// Logs whenever a module is accessed. Helpful for module popularity stats
+model ModuleUsageLog {
+  id         String   @id @default(cuid())
+  userId     String
+  moduleName String
+  timestamp  DateTime @default(now())
+}
