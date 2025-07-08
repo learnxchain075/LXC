@@ -2406,3 +2406,16 @@ model ModuleUsageLog {
   moduleName String
   timestamp  DateTime @default(now())
 }
+
+model OtpToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  otpHash   String   @map("otp_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  used      Boolean  @default(false) @map("used")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+

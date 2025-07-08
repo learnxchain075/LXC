@@ -160,3 +160,5 @@ export async function sendNotifications(): Promise<void> {
     await prisma.$disconnect();
   }
 }
+
+export { sendSMS, sendEmail };
