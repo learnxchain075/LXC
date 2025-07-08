@@ -41,6 +41,9 @@ importers:
       '@react-latest-ui/react-sticky-notes':
         specifier: ^0.2.6
         version: 0.2.6(react@19.1.0)
+      '@react-oauth/google':
+        specifier: ^0.8.1
+        version: 0.8.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@reduxjs/toolkit':
         specifier: ^2.6.1
         version: 2.6.1(react-redux@9.2.0(@types/react@19.0.12)(react@19.1.0)(redux@5.0.1))(react@19.1.0)
@@ -1104,6 +1107,12 @@ packages:
     resolution: {integrity: sha512-J8jKoFsSWa5n1Yei/O89h6+JVx+Sj7W77/IEhbkOyprJ7fQr5U0T7fYfWVXdABCMkt88Y3Ph1oH9gfh2nhjwbA==}
     peerDependencies:
       react: ^16.8.6
+
+  '@react-oauth/google@0.8.1':
+    resolution: {integrity: sha512-pPzZ9ScbTq3FaRU3/uC0d50FgWSGCBBYnW3+aocV1A6YzOMKqyBi5KLCBjh4Gy/yhkHBlKdlN0RIRWapaAGj5g==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   '@react-stately/flags@3.1.2':
     resolution: {integrity: sha512-2HjFcZx1MyQXoPqcBGALwWWmgFVUk2TuKVIQxCbRq7fPyWXIl6VHcakCLurdtYC2Iks7zizvz0Idv48MQ38DWg==}
@@ -4393,6 +4402,11 @@ snapshots:
     dependencies:
       react: 19.1.0
       react-dom: 16.14.0(react@19.1.0)
+
+  '@react-oauth/google@0.8.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
 
   '@react-stately/flags@3.1.2':
     dependencies:
