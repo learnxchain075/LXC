@@ -81,6 +81,7 @@ import addStaffRoutes from "../modules/admin/routes/dashboard/hrm/addStaffRoutes
 import employeeRoutes from "../modules/admin/routes/dashboard/hrm/employeeRoutes";
 import leaveRequestRoutes from "../modules/superadmin/routes/core/leaveRequestRoutes";
 import holidayRoutes from "../modules/admin/routes/dashboard/holidayRoutes";
+import analyticsRoutes from "../modules/analytics/analytics.routes";
 
 import feeHandlerRoutes from "./paymenthandler/feeHandlerRoutes";
 import invoiceRoutes from "./paymenthandler/invoiceRoutes";
@@ -215,6 +216,7 @@ apiRouter.use(paymentTransactionRoutes);
 apiRouter.use(sectionRoutes);
 apiRouter.use(studentAllRoutes);
 apiRouter.use(chatRoutes);
+apiRouter.use(analyticsRoutes);
 apiRouter.use(DashboardHomeRoutes);
 
 // Test Todo

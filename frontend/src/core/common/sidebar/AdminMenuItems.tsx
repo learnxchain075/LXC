@@ -620,6 +620,16 @@ const AdminMenuItems = () => {
                 <span>Feature Request</span>
               </Link>
             </li>
+            <li className="submenu">
+              <Link
+                to={all_routes.adminUsageAnalytics}
+                onClick={() => handleClick("Usage Analytics", undefined, getLayoutClass("Usage Analytics"))}
+                className={`${subOpen === "Usage Analytics" ? "subdrop" : ""} ${all_routes.adminUsageAnalytics === location.pathname ? "active" : ""}`}
+              >
+                <i className="ti ti-chart-bar"></i>
+                <span>Usage Analytics</span>
+              </Link>
+            </li>
             {/*
             <li className="submenu">
               <Link

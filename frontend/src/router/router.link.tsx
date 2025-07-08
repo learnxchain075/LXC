@@ -197,11 +197,13 @@ import Storage from "../pages/SuperAdmin/settings/otherSettings/storage";
 
 // super admin pages
 import SuperAdminFetauresRequestListPage from "../pages/SuperAdmin/SuperAdminFetauresRequestListPage";
+import SuperUsageAnalytics from "../pages/SuperAdmin/UsageAnalytics";
 
 // Admin pages
 
 import AdminRequestFetauresPage from "../pages/Admin/AdminRequestFetauresPage";
 import AdminFeedbackPage from "../pages/Admin/feedback";
+import UsageAnalytics from "../pages/Admin/UsageAnalytics";
 import path from "path";
 import SchoolProfilePage from "../pages/SuperAdmin/SchoolProfilePage";
 import MembershipAddon from "../pages/SuperAdmin/PlansMangePage/membershipaddon";
@@ -311,6 +313,12 @@ export const publicRoutes = [
     role: ["superadmin"],
   },
   {
+    path: routes.superAdminUsageAnalytics,
+    element: <SuperUsageAnalytics />,
+    route: Route,
+    role: ["superadmin"],
+  },
+  {
     path: routes.logs,
     element: <Logs />,
     route: Route,
@@ -364,6 +372,12 @@ export const publicRoutes = [
   {
     path: routes.requestFeatures,
     element: <AdminRequestFetauresPage />,
+    route: Route,
+    role: ["admin"],
+  },
+  {
+    path: routes.adminUsageAnalytics,
+    element: <UsageAnalytics />,
     route: Route,
     role: ["admin"],
   },

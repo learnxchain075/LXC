@@ -82,6 +82,16 @@ const SuperAdminMenuItems = () => {
               {/* <span className="menu-arrow" /> */}
             </Link>
           </li>
+            <li className="submenu">
+              <Link
+                to={all_routes.superAdminUsageAnalytics}
+                onClick={() => handleClick("Usage Analytics", undefined, getLayoutClass("Usage Analytics"))}
+                className={`${subOpen === "Usage Analytics" ? "subdrop" : ""} ${all_routes.superAdminUsageAnalytics === location.pathname ? "active" : ""}`}
+              >
+                <i className="ti ti-chart-bar"></i>
+                <span>Usage Analytics</span>
+              </Link>
+            </li>
 
           {/* <li className="submenu">
             <Link
