@@ -39,6 +39,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+function formatPhone(phone: string): string {
+  let formatted = phone.trim();
+  if (!formatted.startsWith('+')) {
+    formatted = `+${formatted}`;
+  }
+  return formatted;
+}
+
 // Send SMS
 async function sendSMS(phone: string, message: string): Promise<void> {
   if (CONFIG.IS_DEVELOPMENT) {
@@ -50,7 +58,7 @@ async function sendSMS(phone: string, message: string): Promise<void> {
     const msg = await twilioClient.messages.create({
       body: message,
       from: TWILIO_PHONE_NUMBER,
-      to: phone,
+      to: formatPhone(phone),
     });
     Logger.info(`SMS sent: ${msg.sid}`);
   } catch (error) {
@@ -59,9 +67,14 @@ async function sendSMS(phone: string, message: string): Promise<void> {
 }
 
 // Send Email
-async function sendEmail(to: string, subject: string, body: string): Promise<void> {
+async function sendEmail(to: string | undefined | null, subject: string, body: string): Promise<void> {
   if (CONFIG.IS_DEVELOPMENT) {
     Logger.info(`Email skipped (dev): ${to} - ${subject}`);
+    return;
+  }
+
+  if (!to) {
+    Logger.error('Failed to send email: no recipient');
     return;
   }
 

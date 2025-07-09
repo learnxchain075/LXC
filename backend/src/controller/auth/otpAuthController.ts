@@ -34,8 +34,10 @@ export const requestOtp = async (req: Request, res: Response): Promise<void> => 
     if (user.phone) {
       await sendSMS(user.phone, message);
     }
-    await sendEmail(user.email, 'Your OTP Code', message);
-    await renderAndSendEmail('send-otp', { otp }, 'Your OTP Code', user.email);
+    if (user.email) {
+      await sendEmail(user.email, 'Your OTP Code', message);
+      await renderAndSendEmail('send-otp', { otp }, 'Your OTP Code', user.email);
+    }
     res.status(200).json({ success: 'OTP sent' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to send OTP' });
