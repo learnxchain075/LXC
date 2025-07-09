@@ -189,7 +189,7 @@ const NoticeBoardstudent = () => {
           <div className="d-flex gap-2 align-items-center w-100 w-md-auto">
             <input
               type="text"
-              className={`form-control form-control-lg shadow-sm${isDark ? ' bg-secondary text-light border-0' : ''}`}
+              className={`form-control form-control-lg shadow-sm${isDark ? ' bg-dark text-light border-secondary' : 'bg-light text-dark border'}`}
               placeholder="Search notices, events, holidays..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -210,11 +210,11 @@ const NoticeBoardstudent = () => {
             {/* Notices */}
             <div className="col-12 col-lg-4">
               <div className={`card shadow-sm h-100${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
-                <div className="card-header bg-warning bg-opacity-25 d-flex align-items-center gap-2">
+                <div className={`card-header d-flex align-items-center gap-2${isDark ? ' bg-dark text-light border-secondary' : 'bg-warning bg-opacity-25'}`}>
                   <i className="bi bi-bell text-warning fs-4"></i>
                   <span className="fw-bold">Notices</span>
                   <span className="badge bg-warning ms-auto">{filtered.notices.length}</span>
-                  <button className="btn btn-sm btn-link ms-2" onClick={() => handleToggle('notices')}>
+                  <button className={`btn btn-sm btn-link ms-2${isDark ? ' text-light' : ''}`} onClick={() => handleToggle('notices')}>
                     <i className={`bi ${show.notices ? 'bi-caret-down-fill' : 'bi-caret-right-fill'}`}></i>
                   </button>
                     </div>
@@ -231,7 +231,7 @@ const NoticeBoardstudent = () => {
                       </a>
                         )}
                       </li>
-                    )) : <li className={`list-group-item text-muted${isDark ? ' bg-dark border-secondary' : ''}`}>No notices found.</li>}
+                    )) : <li className={`list-group-item${isDark ? ' bg-dark text-light border-secondary' : 'bg-light text-muted'}`}>No notices found.</li>}
                   </ul>
                     )}
                   </div>
@@ -239,11 +239,11 @@ const NoticeBoardstudent = () => {
             {/* Events */}
             <div className="col-12 col-lg-4">
               <div className={`card shadow-sm h-100${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
-                <div className="card-header bg-primary bg-opacity-25 d-flex align-items-center gap-2">
+                <div className={`card-header d-flex align-items-center gap-2${isDark ? ' bg-dark text-light border-secondary' : 'bg-primary bg-opacity-25'}`}>
                   <i className="bi bi-calendar-event text-primary fs-4"></i>
                   <span className="fw-bold">Events</span>
                   <span className="badge bg-primary ms-auto">{filtered.events.length}</span>
-                  <button className="btn btn-sm btn-link ms-2" onClick={() => handleToggle('events')}>
+                  <button className={`btn btn-sm btn-link ms-2${isDark ? ' text-light' : ''}`} onClick={() => handleToggle('events')}>
                     <i className={`bi ${show.events ? 'bi-caret-down-fill' : 'bi-caret-right-fill'}`}></i>
                   </button>
                     </div>
@@ -260,7 +260,7 @@ const NoticeBoardstudent = () => {
                           </a>
                         )}
                       </li>
-                    )) : <li className={`list-group-item text-muted${isDark ? ' bg-dark border-secondary' : ''}`}>No events found.</li>}
+                    )) : <li className={`list-group-item${isDark ? ' bg-dark text-light border-secondary' : 'bg-light text-muted'}`}>No events found.</li>}
                   </ul>
                     )}
                   </div>
@@ -268,11 +268,11 @@ const NoticeBoardstudent = () => {
             {/* Holidays */}
             <div className="col-12 col-lg-4">
               <div className={`card shadow-sm h-100${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
-                <div className="card-header bg-success bg-opacity-25 d-flex align-items-center gap-2">
+                <div className={`card-header d-flex align-items-center gap-2${isDark ? ' bg-dark text-light border-secondary' : 'bg-success bg-opacity-25'}`}>
                   <i className="bi bi-calendar-check text-success fs-4"></i>
                   <span className="fw-bold">Holidays</span>
                   <span className="badge bg-success ms-auto">{filtered.holidays.length}</span>
-                  <button className="btn btn-sm btn-link ms-2" onClick={() => handleToggle('holidays')}>
+                  <button className={`btn btn-sm btn-link ms-2${isDark ? ' text-light' : ''}`} onClick={() => handleToggle('holidays')}>
                     <i className={`bi ${show.holidays ? 'bi-caret-down-fill' : 'bi-caret-right-fill'}`}></i>
                   </button>
                     </div>
@@ -296,7 +296,7 @@ const NoticeBoardstudent = () => {
                           <div className="mb-1">{holiday.description}</div>
                         )}
                       </li>
-                    )) : <li className={`list-group-item text-muted${isDark ? ' bg-dark border-secondary' : ''}`}>No holidays found.</li>}
+                    )) : <li className={`list-group-item${isDark ? ' bg-dark text-light border-secondary' : 'bg-light text-muted'}`}>No holidays found.</li>}
                   </ul>
               )}
               </div>
