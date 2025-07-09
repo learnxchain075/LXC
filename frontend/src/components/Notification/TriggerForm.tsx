@@ -11,7 +11,7 @@ const TriggerForm: React.FC<Props> = ({ events, onSubmit }) => {
   const [data, setData] = useState<Record<string,string>>({});
 
   return (
-    <Form>
+    <Form className='page-wrapper'>
       <Form.Group className="mb-3">
         <Form.Label>Trigger Event</Form.Label>
         <Form.Select value={event} onChange={e=>setEvent(e.target.value)}>

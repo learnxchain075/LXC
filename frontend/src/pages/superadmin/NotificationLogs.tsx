@@ -12,10 +12,14 @@ const NotificationLogs = () => {
   useEffect(() => { fetchLogs(); }, []);
 
   return (
-    <div className="container mt-4">
-      <h3>Notification Logs</h3>
-      <LogTable logs={logs} />
+  
+    <div className="page-wrapper">
+      <div className="container mt-4">
+        <h3>Notification Logs</h3>
+        <LogTable logs={logs} />
+      </div>
     </div>
+   
   );
 };
 

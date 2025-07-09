@@ -18,7 +18,7 @@ interface Props {
 }
 
 const LogTable: React.FC<Props> = ({ logs }) => (
-  <Table bordered hover responsive>
+  <Table  bordered hover responsive>
     <thead>
       <tr>
         <th>Date</th>

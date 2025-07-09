@@ -20,6 +20,7 @@ const NotificationTemplates = () => {
   };
 
   return (
+    <div className="page-wrapper">
     <div className="container mt-4">
       <h3>Notification Templates</h3>
       <Button className="mb-3" onClick={() => setShow(true)}>Add Template</Button>
@@ -44,6 +45,7 @@ const NotificationTemplates = () => {
         </tbody>
       </table>
       <TemplateForm show={show} onHide={()=>setShow(false)} onSubmit={addTemplate} />
+    </div>
     </div>
   );
 };

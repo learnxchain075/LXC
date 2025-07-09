@@ -40,7 +40,7 @@ const SendForm: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className='page-wrapper'>
       <Form>
         <Form.Group className="mb-3">
           <Form.Label>Template</Form.Label>

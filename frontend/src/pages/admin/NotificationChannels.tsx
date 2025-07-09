@@ -19,6 +19,8 @@ const NotificationChannels = () => {
   };
 
   return (
+
+    <div className="page-wrapper">
     <div className="container mt-4">
       <h3>Notification Channels</h3>
       {channels.map((c,i)=>(
@@ -31,6 +33,7 @@ const NotificationChannels = () => {
         </div>
       ))}
       {selected===null && <ChannelForm onSubmit={save} />}
+    </div>
     </div>
   );
 };
