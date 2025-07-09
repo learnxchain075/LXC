@@ -2287,7 +2287,6 @@ export const publicRoutes = [
   { path: routes.aboutUs, element: <AboutUs /> },
   { path: routes.ourServices, element: <OurServices /> },
   { path: routes.signIn, element: <SignIn /> },
-  { path: routes.otpLogin, element: <OtpLogin /> },
   { path: routes.signUp, element: <SignUp /> },
 
   { path: routes.terms, element: <Terms /> },
@@ -2304,6 +2303,8 @@ export const authRoutes = [
     route: Route,
     role: [],
   },
+
+  { path: routes.otpLogin, element: <OtpLogin />, route: Route, role: [] },
 
   {
     path: routes.emailVerification,
