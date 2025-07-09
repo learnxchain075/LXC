@@ -25,6 +25,9 @@ export const getJwtToken = async (
   return token;
 };
 
+// simple alias used across the codebase
+export const generateJwtToken = getJwtToken;
+
 // Middleware for Express
 export const authenticateToken = async (
   req: Request,

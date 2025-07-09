@@ -16,16 +16,18 @@ export const login = async (
   return response;
 };
 
-export const requestOtp = async (email: string) => {
-  return await BaseApi.postRequest(`/auth/request-otp`, { email });
+export const requestOtp = async (identifier: string) => {
+  const data = identifier.includes('@') ? { email: identifier } : { phone: identifier };
+  return await BaseApi.postRequest(`/api/auth/request-otp`, data);
 };
 
-export const loginWithOtp = async (email: string, otp: string) => {
-  return await BaseApi.postRequest(`/auth/login-otp`, { email, otp });
+export const loginWithOtp = async (identifier: string, otp: string) => {
+  const data = identifier.includes('@') ? { email: identifier, otp } : { phone: identifier, otp };
+  return await BaseApi.postRequest(`/api/auth/verify-otp`, data);
 };
 
 export const googleLogin = async (idToken: string) => {
-  return await BaseApi.postRequest(`/auth/google-signin`, { idToken });
+  return await BaseApi.postRequest(`/api/auth/google-login`, { idToken });
 };
 
 export const getUserProfile = async (): Promise<

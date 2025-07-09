@@ -9,12 +9,12 @@ import { CONFIG } from '../../config';
 
 export const requestOtp = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email } = req.body as { email: string };
-    if (!email) {
-      res.status(400).json({ error: 'Email is required' });
+    const { email, phone } = req.body as { email?: string; phone?: string };
+    if (!email && !phone) {
+      res.status(400).json({ error: 'Email or phone is required' });
       return;
     }
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findFirst({ where: { OR: [ { email }, { phone } ] } });
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -44,12 +44,12 @@ export const requestOtp = async (req: Request, res: Response): Promise<void> => 
 
 export const loginWithOtp = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, otp } = req.body as { email: string; otp: string };
-    if (!email || !otp) {
-      res.status(400).json({ error: 'Email and OTP are required' });
+    const { email, phone, otp } = req.body as { email?: string; phone?: string; otp: string };
+    if (!otp || (!email && !phone)) {
+      res.status(400).json({ error: 'Email/phone and OTP are required' });
       return;
     }
-    const user = await prisma.user.findUnique({ where: { email }, include: { school: true } });
+    const user = await prisma.user.findFirst({ where: { OR: [ { email }, { phone } ] }, include: { school: true } });
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -83,3 +83,6 @@ export const loginWithOtp = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ error: 'Login failed' });
   }
 };
+
+// alias for newer route name
+export const verifyOtp = loginWithOtp;
