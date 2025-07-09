@@ -28,6 +28,7 @@ import { prisma } from "./db/prisma";
 import escapeHtml from "escape-html";
 import publicRouter from "./routes/publicRoutes";
 import forgotRoutes from "./routes/forgot-password/forgotRoutes";
+import apiAuthRoute from "./routes/apiAuthRoute";
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ app.use(morganMiddleware);
 
 app.use(requestLogger);
 app.use("/auth",forgotRoutes);
+app.use("/api/auth", apiAuthRoute);
 app.get("/", async (req, res) => {
   res.send("Backend is live ");
 });

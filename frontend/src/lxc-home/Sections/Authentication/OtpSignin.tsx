@@ -10,7 +10,7 @@ import AppConfig from '../../../config/config';
 import { jwtDecode } from 'jwt-decode';
 
 const OtpSignin = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,11 +19,11 @@ const OtpSignin = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (!email.trim()) {
-        toast.error('Email is required');
+      if (!identifier.trim()) {
+        toast.error('Email or phone is required');
         return;
       }
-      await requestOtp(email);
+      await requestOtp(identifier);
       setOtpSent(true);
       toast.success('OTP sent');
     } catch (err: any) {
@@ -42,7 +42,7 @@ const OtpSignin = () => {
         toast.error('Enter valid OTP');
         return;
       }
-      const res = await loginWithOtp(email, code);
+      const res = await loginWithOtp(identifier, code);
       localStorage.setItem(AppConfig.LOCAL_STORAGE_ACCESS_TOKEN_KEY, res.data.accessToken);
       localStorage.setItem(AppConfig.LOCAL_STORAGE_REFRESH_TOKEN_KEY, res.data.refreshToken);
       const decoded: any = jwtDecode(res.data.accessToken);
@@ -72,8 +72,13 @@ const OtpSignin = () => {
         {!otpSent ? (
           <form onSubmit={handleSend}>
             <div className="form-group">
-              <label>Email address</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+              <label>Email / Phone</label>
+              <input
+                type="text"
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
+                required
+              />
             </div>
             <button type="submit" className="form-primary-btn" disabled={loading}>
               {loading ? 'Sending...' : 'Send OTP'}
