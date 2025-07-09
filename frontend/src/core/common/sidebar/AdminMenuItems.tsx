@@ -565,7 +565,7 @@ const AdminMenuItems = () => {
   { "name": "Tickets", "route": all_routes.tickets, "icon": "ti ti-ticket" }
  ]
 
-    }
+    },
 
 
     {

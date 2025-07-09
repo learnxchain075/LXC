@@ -16,6 +16,7 @@ export const FeaturesListObj: FeatureConfig[] = [
   { name: "Academics" },
   { name: "Management" },
   { name: "Announcements" },
+  { name: "Notification" },
   { name: "Tests" },
   { name: "Test2" },
   { name: "Test3" },
