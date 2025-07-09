@@ -589,6 +589,18 @@ const SuperAdminMenuItems = () => {
               <span>My Profile</span>
             </Link>
           </li>
+        <li className="submenu">
+          <Link to={all_routes.superNotificationTemplates} className={`${all_routes.superNotificationTemplates === location.pathname ? "active" : ""}`}>
+            <i className="ti ti-bell"></i>
+            <span>Notification Templates</span>
+          </Link>
+        </li>
+        <li className="submenu">
+          <Link to={all_routes.superNotificationLogs} className={`${all_routes.superNotificationLogs === location.pathname ? "active" : ""}`}>
+            <i className="ti ti-list"></i>
+            <span>Notification Logs</span>
+          </Link>
+        </li>
         </ul>
       </li>
     </ul>

@@ -265,6 +265,12 @@ import AddBusStop from "../pages/SuperAdmin/management/transport/addBusStop";
 import RefundPolicyPage from "../lxc-home/pages/RefundPolicyPage";
 import AddSectionModal from "../pages/Admin/AddSectionModal";
 import StudentIdCardGenerator from "../pages/Admin/peoples/students/student-id-card";
+import NotificationChannels from "../pages/admin/NotificationChannels";
+import SendNotification from "../pages/admin/SendNotification";
+import TriggerNotification from "../pages/admin/TriggerNotification";
+import AdminNotificationLogs from "../pages/admin/NotificationLogs";
+import NotificationTemplates from "../pages/superadmin/NotificationTemplates";
+import SuperNotificationLogs from "../pages/superadmin/NotificationLogs";
 
 const routes = all_routes;
 
@@ -361,6 +367,18 @@ export const publicRoutes = [
     route: Route,
     role: ["superadmin"],
   },
+  {
+    path: routes.superNotificationTemplates,
+    element: <NotificationTemplates />,
+    route: Route,
+    role: ["superadmin"],
+  },
+  {
+    path: routes.superNotificationLogs,
+    element: <SuperNotificationLogs />,
+    route: Route,
+    role: ["superadmin"],
+  },
 
   // ************************************  Admin Routes *********************************************************
 
@@ -391,6 +409,30 @@ export const publicRoutes = [
   {
     path: routes.studentIdCard,
     element: <StudentIdCardGenerator />,
+    route: Route,
+    role: ["admin"],
+  },
+  {
+    path: routes.adminNotificationChannels,
+    element: <NotificationChannels />,
+    route: Route,
+    role: ["admin"],
+  },
+  {
+    path: routes.adminSendNotification,
+    element: <SendNotification />,
+    route: Route,
+    role: ["admin"],
+  },
+  {
+    path: routes.adminTriggerNotification,
+    element: <TriggerNotification />,
+    route: Route,
+    role: ["admin"],
+  },
+  {
+    path: routes.adminNotificationLogs,
+    element: <AdminNotificationLogs />,
     route: Route,
     role: ["admin"],
   },
