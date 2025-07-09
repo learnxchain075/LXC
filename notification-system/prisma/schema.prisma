@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model NotificationTemplate {
+  id            String   @id @default(cuid())
+  schoolId      String?  // null = global
+  name          String
+  type          NotificationType
+  content       String
+  isAutomated   Boolean  @default(false)
+  triggerEvent  NotificationTrigger?
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  school        School? @relation(fields: [schoolId], references: [id])
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum NotificationTrigger {
+  STUDENT_ABSENT
+  FEE_PAID
+  FEE_DUE
+  HOLIDAY
+  EVENT
+  CUSTOM
+}
+
+model NotificationLog {
+  id             String   @id @default(cuid())
+  recipient      String
+  type           NotificationType
+  message        String
+  triggerEvent   NotificationTrigger?
+  status         NotificationStatus
+  channelUsed    String
+  schoolId       String
+  sentBy         String
+  createdAt      DateTime @default(now())
+  school         School   @relation(fields: [schoolId], references: [id])
+}
+
+model NotificationChannel {
+  id        String   @id @default(cuid())
+  schoolId  String
+  type      NotificationType
+  provider  String
+  config    Json
+  isActive  Boolean  @default(true)
+  school    School   @relation(fields: [schoolId], references: [id])
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model School {
+  id    String  @id @default(cuid())
+  name  String
+  templates NotificationTemplate[]
+  logs  NotificationLog[]
+  channels NotificationChannel[]
+}
