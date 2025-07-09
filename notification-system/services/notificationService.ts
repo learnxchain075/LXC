@@ -36,41 +36,42 @@ export async function sendManualNotification(input: SendManualInput) {
 
   const message = replacePlaceholders(template.content, input.data);
 
-  for (const recipient of input.recipients) {
-    try {
-      if (template.type === NotificationType.EMAIL) {
-        await sendEmail(recipient, template.name, message, channel.config as any);
-      } else if (template.type === NotificationType.SMS) {
-        await sendSMS(recipient, message, channel.config as any);
-      } else if (template.type === NotificationType.WHATSAPP) {
-        await sendWhatsApp(recipient, message, channel.config as any);
+  await Promise.allSettled(
+    input.recipients.map(async (recipient) => {
+      try {
+        if (template.type === NotificationType.EMAIL) {
+          await sendEmail(recipient, template.name, message, channel.config as any);
+        } else if (template.type === NotificationType.SMS) {
+          await sendSMS(recipient, message, channel.config as any);
+        } else if (template.type === NotificationType.WHATSAPP) {
+          await sendWhatsApp(recipient, message, channel.config as any);
+        }
+        await prisma.notificationLog.create({
+          data: {
+            recipient,
+            type: template.type,
+            message,
+            status: NotificationStatus.SENT,
+            channelUsed: channel.provider,
+            schoolId: input.schoolId,
+            sentBy: input.userId,
+          },
+        });
+      } catch (err) {
+        await prisma.notificationLog.create({
+          data: {
+            recipient,
+            type: template.type,
+            message,
+            status: NotificationStatus.FAILED,
+            channelUsed: channel.provider,
+            schoolId: input.schoolId,
+            sentBy: input.userId,
+          },
+        });
       }
-      await prisma.notificationLog.create({
-        data: {
-          recipient,
-          type: template.type,
-          message,
-          status: NotificationStatus.SENT,
-          channelUsed: channel.provider,
-          schoolId: input.schoolId,
-          sentBy: input.userId
-        }
-      });
-    } catch (err) {
-      await prisma.notificationLog.create({
-        data: {
-          recipient,
-          type: template.type,
-          message,
-          status: NotificationStatus.FAILED,
-          channelUsed: channel.provider,
-          schoolId: input.schoolId,
-          sentBy: input.userId
-        }
-      });
-      throw err;
-    }
-  }
+    })
+  );
 }
 
 interface TriggerInput {
