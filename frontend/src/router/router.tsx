@@ -45,6 +45,7 @@ import Careers from "../lxc-home/pages/Careers";
 import CookiesPolicy from "../lxc-home/pages/CookiesPolicy";
 import OurVision from "../lxc-home/pages/OurVision";
 import ScheduleDemo from "../lxc-home/pages/schedule-demo";
+import OtpLogin from "../lxc-home/pages/otp-login";
 
 // const ALLRoutes: FC = () => {
 //   return (
@@ -132,6 +133,7 @@ const ALLRoutes: FC = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/reset-password-success" element={<ResetPasswordSuccess />} />
+              <Route path="/otp-login" element={<OtpLogin />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
