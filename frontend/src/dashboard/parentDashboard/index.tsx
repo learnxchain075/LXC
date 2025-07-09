@@ -59,97 +59,66 @@ const ParentDashboard = () => {
   const [addTicketModal, setAddTicketModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
   const [contactModal, setContactModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
 
-  const [statistic_chart] = useState<any>({
-    chart: {
-      type: "line",
-      height: 345,
-      toolbar: {
-        show: false,
-      },
-    },
-    series: [
-      {
-        name: "Attendance %",
-        data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      },
-      {
-        name: "Performance %",
-        data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      },
-    ],
-    xaxis: {
-      categories: [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-      ],
-    },
-    tooltip: {
-      y: {
-        formatter: function (val: any) {
-          return val + "%";
-        },
-      },
-      shared: true,
-      intersect: false,
-    },
-    dataLabels: {
-      enabled: false,
-    },
-    grid: {
-      yaxis: {
-        lines: {
-          show: true,
-        },
-      },
-      padding: {
-        left: -8,
-      },
-    },
-    yaxis: {
-      labels: {
-        offsetX: -15,
-      },
-    },
-    markers: {
-      size: 0,
-      colors: ["#3D5EE1", "#6FCCD8"],
-      strokeColors: "#fff",
-      strokeWidth: 1,
-      hover: {
-        size: 7,
-      },
-    },
-    colors: ["#3D5EE1", "#6FCCD8"],
-    legend: {
-      position: "top",
-      horizontalAlign: "left",
-    },
-  });
+  // Dynamic chart data based on actual student data
+  const getChartData = (studentData: Student | null) => {
+    if (!studentData) {
+      return {
+        attendance: [],
+        performance: []
+      };
+    }
+
+    // Get attendance data if available
+    const attendanceData = studentData.attendance?.recentRecords || [];
+    const attendanceSeries = attendanceData.length > 0 
+      ? attendanceData.map((record: any) => record.present ? 100 : 0)
+      : [];
+
+    // Get performance data if available
+    const performanceData = studentData.academicPerformance?.averages || [];
+    const performanceSeries = performanceData.length > 0
+      ? performanceData.map((avg: any) => avg.average || avg.score || 0)
+      : [];
+
+    return {
+      attendance: attendanceSeries,
+      performance: performanceSeries
+    };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [dashboardRes, studentsRes] = await Promise.all([
-          getParentsDashbord(),
-          getParentsStudent()
-        ]);
-        setGuardianStudents(studentsRes.data);
+        const dashboardRes = await getParentsDashbord();
+        
         if (!dashboardRes.data || !dashboardRes.data.students) {
           throw new Error("Invalid dashboard data format");
         }
-        const guardianMap: Record<string, any> = {};
-        (studentsRes.data.students || []).forEach((s: any) => {
-          guardianMap[s.id] = s;
-        });
-        const mergedStudents = dashboardRes.data.students.map((student: any) => ({
-          ...student,
-          ...guardianMap[student.studentId]
-        }));
+        
+        // Set the dashboard data directly from the API response
         setDashboardData(dashboardRes.data);
         
-        if (mergedStudents.length > 0) {
-          const firstStudent = mergedStudents[0];
+        // Set guardian students data if available
+        if (dashboardRes.data.students && dashboardRes.data.students.length > 0) {
+          setGuardianStudents({
+            guardianEmail: dashboardRes.data.parentName, // Use parent name as email placeholder
+            students: dashboardRes.data.students.map((student: any) => ({
+              id: student.studentId,
+              studentName: student.studentInfo?.name || 'Unknown',
+              admissionNo: student.studentInfo?.rollNo || 'N/A',
+              className: student.studentInfo?.class || 'N/A',
+              rollNo: student.studentInfo?.rollNo || 'N/A',
+              dateOfBirth: student.studentInfo?.admissionDate || null,
+              studentEmail: student.studentInfo?.email || 'N/A',
+              studentPhone: student.studentInfo?.phone || 'N/A'
+            }))
+          });
+        }
+        
+        // Set the first student as active if available
+        if (dashboardRes.data.students && dashboardRes.data.students.length > 0) {
+          const firstStudent = dashboardRes.data.students[0];
           setActiveStudent(firstStudent.studentId);
           setStudentId(firstStudent.studentId);
         } else {
@@ -157,6 +126,7 @@ const ParentDashboard = () => {
           setStudentId("");
         }
       } catch (error) {
+        console.error('Dashboard fetch error:', error);
         toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
@@ -197,17 +167,16 @@ const ParentDashboard = () => {
           setAssignmentsModal({ show: true, studentId });
           break;
         case 'notices':
-          const activeStudent = getActiveStudent();
-          setNoticesModal({ show: true, studentId: activeStudent?.studentId || '' });
+          setNoticesModal({ show: true, studentId });
           break;
         case 'examResults':
           setExamResultsModal({ show: true, studentId });
           break;
         case 'addTicket':
-          setAddTicketModal({ show: true, studentId });
+          setAddTicketModal({ show: true, studentId: '' }); // Parent action, no student required
           break;
         case 'contact':
-          setContactModal({ show: true, studentId });
+          setContactModal({ show: true, studentId: '' }); // Parent action, no student required
           break;
         default:
           break;
@@ -265,7 +234,7 @@ const ParentDashboard = () => {
   };
 
   const renderAcademicPerformance = (student: Student) => {
-    if (!student.academicPerformance || !student.academicPerformance.averages.length) {
+    if (!student.academicPerformance || !student.academicPerformance.averages || student.academicPerformance.averages.length === 0) {
       return <span className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>No academic data available</span>;
     }
     
@@ -291,10 +260,10 @@ const ParentDashboard = () => {
       },
     ];
 
-    const academicData = student.academicPerformance.averages.map((avg, idx) => ({
+    const academicData = student.academicPerformance.averages.map((avg: any, idx) => ({
       key: idx,
       subject: avg.subject || '-',
-      average: ('average' in avg ? avg.average : avg.score) ?? '-',
+      average: avg.average || avg.score || '-',
       grade: avg.grade || '-',
     }));
 
@@ -473,14 +442,44 @@ const ParentDashboard = () => {
                   <h5 className={`mb-0 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}><i className="ti ti-bell me-2"></i>School Communications</h5>
                         </div>
                 <div className={`card-body ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
-                  {/* Notices Table */}
-                  <h6 className={`mb-2 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}><i className="ti ti-bell me-1"></i>Notices</h6>
-                  {(activeStudentData?.events?.notices?.length || 0) > 0 ? (
+                  {/* Communications Table */}
+                  <h6 className={`mb-2 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}><i className="ti ti-message-circle me-1"></i>Communications</h6>
+                  {(activeStudentData?.communication?.length || 0) > 0 ? (
                     <AntdTable
                       className={`${dataTheme === "dark_data_theme" ? "dark-table" : ""} mb-4`}
                       columns={[
                         { title: 'Title', dataIndex: 'title', key: 'title', ellipsis: true, responsive: ['md'] },
                         { title: 'Date', dataIndex: 'publishDate', key: 'publishDate', width: 120, render: (date, record) => new Date(date || record.date).toLocaleDateString(), responsive: ['md'] },
+                        { title: 'Message', dataIndex: 'message', key: 'message', ellipsis: true, responsive: ['md'] },
+                        { title: 'Action', key: 'action', width: 120, render: (_, record: any) => (
+                          <div className="d-flex gap-1 flex-wrap">
+                            {record.attachment && (
+                              <AntdButton size="small" type="primary" onClick={() => setNoticeAttachment({ show: true, url: record.attachment })}>View</AntdButton>
+                            )}
+                            <AntdButton size="small" onClick={() => setDetailsModal({ type: 'communication', data: record })}>Details</AntdButton>
+                          </div>
+                        ) },
+                      ]}
+                      dataSource={activeStudentData?.communication || []}
+                      rowKey="id"
+                      pagination={{ pageSize: 5, size: 'small' }}
+                      scroll={{ x: true, y: 250 }}
+                      locale={{ emptyText: 'No communications for this student.' }}
+                      size="small"
+                    />
+                  ) : (
+                    <div className={`text-center ${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"} mb-4`}>No communications for this student.</div>
+                  )}
+                          
+                  {/* Notices Table */}
+                          {(activeStudentData?.events?.notices?.length || 0) > 0 && (
+                            <>
+                  <h6 className={`mb-2 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}><i className="ti ti-bell me-1"></i>Notices</h6>
+                    <AntdTable
+                      className={`${dataTheme === "dark_data_theme" ? "dark-table" : ""} mb-4`}
+                      columns={[
+                        { title: 'Title', dataIndex: 'title', key: 'title', ellipsis: true, responsive: ['md'] },
+                                  { title: 'Date', dataIndex: 'publishDate', key: 'publishDate', width: 120, render: (date, record: any) => new Date(date || record.publishDate || record.noticeDate || '').toLocaleDateString(), responsive: ['md'] },
                         { title: 'Action', key: 'action', width: 120, render: (_, record: any) => (
                           <div className="d-flex gap-1 flex-wrap">
                             {record.attachment && (
@@ -497,17 +496,18 @@ const ParentDashboard = () => {
                       locale={{ emptyText: 'No notices for this student.' }}
                       size="small"
                     />
-                  ) : (
-                    <div className={`text-center ${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"} mb-4`}>No notices for this student.</div>
+                            </>
                   )}
+                          
                   {/* Events Table */}
+                          {(activeStudentData?.events?.events?.length || 0) > 0 && (
+                            <>
                   <h6 className={`mb-2 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}><i className="ti ti-calendar-event me-1"></i>Events</h6>
-                  {(activeStudentData?.events?.events?.length || 0) > 0 ? (
                     <AntdTable
                       className={dataTheme === "dark_data_theme" ? "dark-table" : ""}
                       columns={[
-                        { title: 'Title', dataIndex: 'title', key: 'title', ellipsis: true, responsive: ['md'] },
-                        { title: 'Date', dataIndex: 'publishDate', key: 'publishDate', width: 120, render: (date, record) => new Date(date || record.date).toLocaleDateString(), responsive: ['md'] },
+                                  { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true, responsive: ['md'] },
+                                  { title: 'Date', dataIndex: 'date', key: 'date', width: 120, render: (date, record: any) => new Date(date || '').toLocaleDateString(), responsive: ['md'] },
                         { title: 'Action', key: 'action', width: 120, render: (_, record) => (
                           <AntdButton size="small" onClick={() => setDetailsModal({ type: 'communication', data: record })}>Details</AntdButton>
                         ) },
@@ -519,9 +519,17 @@ const ParentDashboard = () => {
                       locale={{ emptyText: 'No events for this student.' }}
                       size="small"
                     />
-                  ) : (
-                    <div className={`text-center ${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>No events for this student.</div>
-                  )}
+                            </>
+                          )}
+                          
+                          {/* No notices or events message */}
+                          {(!activeStudentData?.events?.notices?.length && !activeStudentData?.events?.events?.length) && (
+                            <div className={`text-center py-4 ${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
+                              <i className="ti ti-bell-off fs-1 mb-3"></i>
+                              <p>No notices or events available for this student.</p>
+                              <small>Check back later for updates.</small>
+                            </div>
+                          )}
                           </div>
                         </div>
                             </div>
@@ -573,6 +581,47 @@ const ParentDashboard = () => {
                       </div>
                     </div>
 
+          {/* Parent Actions Section - Always visible */}
+          <div className="mb-4">
+            <div className={`card parent-actions-card ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : "border-primary"}`} style={{borderLeft: '4px solid #ffc107'}}>
+              <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-light"}`}>
+                <h5 className={`mb-0 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
+                  <i className="ti ti-tools me-2"></i>Parent Actions
+                </h5>
+                <small className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
+                  Quick actions for parent support and communication
+                </small>
+              </div>
+              <div className={`card-body ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
+                <div className={`d-flex gap-2 gap-md-3 overflow-auto pb-2 ${dataTheme === "dark_data_theme" ? "scrollbar-dark" : ""}`} style={{ scrollbarWidth: 'thin', scrollbarColor: dataTheme === "dark_data_theme" ? '#495057 #343a40' : '#dee2e6 #f8f9fa' }}>
+                  {[
+                    { key: 'addTicket', icon: 'ti ti-ticket', label: 'Submit Ticket', color: 'warning', description: 'Submit support ticket' },
+                    { key: 'contact', icon: 'ti ti-phone', label: 'Contact School', color: 'info', description: 'Send message to school' },
+                  ].map(action => (
+                    <div key={action.key} className="flex-shrink-0" style={{ minWidth: isMobile ? '160px' : '200px', maxWidth: isMobile ? '160px' : '200px' }}>
+                      <button
+                        className={`btn btn-outline-${action.color} d-flex flex-column align-items-center p-2 p-md-3 rounded-4 shadow-sm border-0 w-100 h-100 ${dataTheme === "dark_data_theme" ? "dark-mode-btn" : ""}`}
+                        style={{ minHeight: isMobile ? 120 : 140 }}
+                        onClick={() => {
+                          const event = new CustomEvent('openParentModal', {
+                            detail: { modalType: action.key, studentId: '' }
+                          });
+                          window.dispatchEvent(event);
+                        }}
+                        title={action.description}
+                      >
+                        <span className={`d-flex align-items-center justify-content-center rounded-circle bg-${action.color} mb-2 mb-md-3`} style={{ width: isMobile ? 48 : 56, height: isMobile ? 48 : 56 }}>
+                          <i className={`${action.icon} text-white ${isMobile ? 'fs-4' : 'fs-3'}`}></i>
+                        </span>
+                        <span className="fw-semibold text-center small">{action.label}</span>
+                      </button>
+                    </div>
+                  ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
           {/* Children Selection Message */}
           {!activeStudent && dashboardData.students.length > 0 && (
             <div className="mb-4">
@@ -596,7 +645,6 @@ const ParentDashboard = () => {
               { key: 'assignments', icon: 'ti ti-book', label: 'Assignments & Homework', color: 'secondary' },
               { key: 'notices', icon: 'ti ti-bell', label: 'Notices & Events', color: 'primary' },
               { key: 'examResults', icon: 'ti ti-award', label: 'Exam & Result', color: 'danger' },
-              { key: 'addTicket', icon: 'ti ti-ticket', label: 'Add Ticket', color: 'warning' },
               { key: 'contact', icon: 'ti ti-phone', label: 'Contact', color: 'info' },
             ].map(action => (
                   <div key={action.key} className="flex-shrink-0" style={{ minWidth: isMobile ? '160px' : '200px', maxWidth: isMobile ? '160px' : '200px' }}>
@@ -668,7 +716,7 @@ const ParentDashboard = () => {
                 )}
 
                 {/* Enhanced: Academic Performance */}
-                {activeStudentData && (
+                {activeStudentData && activeStudentData.academicPerformance && activeStudentData.academicPerformance.averages && activeStudentData.academicPerformance.averages.length > 0 ? (
                   <div className="col-12 mb-4">
                     <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
                       <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-white"} border-bottom-0 d-flex justify-content-between align-items-center`}>
@@ -698,10 +746,25 @@ const ParentDashboard = () => {
                       </div>
                     </div>
                         </div>
+                ) : (
+                  <div className="col-12 mb-4">
+                    <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
+                      <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-white"} border-bottom-0`}>
+                        <h5 className={`mb-0 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}><i className="ti ti-bookmark me-2"></i>Academic Performance</h5>
+                      </div>
+                      <div className={`card-body text-center py-5 ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
+                        <i className="ti ti-book-off fs-1 text-muted mb-3"></i>
+                        <h6 className={`${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>No Academic Data Available</h6>
+                        <p className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
+                          Academic performance data is not available for this student.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {/* Academic Report Graph */}
-                {activeStudentData && activeStudentData.academicPerformance && (
+                {activeStudentData && activeStudentData.academicPerformance && activeStudentData.academicPerformance.averages && activeStudentData.academicPerformance.averages.length > 0 ? (
                   <div className="col-12 mb-4">
                     <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
                       <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-white"} border-bottom-0`}>
@@ -727,13 +790,7 @@ const ParentDashboard = () => {
                                   {
                                     name: 'Subject Average',
                                     data: activeStudentData.academicPerformance.averages.map((avg: any) => 
-                                      ('average' in avg ? avg.average : avg.score) || 0
-                                    ),
-                                  },
-                                  {
-                                    name: 'Class Average',
-                                    data: activeStudentData.academicPerformance.averages.map(() => 
-                                      Math.floor(Math.random() * 20) + 70
+                                      avg.average || avg.score || 0
                                     ),
                                   }
                                 ],
@@ -794,13 +851,7 @@ const ParentDashboard = () => {
                                 {
                                   name: 'Subject Average',
                                   data: activeStudentData.academicPerformance.averages.map((avg: any) => 
-                                    ('average' in avg ? avg.average : avg.score) || 0
-                                  ),
-                                },
-                                {
-                                  name: 'Class Average',
-                                  data: activeStudentData.academicPerformance.averages.map(() => 
-                                    Math.floor(Math.random() * 20) + 70
+                                    avg.average || avg.score || 0
                                   ),
                                 }
                               ]}
@@ -819,7 +870,7 @@ const ParentDashboard = () => {
                                     <div className={`card-body text-center ${dataTheme === "dark_data_theme" ? "bg-dark text-white" : ""}`}>
                                       <h4 className={`${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
                                         {Math.round(activeStudentData.academicPerformance.averages.reduce((sum: number, avg: any) => 
-                                          sum + (('average' in avg ? avg.average : avg.score) || 0), 0
+                                          sum + (avg.average || avg.score || 0), 0
                                         ) / activeStudentData.academicPerformance.averages.length)}%
                                       </h4>
                                       <small className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>Overall Average</small>
@@ -841,14 +892,14 @@ const ParentDashboard = () => {
                                 <h6 className={`mb-2 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>Top Subjects</h6>
                                 {activeStudentData.academicPerformance.averages
                                   .sort((a: any, b: any) => 
-                                    (('average' in b ? b.average : b.score) || 0) - (('average' in a ? a.average : a.score) || 0)
+                                    (b.average || b.score || 0) - (a.average || a.score || 0)
                                   )
                                   .slice(0, 3)
                                   .map((subject: any, index: number) => (
                                     <div key={index} className={`d-flex justify-content-between align-items-center mb-2 p-2 rounded ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-light"}`}>
                                       <span className={`${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>{subject.subject}</span>
                                       <span className={`badge ${index === 0 ? 'bg-success' : index === 1 ? 'bg-warning' : 'bg-info'}`}>
-                                        {('average' in subject ? subject.average : subject.score) || 0}%
+                                        {subject.average || subject.score || 0}%
                                       </span>
                                     </div>
                                   ))}
@@ -859,10 +910,27 @@ const ParentDashboard = () => {
                       </div>
                     </div>
                   </div>
+                ) : (
+                  <div className="col-12 mb-4">
+                    <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
+                      <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-white"} border-bottom-0`}>
+                        <h5 className={`mb-0 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
+                          <i className="ti ti-chart-line me-2"></i>Academic Report Graph
+                        </h5>
+                      </div>
+                      <div className={`card-body text-center py-5 ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
+                        <i className="ti ti-chart-off fs-1 text-muted mb-3"></i>
+                        <h6 className={`${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>No Academic Data Available</h6>
+                        <p className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
+                          Academic performance data is not available for this student.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {/* Subject Distribution Pie Chart */}
-                {activeStudentData && activeStudentData.academicPerformance && (
+                {activeStudentData && activeStudentData.academicPerformance && activeStudentData.academicPerformance.averages && activeStudentData.academicPerformance.averages.length > 0 ? (
                   <div className="col-lg-6 mb-4">
                     <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
                       <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-white"} border-bottom-0`}>
@@ -911,10 +979,27 @@ const ParentDashboard = () => {
                       </div>
                     </div>
                   </div>
+                ) : (
+                  <div className="col-lg-6 mb-4">
+                    <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
+                      <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-white"} border-bottom-0`}>
+                        <h5 className={`mb-0 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
+                          <i className="ti ti-chart-pie me-2"></i>Subject Distribution
+                        </h5>
+                      </div>
+                      <div className={`card-body text-center py-5 ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
+                        <i className="ti ti-chart-pie-off fs-1 text-muted mb-3"></i>
+                        <h6 className={`${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>No Subject Data Available</h6>
+                        <p className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
+                          Subject distribution data is not available for this student.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {/* Performance Trend Chart */}
-                {activeStudentData && activeStudentData.academicPerformance && (
+                {activeStudentData && activeStudentData.academicPerformance && activeStudentData.academicPerformance.averages && activeStudentData.academicPerformance.averages.length > 0 ? (
                   <div className="col-lg-6 mb-4">
                     <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
                       <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-white"} border-bottom-0`}>
@@ -938,7 +1023,7 @@ const ParentDashboard = () => {
                               {
                                 name: 'Performance Score',
                                 data: activeStudentData.academicPerformance.averages.map((avg: any) => 
-                                  ('average' in avg ? avg.average : avg.score) || 0
+                                  avg.average || avg.score || 0
                                 ),
                               }
                             ],
@@ -989,7 +1074,7 @@ const ParentDashboard = () => {
                             {
                               name: 'Performance Score',
                               data: activeStudentData.academicPerformance.averages.map((avg: any) => 
-                                ('average' in avg ? avg.average : avg.score) || 0
+                                avg.average || avg.score || 0
                               ),
                             }
                           ]}
@@ -999,19 +1084,40 @@ const ParentDashboard = () => {
                       </div>
                     </div>
                         </div>
+                ) : (
+                  <div className="col-lg-6 mb-4">
+                    <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
+                      <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-white"} border-bottom-0`}>
+                        <h5 className={`mb-0 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
+                          <i className="ti ti-trending-up me-2"></i>Performance Trend
+                        </h5>
+                      </div>
+                      <div className={`card-body text-center py-5 ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
+                        <i className="ti ti-trending-down fs-1 text-muted mb-3"></i>
+                        <h6 className={`${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>No Performance Data Available</h6>
+                        <p className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
+                          Performance trend data is not available for this student.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {/* Quick Stats */}
+                {activeStudentData ? (
+                  <>
                   <div className="col-lg-4 col-md-6 col-12 mb-3">
                     <div className={`card h-100 ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
                     <div className={`card-body text-center ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
                       <div className="avatar avatar-lg bg-primary rounded-circle mx-auto mb-3">
                         <i className="ti ti-calendar-check text-white fs-2"></i>
                       </div>
-                      <h4 className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>{activeStudentData?.attendance.percentage || 0}%</h4>
+                          <h4 className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
+                            {activeStudentData?.attendance?.percentage || 0}%
+                          </h4>
                       <p className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"} mb-0`}>Attendance</p>
                       <small className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
-                        {activeStudentData?.attendance.presentDays || 0} of {activeStudentData?.attendance.totalDays || 0} days
+                            {activeStudentData?.attendance?.presentDays || 0} of {activeStudentData?.attendance?.totalDays || 0} days
                       </small>
                     </div>
                   </div>
@@ -1023,10 +1129,12 @@ const ParentDashboard = () => {
                       <div className="avatar avatar-lg bg-success rounded-circle mx-auto mb-3">
                         <i className="ti ti-report-money text-white fs-2"></i>
                       </div>
-                      <h4 className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>{formatCurrency(activeStudentData?.fees.totalPaid || 0)}</h4>
+                          <h4 className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
+                            {formatCurrency(activeStudentData?.fees?.totalPaid || 0)}
+                          </h4>
                       <p className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"} mb-0`}>Total Paid</p>
                       <small className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
-                        {activeStudentData?.fees.paymentHistory.length || 0} payments
+                            {activeStudentData?.fees?.paymentHistory?.length || 0} payments
                       </small>
                     </div>
                   </div>
@@ -1038,14 +1146,30 @@ const ParentDashboard = () => {
                       <div className="avatar avatar-lg bg-warning rounded-circle mx-auto mb-3">
                         <i className="ti ti-alert-circle text-white fs-2"></i>
                       </div>
-                      <h4 className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>{formatCurrency(activeStudentData?.fees.totalPending || 0)}</h4>
+                          <h4 className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
+                            {formatCurrency(activeStudentData?.fees?.totalPending || 0)}
+                          </h4>
                       <p className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"} mb-0`}>Pending Fees</p>
                       <small className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
-                        {activeStudentData?.fees.pendingFees.length || 0} items
+                            {activeStudentData?.fees?.pendingFees?.length || 0} items
                       </small>
                     </div>
                   </div>
                 </div>
+                  </>
+                ) : (
+                  <div className="col-12 mb-4">
+                    <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
+                      <div className={`card-body text-center py-5 ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
+                        <i className="ti ti-users fs-1 text-muted mb-3"></i>
+                        <h6 className={`${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>No Student Selected</h6>
+                        <p className={`${dataTheme === "dark_data_theme" ? "text-light" : "text-muted"}`}>
+                          Please select a child from the dropdown to view their statistics.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Pending Fees */}
                 {activeStudentData && activeStudentData.fees.pendingFees.length > 0 && (
