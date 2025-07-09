@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { getAttendanceLeavesByStudentId, IAttendance, applyStudentLeave, getStudentLeaveRequests, ILeaveRequest } from '../../../../../services/student/StudentAllApi';
+import { useSelector } from 'react-redux';
+import ReactDOM from 'react-dom';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 type AttendanceData = {
   series: number[];
@@ -12,19 +14,34 @@ type AttendanceData = {
 
 const Attendancechartstudent: React.FC = () => {
   const [data, setData] = useState<AttendanceData | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<'none' | 'details' | 'leave'>("none");
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'leaves'>('overview');
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaveRequests, setLeaveRequests] = useState<ILeaveRequest[]>([]);
   const [isLoadingLeaves, setIsLoadingLeaves] = useState(false);
   const [leaveForm, setLeaveForm] = useState({
     leaveType: '',
-    fromDate: '',
-    toDate: '',
+    startDate: '',
+    endDate: '',
     reason: '',
     isSubmitting: false,
   });
+  const [prevApprovedIds, setPrevApprovedIds] = useState<string[]>([]);
+
+  // Get theme from Redux
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
+
+  const student = useSelector((state: any) => state.auth?.user?.student);
+  const documents = [
+    student?.medicalCertificate && {
+      name: "Medical Certificate.pdf",
+      url: student.medicalCertificate,
+    },
+    student?.transferCertificate && {
+      name: "Transfer Certificate.pdf",
+      url: student.transferCertificate,
+    },
+  ].filter(Boolean);
 
   const leaveTypes = [
     'Medical Leave',
@@ -67,13 +84,11 @@ const Attendancechartstudent: React.FC = () => {
             const series = [present, absent, late];
           
           setData({ series, details });
-          toast.success('📊 Attendance data loaded successfully!', { autoClose: 3000 });
         } else {
           throw new Error('Failed to load attendance data');
         }
       } catch (error: any) {
         console.error('Error fetching attendance:', error);
-        toast.error(error.message || 'Failed to load attendance data', { autoClose: 3000 });
       } finally {
         setIsLoading(false);
       }
@@ -96,7 +111,7 @@ const Attendancechartstudent: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isModalVisible || showLeaveModal) {
+    if (modalType !== 'none') {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -104,18 +119,15 @@ const Attendancechartstudent: React.FC = () => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isModalVisible, showLeaveModal]);
+  }, [modalType]);
 
-  const handleShowDetails = () => {
+  const openDetailsModal = () => {
     setActiveTab('details');
-    setIsModalVisible(true);
-    toast.success('📋 Showing attendance details', { autoClose: 3000 });
+    setModalType('details');
   };
 
-  const handleCloseDetails = () => {
-    setIsModalVisible(false);
-    setActiveTab('overview');
-  };
+  const openLeaveModal = () => setModalType('leave');
+  const closeModal = () => setModalType('none');
 
   const calculateAttendancePercentage = () => {
     const present = data?.details.filter((entry) => entry.status === 'Present').length || 0;
@@ -137,9 +149,8 @@ const Attendancechartstudent: React.FC = () => {
 
   const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { leaveType, fromDate, toDate, reason } = leaveForm;
-    if (!leaveType || !fromDate || !toDate || !reason) {
-      toast.error('Please fill in all fields');
+    const { leaveType, startDate, endDate, reason } = leaveForm;
+    if (!leaveType || !startDate || !endDate || !reason) {
       return;
     }
     setLeaveForm((f) => ({ ...f, isSubmitting: true }));
@@ -149,27 +160,36 @@ const Attendancechartstudent: React.FC = () => {
       await applyStudentLeave({
         userId,
         reason: `${leaveType}: ${reason}`,
-        fromDate,
-        toDate,
+        fromDate: startDate,
+        toDate: endDate,
         status: 'pending',
         leaveType,
       });
       toast.success('Leave applied successfully!');
-      setShowLeaveModal(false);
-      setLeaveForm({ leaveType: '', fromDate: '', toDate: '', reason: '', isSubmitting: false });
-      
+      closeModal();
+      setLeaveForm({ leaveType: '', startDate: '', endDate: '', reason: '', isSubmitting: false });
       const response = await getStudentLeaveRequests();
       setLeaveRequests(response.data || []);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to apply leave');
       setLeaveForm((f) => ({ ...f, isSubmitting: false }));
+      toast.error(error.message || 'Failed to apply leave');
     }
   };
+
+  useEffect(() => {
+    if (leaveRequests.length > 0) {
+      const approvedIds = leaveRequests.filter(l => l.status === 'APPROVED').map(l => l.id);
+      const newApproved = approvedIds.filter(id => !prevApprovedIds.includes(id));
+      if (newApproved.length > 0) {
+        toast.success('Your leave has been approved!');
+      }
+      setPrevApprovedIds(approvedIds);
+    }
+  }, [leaveRequests]);
 
   if (isLoading) {
     return (
       <div className="card flex-fill p-4 bg-white rounded-lg shadow-sm border-0">
-        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
         <div className="text-center py-5">
           <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }} role="status">
             <span className="visually-hidden">Loading...</span>
@@ -184,7 +204,6 @@ const Attendancechartstudent: React.FC = () => {
   if (!data) {
     return (
       <div className="card flex-fill p-4 bg-white rounded-lg shadow-sm border-0">
-        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
         <div className="text-center py-5">
           <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '80px', height: '80px' }}>
             <i className="bi bi-exclamation-triangle text-warning" style={{ fontSize: '2rem' }}></i>
@@ -299,9 +318,11 @@ const Attendancechartstudent: React.FC = () => {
     }),
   }));
 
+  // Render modals using React Portal to ensure they are always centered relative to the viewport
+  const modalRoot = document.getElementById('modal-root') || document.body;
+
   return (
     <div className="card flex-fill p-4 bg-white rounded-lg shadow-sm border-0">
-      <ToastContainer position="top-center" autoClose={3000} theme="colored" />
       
       {/* Header */}
       <div className="card-header bg-transparent border-0 mb-4">
@@ -314,7 +335,7 @@ const Attendancechartstudent: React.FC = () => {
             <p className="text-muted mb-0">Track your daily attendance and performance</p>
           </div>
           <div className="d-flex align-items-center gap-2 flex-wrap">
-            <button className="btn btn-outline-primary btn-sm" onClick={() => setShowLeaveModal(true)}>
+            <button className="btn btn-outline-primary btn-sm" onClick={openLeaveModal}>
               <i className="bi bi-plus-circle me-1"></i>
               <span className="d-none d-sm-inline">Apply Leave</span>
               <span className="d-inline d-sm-none">Leave</span>
@@ -337,34 +358,37 @@ const Attendancechartstudent: React.FC = () => {
             </h6>
             <button 
               className="btn btn-outline-info btn-sm"
-              onClick={() => setIsModalVisible(true)}
+              onClick={openDetailsModal}
             >
               <i className="bi bi-eye me-1"></i>
               View All
             </button>
           </div>
           <div className="row g-2">
-            {leaveRequests.slice(0, 3).map((leave, index) => (
+            {leaveRequests.slice(0, 3).map((leave, index) => {
+              const leaveType = leave.reason?.split(':')[0] || 'Leave';
+              const fromDate = leave.fromDate ? new Date(leave.fromDate) : null;
+              const toDate = leave.toDate ? new Date(leave.toDate) : null;
+              const dateRange = fromDate && toDate
+                ? `${fromDate.toLocaleDateString()} - ${toDate.toLocaleDateString()}`
+                : 'Date not specified';
+              const status = leave.status || 'Pending';
+              return (
               <div key={leave.id || index} className="col-md-4">
                 <div className="bg-light rounded-3 p-3 border-start border-3 border-info">
                   <div className="d-flex justify-content-between align-items-start mb-2">
-                    <small className="text-muted">{leave.reason?.split(':')[0] || 'Leave'}</small>
-                    <span className={`badge ${leave.status === 'APPROVED' ? 'bg-success' : leave.status === 'REJECTED' ? 'bg-danger' : 'bg-warning'} small`}>
-                      {leave.status || 'Pending'}
+                      <small className="text-muted">{leaveType}</small>
+                      <span className={`badge ${status === 'APPROVED' ? 'bg-success' : status === 'REJECTED' ? 'bg-danger' : 'bg-warning'} small`}>
+                        {status}
                     </span>
                   </div>
                   <div className="small text-muted">
-                    {leave.fromDate && leave.toDate ? (
-                      <>
-                        {new Date(leave.fromDate).toLocaleDateString()} - {new Date(leave.toDate).toLocaleDateString()}
-                      </>
-                    ) : (
-                      'Date not specified'
-                    )}
+                      {dateRange}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -373,30 +397,30 @@ const Attendancechartstudent: React.FC = () => {
         {/* Stats Cards */}
         <div className="row g-3 mb-4">
           <div className="col-md-4">
-            <div className="bg-success bg-opacity-10 rounded-3 p-3 text-center border border-success border-opacity-25">
+            <div className={`bg-success bg-opacity-10 rounded-3 p-3 text-center border border-success border-opacity-25${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>
               <div className="d-flex align-items-center justify-content-center mb-2">
                 <i className="bi bi-check-circle-fill text-success fs-4 me-2"></i>
                 <h3 className="fw-bold text-success mb-0">{presentCount}</h3>
               </div>
-              <p className="text-success fw-medium mb-0">Present Days</p>
+              <p className={`fw-medium mb-0${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Present Days</p>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="bg-danger bg-opacity-10 rounded-3 p-3 text-center border border-danger border-opacity-25">
+            <div className={`bg-danger bg-opacity-10 rounded-3 p-3 text-center border border-danger border-opacity-25${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>
               <div className="d-flex align-items-center justify-content-center mb-2">
                 <i className="bi bi-x-circle-fill text-danger fs-4 me-2"></i>
                 <h3 className="fw-bold text-danger mb-0">{absentCount}</h3>
               </div>
-              <p className="text-danger fw-medium mb-0">Absent Days</p>
+              <p className={`fw-medium mb-0${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Absent Days</p>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="bg-primary bg-opacity-10 rounded-3 p-3 text-center border border-primary border-opacity-25">
+            <div className={`bg-primary bg-opacity-10 rounded-3 p-3 text-center border border-primary border-opacity-25${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>
               <div className="d-flex align-items-center justify-content-center mb-2">
                 <i className="bi bi-calendar-check text-primary fs-4 me-2"></i>
                 <h3 className="fw-bold text-primary mb-0">{totalDays}</h3>
               </div>
-              <p className="text-primary fw-medium mb-0">Total Days</p>
+              <p className={`fw-medium mb-0${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Total Days</p>
             </div>
           </div>
         </div>
@@ -433,7 +457,7 @@ const Attendancechartstudent: React.FC = () => {
 
               <button 
                 className="btn btn-primary btn-lg w-100 w-lg-auto"
-                onClick={handleShowDetails}
+                onClick={openDetailsModal}
               >
                 <i className="bi bi-list-ul me-2"></i>
                 View Detailed Records
@@ -455,50 +479,52 @@ const Attendancechartstudent: React.FC = () => {
         </div>
       </div>
 
-      {/* Bootstrap Modal */}
-      {isModalVisible && (
+      {/* Details Modal */}
+      {modalType === 'details' && ReactDOM.createPortal(
         <>
           <div className="modal fade show" style={{ display: 'block', zIndex: 1050 }} tabIndex={-1}>
-            <div className="modal-dialog modal-xl">
-              <div className="modal-content border-0 shadow">
+            <div className="modal-dialog modal-xl modal-dialog-centered">
+              <div
+                className={`modal-content${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-white'}`}
+                style={{
+                  background: dataTheme === 'dark_data_theme' ? '#23272b' : '#fff',
+                  boxShadow: '0 0 24px rgba(0,0,0,0.3)',
+                  border: dataTheme === 'dark_data_theme' ? '1px solid #fff' : undefined,
+                }}
+              >
                 <div className="modal-header bg-primary text-white">
                   <h5 className="modal-title fw-bold">
                     <i className="bi bi-list-check me-2"></i>
                     Attendance & Leave Details
                   </h5>
-                  <button 
-                    type="button" 
-                    className="btn-close btn-close-white" 
-                    onClick={handleCloseDetails}
-                    aria-label="Close"
-                  ></button>
+                  <button type="button" className="btn-close btn-close-white" onClick={closeModal} aria-label="Close"></button>
                 </div>
-                <div className="modal-body p-0">
+                <div className={`modal-body p-0${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
                   <ul className="nav nav-tabs nav-fill" role="tablist">
                     <li className="nav-item" role="presentation">
                       <button 
-                        className={`nav-link ${activeTab === 'overview' ? 'active' : ''}`}
+                        className={`nav-link${activeTab === 'overview' ? ' active' : ''}${dataTheme === 'dark_data_theme' ? (activeTab === 'overview' ? ' bg-dark text-light border border-secondary' : ' text-light') : ''}`}
                         onClick={() => setActiveTab('overview')}
                       >
-                        <i className="bi bi-graph-up me-2"></i>
+                        <i className={`bi bi-graph-up me-2${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}></i>
                         Overview
                       </button>
                     </li>
                     <li className="nav-item" role="presentation">
                       <button 
-                        className={`nav-link ${activeTab === 'details' ? 'active' : ''}`}
+                        className={`nav-link${activeTab === 'details' ? ' active' : ''}${dataTheme === 'dark_data_theme' ? (activeTab === 'details' ? ' bg-dark text-light border border-secondary' : ' text-light') : ''}`}
                         onClick={() => setActiveTab('details')}
                       >
-                        <i className="bi bi-list-ul me-2"></i>
+                        <i className={`bi bi-list-ul me-2${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}></i>
                         Attendance Records
                       </button>
                     </li>
                     <li className="nav-item" role="presentation">
                       <button 
-                        className={`nav-link ${activeTab === 'leaves' ? 'active' : ''}`}
+                        className={`nav-link${activeTab === 'leaves' ? ' active' : ''}${dataTheme === 'dark_data_theme' ? (activeTab === 'leaves' ? ' bg-dark text-light border border-secondary' : ' text-light') : ''}`}
                         onClick={() => setActiveTab('leaves')}
                       >
-                        <i className="bi bi-calendar-check me-2"></i>
+                        <i className={`bi bi-calendar-check me-2${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}></i>
                         Leave Requests
                         {leaveRequests.length > 0 && (
                           <span className="badge bg-danger ms-2">{leaveRequests.length}</span>
@@ -507,31 +533,31 @@ const Attendancechartstudent: React.FC = () => {
                     </li>
                   </ul>
 
-                  <div className="tab-content p-4">
+                  <div className={`tab-content p-4${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
                     {activeTab === 'overview' && (
                       <div className="tab-pane fade show active">
                         <div className="row g-4">
                           <div className="col-md-6">
-                            <div className="card border-0 bg-light">
+                            <div className={`card border-0${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-light'}`}>
                               <div className="card-body text-center">
-                                <h4 className="text-success fw-bold">{presentCount}</h4>
-                                <p className="text-muted mb-0">Present Days</p>
+                                <h4 className="fw-bold" style={{ color: dataTheme === 'dark_data_theme' ? '#4ade80' : '' }}>{presentCount}</h4>
+                                <p className={`mb-0${dataTheme === 'dark_data_theme' ? ' text-secondary' : ' text-muted'}`}>Present Days</p>
                               </div>
                             </div>
                           </div>
                           <div className="col-md-6">
-                            <div className="card border-0 bg-light">
+                            <div className={`card border-0${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-light'}`}>
                               <div className="card-body text-center">
-                                <h4 className="text-danger fw-bold">{absentCount}</h4>
-                                <p className="text-muted mb-0">Absent Days</p>
+                                <h4 className="fw-bold" style={{ color: dataTheme === 'dark_data_theme' ? '#f87171' : '' }}>{absentCount}</h4>
+                                <p className={`mb-0${dataTheme === 'dark_data_theme' ? ' text-secondary' : ' text-muted'}`}>Absent Days</p>
                               </div>
                             </div>
                           </div>
                           <div className="col-12">
-                            <div className="card border-0 bg-light">
+                            <div className={`card border-0${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-light'}`}>
                               <div className="card-body text-center">
-                                <h4 className="text-primary fw-bold">{calculateAttendancePercentage()}%</h4>
-                                <p className="text-muted mb-0">Attendance Rate</p>
+                                <h4 className="fw-bold" style={{ color: dataTheme === 'dark_data_theme' ? '#60a5fa' : '' }}>{calculateAttendancePercentage()}%</h4>
+                                <p className={`mb-0${dataTheme === 'dark_data_theme' ? ' text-secondary' : ' text-muted'}`}>Attendance Rate</p>
                               </div>
                             </div>
                           </div>
@@ -541,9 +567,9 @@ const Attendancechartstudent: React.FC = () => {
 
                     {activeTab === 'details' && (
                       <div className="tab-pane fade show active">
-                        <div className="table-responsive">
-                          <table className="table table-hover">
-                            <thead className="table-primary">
+                        <div className={`table-responsive${dataTheme === 'dark_data_theme' ? ' bg-dark border border-secondary rounded-2 p-2' : ''}`}>
+                          <table className={`table${dataTheme === 'dark_data_theme' ? ' table-dark text-light border-secondary' : ''}`}>
+                            <thead className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : 'table-primary'}>
                               <tr>
                                 <th scope="col" className="border-0">
                                   <i className="bi bi-calendar me-1"></i>
@@ -565,14 +591,14 @@ const Attendancechartstudent: React.FC = () => {
                             </thead>
                             <tbody>
                               {detailsWithRealTime.map((record, index) => (
-                                <tr key={record.key} className={index % 2 === 0 ? 'table-light' : ''}>
+                                <tr key={record.key} className={dataTheme === 'dark_data_theme' ? '' : (index % 2 === 0 ? 'table-light' : '')}>
                                   <td>
                                     <div className="d-flex align-items-center">
-                                      <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px' }}>
+                                      <div className={`bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3${dataTheme === 'dark_data_theme' ? ' bg-opacity-25' : ''}`} style={{ width: '40px', height: '40px' }}>
                                         <i className="bi bi-calendar3 text-primary"></i>
                                       </div>
                                       <div>
-                                        <span className="fw-medium text-dark">{record.date}</span>
+                                        <span className={`fw-medium${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-dark'}`}>{record.date}</span>
                                       </div>
                                     </div>
                                   </td>
@@ -585,13 +611,13 @@ const Attendancechartstudent: React.FC = () => {
                                   <td>
                                     <div className="d-flex align-items-center">
                                       <i className="bi bi-book text-info me-2"></i>
-                                      <span className="text-muted">{record.lesson}</span>
+                                      <span className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>{record.lesson}</span>
                                     </div>
                                   </td>
                                   <td>
                                     <div className="d-flex align-items-center">
                                       <i className="bi bi-mortarboard text-warning me-2"></i>
-                                      <span className="text-muted">{record.subject}</span>
+                                      <span className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>{record.subject}</span>
                                     </div>
                                   </td>
                                 </tr>
@@ -609,47 +635,57 @@ const Attendancechartstudent: React.FC = () => {
                             <div className="spinner-border text-primary" role="status">
                               <span className="visually-hidden">Loading...</span>
                             </div>
-                            <p className="mt-3 text-muted">Loading leave requests...</p>
+                            <p className={`mt-3${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-muted'}`}>Loading leave requests...</p>
                           </div>
                         ) : leaveRequests.length > 0 ? (
-                          <div className="table-responsive">
-                            <table className="table table-hover">
-                              <thead>
+                          <div className={`table-responsive${dataTheme === 'dark_data_theme' ? ' bg-dark border border-secondary rounded-2 p-2' : ''}`}>
+                            <table className={`table${dataTheme === 'dark_data_theme' ? ' table-dark text-light border-secondary' : ''}`}>
+                              <thead className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : 'table-light'}>
                                 <tr>
-                                  <th>Type</th>
-                                  <th>Date Range</th>
-                                  <th>Duration</th>
-                                  <th>Status</th>
+                                  <th className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>Type</th>
+                                  <th className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>Date Range</th>
+                                  <th className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>Duration</th>
+                                  <th className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>Status</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {leaveRequests.map((leave, idx) => (
-                                  <tr key={leave.id || idx}>
-                                    <td>{leave.reason?.split(':')[0]}</td>
-                                    <td>{leave.fromDate} - {leave.toDate}</td>
-                                    <td>{leave.fromDate && leave.toDate ? (Math.ceil((new Date(leave.toDate).getTime() - new Date(leave.fromDate).getTime()) / (1000 * 60 * 60 * 24)) + 1) : '-'}</td>
-                                    <td>
-                                      <span className={`badge bg-${leave.status === 'APPROVED' ? 'success' : leave.status === 'REJECTED' ? 'bg-danger' : 'bg-warning'}`}>
-                                        {leave.status || 'Pending'}
-                                      </span>
+                                {leaveRequests.map((leave, idx) => {
+                                  const leaveType = leave.reason?.split(':')[0] || '-';
+                                  const fromDate = leave.fromDate ? new Date(leave.fromDate) : null;
+                                  const toDate = leave.toDate ? new Date(leave.toDate) : null;
+                                  const dateRange = fromDate && toDate
+                                    ? `${fromDate.toLocaleDateString()} - ${toDate.toLocaleDateString()}`
+                                    : 'Date not specified';
+                                  const duration = fromDate && toDate
+                                    ? (Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                                    : '-';
+                                  const status = leave.status || leave.isApproved || 'Pending';
+                                  return (
+                                    <tr key={leave.id || idx} className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>
+                                      <td className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>{leaveType}</td>
+                                      <td className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>{dateRange}</td>
+                                      <td className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>{duration}</td>
+                                      <td className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>
+                                        <span className={`badge bg-${status === 'APPROVED' ? 'success' : status === 'REJECTED' ? 'danger' : status === 'PENDING' ? 'warning' : 'secondary'}`}>{status}</span>
                                     </td>
                                   </tr>
-                                ))}
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </div>
                         ) : (
-                          <div className="text-muted">No leave requests found.</div>
+                          <div className={dataTheme === 'dark_data_theme' ? 'text-secondary' : 'text-muted'}>No leave requests found.</div>
                         )}
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="modal-footer bg-light">
+                <div className={`modal-footer${dataTheme === 'dark_data_theme' ? ' bg-dark border-secondary' : ' bg-light'}`}>
                   <button 
                     type="button" 
                     className="btn btn-secondary" 
-                    onClick={handleCloseDetails}
+                    onClick={closeModal}
                   >
                     <i className="bi bi-x-circle me-1"></i>
                     Close
@@ -666,94 +702,118 @@ const Attendancechartstudent: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 2040 }}></div>
-        </>
+          <div
+            className="modal-backdrop fade show"
+            style={{
+              background: dataTheme === 'dark_data_theme' ? 'rgba(0,0,0,0.6)' : '',
+              zIndex: 1040,
+            }}
+          ></div>
+        </>,
+        modalRoot
       )}
 
       {/* Apply Leave Modal */}
-      {showLeaveModal && (
-        <div className="modal fade show" style={{ display: 'block', zIndex: 2050 }} tabIndex={-1} role="dialog" aria-modal="true">
-          <div className="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div className="modal-content">
+      {modalType === 'leave' && ReactDOM.createPortal(
+        <>
+          <div className="modal fade show" style={{ display: 'block', zIndex: 1050 }} tabIndex={-1}>
+            <div className="modal-dialog modal-dialog-centered modal-lg">
+              <div
+                className={`modal-content${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-white'}`}
+                style={{
+                  background: dataTheme === 'dark_data_theme' ? '#23272b' : '#fff',
+                  boxShadow: '0 0 24px rgba(0,0,0,0.3)',
+                  border: dataTheme === 'dark_data_theme' ? '1px solid #fff' : undefined,
+                }}
+              >
               <form onSubmit={handleApplyLeave}>
-                <div className="modal-header bg-primary text-white">
+                  <div className={`modal-header bg-primary text-white`}>
                   <h5 className="modal-title fw-bold">
                     <i className="bi bi-plus-circle me-2"></i>Apply Leave
                   </h5>
-                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowLeaveModal(false)} aria-label="Close"></button>
+                    <button type="button" className="btn-close btn-close-white" onClick={closeModal} aria-label="Close"></button>
                 </div>
-                <div className="modal-body p-4">
+                  <div className={`modal-body p-4${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
                   <div className="row g-3">
                     <div className="col-md-6">
-                      <label className="form-label fw-medium">Leave Type</label>
-                      <select className="form-select" name="leaveType" value={leaveForm.leaveType} onChange={handleLeaveInput} required>
-                        <option value="">Select Leave Type</option>
+                        <label className={`form-label fw-medium${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Leave Type</label>
+                        <select
+                          className={`form-select${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`}
+                          name="leaveType"
+                          value={leaveForm.leaveType}
+                          onChange={handleLeaveInput}
+                          required
+                          style={dataTheme === 'dark_data_theme' ? { color: '#fff', backgroundColor: '#23272b', borderColor: '#fff' } : {}}
+                        >
+                          <option value="" style={dataTheme === 'dark_data_theme' ? { color: '#aaa', backgroundColor: '#23272b' } : {}}>Select Leave Type</option>
                         {leaveTypes.map((type) => (
-                          <option key={type} value={type}>{type}</option>
+                            <option key={type} value={type} style={dataTheme === 'dark_data_theme' ? { color: '#fff', backgroundColor: '#23272b' } : {}}>{type}</option>
                         ))}
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label fw-medium">From Date</label>
-                      <input type="date" className="form-control" name="fromDate" value={leaveForm.fromDate} onChange={handleLeaveInput} required />
+                        <label className={`form-label fw-medium${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Start Date</label>
+                        <input type="date" className={`form-control${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`} name="startDate" value={leaveForm.startDate} onChange={handleLeaveInput} required placeholder="dd-mm-yyyy" style={dataTheme === 'dark_data_theme' ? { color: '#fff', backgroundColor: '#23272b', borderColor: '#fff' } : {}} />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label fw-medium">To Date</label>
-                      <input type="date" className="form-control" name="toDate" value={leaveForm.toDate} onChange={handleLeaveInput} required min={leaveForm.fromDate} />
+                        <label className={`form-label fw-medium${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>End Date</label>
+                        <input type="date" className={`form-control${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`} name="endDate" value={leaveForm.endDate} onChange={handleLeaveInput} required min={leaveForm.startDate} placeholder="dd-mm-yyyy" style={dataTheme === 'dark_data_theme' ? { color: '#fff', backgroundColor: '#23272b', borderColor: '#fff' } : {}} />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label fw-medium">Duration</label>
-                      <div className="form-control-plaintext">
-                        {leaveForm.fromDate && leaveForm.toDate ? (
-                          <span className="text-primary fw-medium">
-                            {Math.ceil((new Date(leaveForm.toDate).getTime() - new Date(leaveForm.fromDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
-                          </span>
-                        ) : (
-                          <span className="text-muted">Select dates</span>
-                        )}
-                      </div>
+                        <label className={`form-label fw-medium${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Duration</label>
+                        <div className={`form-control-plaintext${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Select dates</div>
                     </div>
                     <div className="col-12">
-                      <label className="form-label fw-medium">Reason</label>
-                      <textarea className="form-control" name="reason" rows={4} value={leaveForm.reason} onChange={handleLeaveInput} required placeholder="Please provide a detailed reason for your leave request..."></textarea>
+                        <label className={`form-label fw-medium${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Reason</label>
+                        <textarea className={`form-control${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`} name="reason" rows={4} value={leaveForm.reason} onChange={handleLeaveInput} required placeholder="Please provide a detailed reason for your leave request..." style={dataTheme === 'dark_data_theme' ? { color: '#fff', backgroundColor: '#23272b', borderColor: '#fff' } : {}}></textarea>
                     </div>
                   </div>
                   <div className="mt-4">
-                    <h6 className="fw-bold mb-2">Your Leave Requests</h6>
+                      <h6 className={`fw-bold mb-2${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>Your Leave Requests</h6>
                     {leaveRequests.length > 0 ? (
-                      <div className="table-responsive">
-                        <table className="table table-hover">
-                          <thead>
+                        <div className={`table-responsive${dataTheme === 'dark_data_theme' ? ' bg-dark border border-secondary rounded-2 p-2' : ''}`}>
+                          <table className={`table${dataTheme === 'dark_data_theme' ? ' table-dark text-light border-secondary' : ''}`}>
+                            <thead className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : 'table-light'}>
                             <tr>
-                              <th>Type</th>
-                              <th>Date Range</th>
-                              <th>Duration</th>
-                              <th>Status</th>
+                                <th className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>Type</th>
+                                <th className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>Date Range</th>
+                                <th className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>Duration</th>
+                                <th className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>Status</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {leaveRequests.map((leave, idx) => (
-                              <tr key={leave.id || idx}>
-                                <td>{leave.reason?.split(':')[0]}</td>
-                                <td>{leave.fromDate} - {leave.toDate}</td>
-                                <td>{leave.fromDate && leave.toDate ? (Math.ceil((new Date(leave.toDate).getTime() - new Date(leave.fromDate).getTime()) / (1000 * 60 * 60 * 24)) + 1) : '-'}</td>
-                                <td>
-                                  <span className={`badge bg-${leave.status === 'APPROVED' ? 'success' : leave.status === 'REJECTED' ? 'bg-danger' : 'bg-warning'}`}>
-                                    {leave.status || 'Pending'}
-                                  </span>
+                              {leaveRequests.map((leave, idx) => {
+                                const leaveType = leave.reason?.split(':')[0] || '-';
+                                const fromDate = leave.fromDate ? new Date(leave.fromDate) : null;
+                                const toDate = leave.toDate ? new Date(leave.toDate) : null;
+                                const dateRange = fromDate && toDate
+                                  ? `${fromDate.toLocaleDateString()} - ${toDate.toLocaleDateString()}`
+                                  : 'Date not specified';
+                                const duration = fromDate && toDate
+                                  ? (Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                                  : '-';
+                                const status = leave.status || leave.isApproved || 'Pending';
+                                return (
+                                  <tr key={leave.id || idx} className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>
+                                    <td className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>{leaveType}</td>
+                                    <td className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>{dateRange}</td>
+                                    <td className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>{duration}</td>
+                                    <td className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>
+                                      <span className={`badge bg-${status === 'APPROVED' ? 'success' : status === 'REJECTED' ? 'danger' : status === 'PENDING' ? 'warning' : 'secondary'}`}>{status}</span>
                                 </td>
                               </tr>
-                            ))}
+                                );
+                              })}
                           </tbody>
                         </table>
                       </div>
                     ) : (
-                      <div className="text-muted">No leave requests found.</div>
+                        <div className={dataTheme === 'dark_data_theme' ? 'text-secondary' : 'text-muted'}>No leave requests found.</div>
                     )}
                   </div>
                 </div>
-                <div className="modal-footer bg-light">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowLeaveModal(false)}>
+                  <div className={`modal-footer${dataTheme === 'dark_data_theme' ? ' bg-dark border-secondary' : ' bg-light'}`}>
+                    <button type="button" className="btn btn-secondary" onClick={closeModal}>
                     <i className="bi bi-x-circle me-1"></i>Cancel
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={leaveForm.isSubmitting}>
@@ -772,9 +832,18 @@ const Attendancechartstudent: React.FC = () => {
               </form>
             </div>
           </div>
-          <div className="modal-backdrop fade show" style={{ zIndex: 2040 }}></div>
         </div>
+          <div
+            className="modal-backdrop fade show"
+            style={{
+              background: dataTheme === 'dark_data_theme' ? 'rgba(0,0,0,0.6)' : '',
+              zIndex: 1040,
+            }}
+          ></div>
+        </>,
+        modalRoot
       )}
+      <ToastContainer position="top-center" autoClose={3000} theme={dataTheme === 'dark_data_theme' ? 'dark' : 'colored'} />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector as useReduxSelector } from "react-redux";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { all_routes } from "../../router/all_routes";
@@ -41,7 +41,7 @@ interface ClassItem {
 
 const SelfEnhancement = () => {
   const routes = all_routes;
-  const user = useSelector((state: any) => state.auth.userObj);
+  const user = useReduxSelector((state: any) => state.auth.userObj);
   const [items, setItems] = useState<SelfEnhancementItem[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedSection, setSelectedSection] = useState<string>("");
@@ -58,6 +58,7 @@ const SelfEnhancement = () => {
   const isStudent = user?.role === "student";
   const [activeTab, setActiveTab] = useState<"quiz" | "newspaper">("quiz");
   const [loading, setLoading] = useState(false);
+  const dataTheme = useReduxSelector((state: any) => state.themeSetting.dataTheme);
 
   const fetchClasses = useCallback(async () => {
     if (isStudent) return;
@@ -82,7 +83,7 @@ const SelfEnhancement = () => {
       
       setClassList(classes);
       
-      // Automatically select the first class if available
+     
       if (classes.length > 0) {
         setSelectedClass(classes[0].id);
       }
@@ -436,26 +437,54 @@ const SelfEnhancement = () => {
     </div>
   );
 
+  // Columns for student (no class, section, action)
+  const studentColumns = [
+    {
+      title: "Title",
+      dataIndex: "title",
+      render: (text: string, record: SelfEnhancementItem) => (
+        <Link
+          to="#"
+          className="link-primary"
+          data-bs-toggle="modal"
+          data-bs-target="#take_quiz"
+          onClick={() => openQuizModal(record)}
+        >
+          {text}
+        </Link>
+      ),
+      sorter: (a: SelfEnhancementItem, b: SelfEnhancementItem) =>
+        a.title.localeCompare(b.title, 'en-US'),
+    },
+    {
+      title: "Details",
+      dataIndex: "options",
+      render: (_: any, record: SelfEnhancementItem) =>
+        record.type === "Quiz" ? (
+          <span>Options: {record.options?.join(", ")}</span>
+        ) : (
+          <span>
+            {record.content?.substring(0, 50)}
+            {record.content && record.content.length > 50 ? "..." : ""}
+            {record.attachmentCount ? ` (${record.attachmentCount} attachments)` : ""}
+          </span>
+        ),
+    },
+    {
+      title: "Created At",
+      dataIndex: "createdAt",
+      sorter: (a: SelfEnhancementItem, b: SelfEnhancementItem) =>
+        a.createdAt.localeCompare(b.createdAt, 'en-US'),
+    },
+  ];
+
+  // Columns for non-student (admin/teacher)
   const columns = [
     {
       title: "Title",
       dataIndex: "title",
       render: (text: string, record: SelfEnhancementItem) => (
-        isStudent && record.type === "Quiz" ? (
-          <Link
-            to="#"
-            className="link-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#take_quiz"
-            onClick={() => openQuizModal(record)}
-          >
-            {text}
-          </Link>
-        ) : (
-          <Link to="#" className="link-primary">
-            {text}
-          </Link>
-        )
+        <Link to="#" className="link-primary">{text}</Link>
       ),
       sorter: (a: SelfEnhancementItem, b: SelfEnhancementItem) =>
         a.title.localeCompare(b.title, 'en-US'),
@@ -478,7 +507,6 @@ const SelfEnhancement = () => {
       title: "Class",
       dataIndex: "classId",
       render: (classId: string) => {
-        if (isStudent) return "N/A";
         const classObj = classList.find((cls) => cls.id === classId);
         return classObj ? classObj.className : classId || "N/A";
       },
@@ -487,7 +515,6 @@ const SelfEnhancement = () => {
       title: "Section",
       dataIndex: "section",
       render: (sectionId: string) => {
-        if (isStudent) return "N/A";
         const classObj = classList.find((cls) => cls.id === selectedClass);
         const section = classObj?.Section.find((sec) => sec.id === sectionId);
         return section ? section.name : sectionId || "N/A";
@@ -502,7 +529,7 @@ const SelfEnhancement = () => {
     {
       title: "Action",
       dataIndex: "action",
-      render: (_: any, record: SelfEnhancementItem) => !isStudent && (
+      render: (_: any, record: SelfEnhancementItem) => (
         <div className="d-flex align-items-center">
           <div className="dropdown">
             <Link
@@ -549,20 +576,20 @@ const SelfEnhancement = () => {
   ];
 
   return (
-    <div>
-      <ToastContainer />
-      <div className={isMobile || user.role === "admin" ? "page-wrapper" : "pt-4"}>
+    <div className={dataTheme === 'dark_data_theme' ? 'dark-theme bg-dark text-light min-vh-100' : ''}>
+      <ToastContainer position="top-center" autoClose={3000} theme={dataTheme === 'dark_data_theme' ? 'dark' : 'light'} />
+      <div className={(isMobile || user.role === "admin" ? "page-wrapper" : "pt-4") + (dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : '')}>
         <div className="content">
           <div className="d-md-flex d-block align-items-center justify-content-between mb-3">
-            <div className="my-auto mb-2">
-              <h3 className="page-title mb-1">Self Enhancement</h3>
+            <div className={"my-auto mb-2" + (dataTheme === 'dark_data_theme' ? ' text-light' : '')}>
+              <h3 className={"page-title mb-1" + (dataTheme === 'dark_data_theme' ? ' text-light' : '')}>Self Enhancement</h3>
               <nav>
-                <ol className="breadcrumb mb-0">
+                <ol className={"breadcrumb mb-0" + (dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : '')}>
                   <li className="breadcrumb-item">
-                    <Link to={routes.adminDashboard}>Dashboard</Link>
+                    <Link to={routes.adminDashboard} className={dataTheme === 'dark_data_theme' ? 'text-light' : ''}>Dashboard</Link>
                   </li>
                   <li className="breadcrumb-item">
-                    <Link to="#">Self-Assessment</Link>
+                    <Link to="#" className={dataTheme === 'dark_data_theme' ? 'text-light' : ''}>Self-Assessment</Link>
                   </li>
                   <li className="breadcrumb-item active" aria-current="page">
                     Self Enhancement
@@ -575,8 +602,8 @@ const SelfEnhancement = () => {
             </div>
           </div>
           
-          <div className="card">
-            <div className="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+          <div className={dataTheme === 'dark_data_theme' ? 'card bg-dark text-light' : 'card'}>
+            <div className={"card-header d-flex align-items-center justify-content-between flex-wrap pb-0" + (dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : '')}>
             {/* //  <h4 className="mb-3">Self Enhancement</h4> */}
               
               {/* Tab Navigation and Add Buttons */}
@@ -732,7 +759,7 @@ const SelfEnhancement = () => {
                 </div>
               )}
             </div>
-            <div className="card-body p-0 py-3">
+            <div className={"card-body p-0 py-3" + (dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : '')}>
               {loading ? (
                 renderTableSkeleton()
               ) : filteredItems.length === 0 ? (
@@ -740,16 +767,17 @@ const SelfEnhancement = () => {
                   <div className="avatar avatar-lg bg-secondary bg-opacity-10 rounded-circle mb-3">
                     <i className="ti ti-file-off fs-1 text-secondary"></i>
                   </div>
-                  <h5>No {activeTab === "quiz" ? "quizzes" : "newspapers"} found</h5>
-                  <p className="text-muted">
+                  <h5 className={dataTheme === 'dark_data_theme' ? 'text-light' : ''}>No {activeTab === "quiz" ? "quizzes" : "newspapers"} found</h5>
+                  <p className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>
                     {!isStudent && `Click "Add ${activeTab === "quiz" ? "Quiz" : "Newspaper"}" to create your first item`}
                   </p>
                 </div>
               ) : (
-                <Table 
-                  columns={columns} 
-                  dataSource={filteredItems} 
+                <Table
+                  columns={isStudent ? studentColumns : columns}
+                  dataSource={filteredItems}
                   rowKey="id"
+                  className={dataTheme === 'dark_data_theme' ? 'table-dark' : ''}
                 />
               )}
             </div>
@@ -760,9 +788,9 @@ const SelfEnhancement = () => {
       {/* Modals */}
       <>
         {isStudent && (
-          <div className="modal fade" id="take_quiz">
+          <div className={"modal fade" + (dataTheme === 'dark_data_theme' ? ' modal-dark' : '')} id="take_quiz">
             <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
+              <div className={dataTheme === 'dark_data_theme' ? 'modal-content bg-dark text-light' : 'modal-content'}>
                 <div className="modal-header">
                   <h4 className="modal-title">Take Quiz</h4>
                   <button type="button" className="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
@@ -822,9 +850,9 @@ const SelfEnhancement = () => {
         )}
         {!isStudent && (
           <>
-            <div className="modal fade" id="add_quiz">
+            <div className={"modal fade" + (dataTheme === 'dark_data_theme' ? ' modal-dark' : '')} id="add_quiz">
               <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content">
+                <div className={dataTheme === 'dark_data_theme' ? 'modal-content bg-dark text-light' : 'modal-content'}>
                   <div className="modal-header">
                     <h4 className="modal-title">Add Quiz</h4>
                     <button type="button" className="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
@@ -926,9 +954,9 @@ const SelfEnhancement = () => {
                 </div>
               </div>
             </div>
-            <div className="modal fade" id="add_newspaper">
+            <div className={"modal fade" + (dataTheme === 'dark_data_theme' ? ' modal-dark' : '')} id="add_newspaper">
               <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content">
+                <div className={dataTheme === 'dark_data_theme' ? 'modal-content bg-dark text-light' : 'modal-content'}>
                   <div className="modal-header">
                     <h4 className="modal-title">Add Newspaper</h4>
                     <button type="button" className="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
@@ -1010,9 +1038,9 @@ const SelfEnhancement = () => {
                 </div>
               </div>
             </div>
-            <div className="modal fade" id="edit_item">
+            <div className={"modal fade" + (dataTheme === 'dark_data_theme' ? ' modal-dark' : '')} id="edit_item">
               <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content">
+                <div className={dataTheme === 'dark_data_theme' ? 'modal-content bg-dark text-light' : 'modal-content'}>
                   <div className="modal-header">
                     <h4 className="modal-title">Edit {editItem?.type}</h4>
                     <button type="button" className="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
@@ -1154,9 +1182,9 @@ const SelfEnhancement = () => {
                 </div>
               </div>
             </div>
-            <div className="modal fade" id="delete-modal">
+            <div className={"modal fade" + (dataTheme === 'dark_data_theme' ? ' modal-dark' : '')} id="delete-modal">
               <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content">
+                <div className={dataTheme === 'dark_data_theme' ? 'modal-content bg-dark text-light' : 'modal-content'}>
                   <form>
                     <div className="modal-body text-center">
                       <span className="delete-icon">

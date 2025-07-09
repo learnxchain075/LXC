@@ -14,8 +14,9 @@ import {
   ISubmitAssignmentResponse,
 } from '../../../../../services/student/StudentAllApi';
 import './AcademicResources.css';
+import { useSelector } from 'react-redux';
+import ReactDOM from 'react-dom';
 
-// Define UploadFile type for local use
 interface UploadFile {
   uid: string;
   name: string;
@@ -103,11 +104,17 @@ const AcademicResources: React.FC = () => {
   const [pendingPage, setPendingPage] = useState(1);
   const [submittedPage, setSubmittedPage] = useState(1);
   const pageSize = 5;
+    const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
+
+  // Add state for title/description modal
+  const [showTitleModal, setShowTitleModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState<string | null>(null);
+  const [modalDescription, setModalDescription] = useState<string | null>(null);
+
 
   useEffect(() => {
     const studentId = localStorage.getItem('studentId');
     if (!studentId) {
-      toast.error('Student ID not found. Please log in.', { autoClose: 3000 });
       setIsLoading(false);
       setError('Student ID not found');
       return;
@@ -124,18 +131,22 @@ const AcademicResources: React.FC = () => {
         
         if (response.data.success) {
           // Process assignments
-          const assignments: AcademicResourceItem[] = response.data.assignments.map((item: IAssignment) => ({
-            key: item.id,
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            dueDate: item.dueDate,
-            submissionDate: null,
-            attachment: item.attachment,
-            status: item.status,
-            subject: item.subject?.name || 'N/A',
-            isSubmitted: false,
-          }));
+          const assignments: AcademicResourceItem[] = response.data.assignments.map((item: IAssignment) => {
+            const submission = item.AssignmentSubmission?.[0];
+            return {
+              key: item.id,
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              dueDate: item.dueDate,
+              submissionDate: submission?.submittedAt || null,
+              // Show student's uploaded file if submitted, else teacher's attachment
+              attachment: submission?.file || item.attachment,
+              status: submission ? 'Submitted' : item.status,
+              subject: item.subject?.name || 'N/A',
+              isSubmitted: !!submission,
+            };
+          });
 
           // Process homeworks with submission data
           const homeworks: AcademicResourceItem[] = response.data.homeworks.map((item: IHomework) => {
@@ -147,7 +158,8 @@ const AcademicResources: React.FC = () => {
               description: item.description,
               dueDate: item.dueDate,
               submissionDate: submission?.submittedAt || null,
-              attachment: item.attachment,
+              // Use student's file if submitted, else teacher's attachment
+              attachment: submission?.file || item.attachment,
               status: submission ? 'Submitted' : item.status,
               subject: item.subject?.name || 'N/A',
               isSubmitted: !!submission,
@@ -185,15 +197,13 @@ const AcademicResources: React.FC = () => {
           };
 
           setData(processedData);
-          toast.success('Academic resources loaded successfully!', { autoClose: 3000 });
         } else {
           throw new Error('Failed to fetch resources');
         }
       } catch (error: any) {
-        console.error('Error fetching resources:', error);
+       // console.error('Error fetching resources:', error);
         const errorMessage = error.response?.data?.error || error.message || 'Failed to load academic resources';
         setError(errorMessage);
-        toast.error(errorMessage, { autoClose: 3000 });
       } finally {
         setIsLoading(false);
       }
@@ -205,9 +215,6 @@ const AcademicResources: React.FC = () => {
   const toggleCategory = (category: AcademicResourceCategory) => {
     const newCategory = openCategory === category ? null : category;
     setOpenCategory(newCategory);
-    if (newCategory) {
-      toast.success(`Showing ${category} data`, { autoClose: 2000 });
-    }
   };
 
   const openUploadModal = (item: AcademicResourceItem, category: AcademicResourceCategory) => {
@@ -224,16 +231,18 @@ const AcademicResources: React.FC = () => {
     setFileList([]);
   };
 
-  const openPreviewModal = (link: string | null) => {
+  const [previewDescription, setPreviewDescription] = useState<string | null>(null);
+  const openPreviewModal = (link: string | null, description?: string | null) => {
     if (link) {
       setPreviewFile(link);
+      setPreviewDescription(description || null);
       setShowPreview(true);
     }
   };
-
   const closePreviewModal = () => {
     setShowPreview(false);
     setPreviewFile(null);
+    setPreviewDescription(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,12 +254,10 @@ const AcademicResources: React.FC = () => {
         file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         file.type.startsWith('image/');
       if (!isValidType) {
-        toast.error('You can only upload PDF, DOC, DOCX, or image files!', { autoClose: 3000 });
         return;
       }
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
-        toast.error('File size must be less than 10MB!', { autoClose: 3000 });
         return;
       }
       setFileList([{ uid: `-${Date.now()}`, name: file.name, status: 'done', originFileObj: file }]);
@@ -259,13 +266,11 @@ const AcademicResources: React.FC = () => {
 
   const handleUpload = async () => {
     if (!fileList.length || !selectedItem || !selectedCategory) {
-      toast.error('Please select a file to upload.', { autoClose: 3000 });
       return;
     }
 
     const studentId = localStorage.getItem('studentId');
     if (!studentId) {
-      toast.error('Student ID not found. Please log in.', { autoClose: 3000 });
       return;
     }
 
@@ -302,7 +307,7 @@ const AcademicResources: React.FC = () => {
         response = await submitAssignment(formData);
       }
 
-      console.log('Submission response:', response.data);
+      //console.log('Submission response:', response.data);
 
       if (response.status >= 200 && response.status < 300) {
         toast.success('Submission successful!', { autoClose: 3000 });
@@ -335,7 +340,7 @@ const AcademicResources: React.FC = () => {
         throw new Error(response.data.message || 'Submission failed');
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
+     // console.error('Upload error:', error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to submit. Please try again.';
       toast.error(errorMessage, { autoClose: 3000 });
     } finally {
@@ -352,8 +357,8 @@ const AcademicResources: React.FC = () => {
   // Table renderer
   const renderTable = (items: AcademicResourceItem[]) => (
     <div className="table-responsive">
-      <table className="table table-bordered table-hover align-middle">
-        <thead className="table-light">
+      <table className={`table table-bordered table-hover align-middle${dataTheme === 'dark_data_theme' ? ' table-dark text-light border-secondary' : ''}`}>
+        <thead className={dataTheme === 'dark_data_theme' ? 'table-dark text-light border-secondary' : 'table-light'}>
           <tr>
             <th>Title</th>
             <th>Subject</th>
@@ -381,7 +386,16 @@ const AcademicResources: React.FC = () => {
             items.map((item) => (
               <tr key={item.key}>
                 <td>
-                  <div className="text-truncate" style={{ maxWidth: 200 }} title={item.title}>
+                  <div
+                    className="text-truncate cursor-pointer"
+                    style={{ maxWidth: 200 }}
+                    title={item.title}
+                    onClick={() => {
+                      setModalTitle(item.title);
+                      setModalDescription(item.description);
+                      setShowTitleModal(true);
+                    }}
+                  >
                     {item.title}
                   </div>
                 </td>
@@ -393,16 +407,16 @@ const AcademicResources: React.FC = () => {
                     {item.attachment ? (
                       <div className="btn-group btn-group-sm">
                         <button 
-                          className="btn btn-outline-primary" 
+                          className={`btn btn-outline-primary${dataTheme === 'dark_data_theme' ? ' btn-outline-light text-light border-secondary' : ''}`} 
                           onClick={() => window.open(item.attachment!, '_blank')}
                         >
-                          <i className="bi bi-download me-1"></i>Download
+                          <i className={`bi bi-download me-1${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>Download
                         </button>
                         <button 
-                          className="btn btn-outline-success" 
+                          className={`btn btn-outline-success${dataTheme === 'dark_data_theme' ? ' btn-outline-light text-light border-secondary' : ''}`} 
                           onClick={() => openPreviewModal(item.attachment!)}
                         >
-                          <i className="bi bi-eye me-1"></i>Preview
+                          <i className={`bi bi-eye me-1${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>Preview
                         </button>
                       </div>
                     ) : (
@@ -413,7 +427,7 @@ const AcademicResources: React.FC = () => {
                   <>
                     <td>
                       <div className="d-flex align-items-center">
-                        <i className="bi bi-calendar3 text-muted me-2"></i>
+                        <i className={`bi bi-calendar3 text-muted me-2${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>
                         <span className={item.dueDate && new Date(item.dueDate) < new Date() ? 'text-danger fw-medium' : ''}>
                           {formatDate(item.dueDate)}
                         </span>
@@ -423,32 +437,24 @@ const AcademicResources: React.FC = () => {
                     <td>{formatDate(item.submissionDate)}</td>
                     <td>
                       {item.attachment ? (
-                        <div className="btn-group btn-group-sm">
-                          <button 
-                            className="btn btn-outline-primary" 
-                            onClick={() => window.open(item.attachment!, '_blank')}
-                          >
-                            <i className="bi bi-download me-1"></i>Download
-                          </button>
-                          <button 
-                            className="btn btn-outline-success" 
-                            onClick={() => openPreviewModal(item.attachment!)}
-                          >
-                            <i className="bi bi-eye me-1"></i>Preview
-                          </button>
-                        </div>
+                        <button
+                          className={`btn btn-outline-success btn-sm${dataTheme === 'dark_data_theme' ? ' btn-outline-light text-light border-secondary' : ''}`}
+                          onClick={() => openPreviewModal(item.attachment ?? null, item.description ?? null)}
+                        >
+                          <i className={`bi bi-eye me-1${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>View
+                        </button>
                       ) : (
                         <span className="text-muted">N/A</span>
                       )}
                     </td>
                     <td>
                       <button
-                        className={`btn btn-sm ${item.isSubmitted ? 'btn-secondary disabled' : 'btn-primary'}`}
+                        className={`btn btn-sm ${item.isSubmitted ? 'btn-secondary disabled' : 'btn-primary'}${dataTheme === 'dark_data_theme' ? ' btn-outline-light text-light border-secondary' : ''}`}
                         disabled={item.isSubmitted || uploading}
                         onClick={() => openUploadModal(item, openCategory!)}
                         title={item.isSubmitted ? 'Already submitted' : 'Upload your file'}
                       >
-                        <i className="bi bi-upload me-1"></i>
+                        <i className={`bi bi-upload me-1${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>
                         {item.isSubmitted ? 'Submitted' : 'Upload'}
                       </button>
                     </td>
@@ -523,17 +529,17 @@ const AcademicResources: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="card shadow-sm border-0 rounded-3 m-3">
-        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
+      <div className={`card shadow-lg border-0 rounded-4 m-3${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`}>
+        <ToastContainer position="top-center" autoClose={3000} theme={dataTheme === 'dark_data_theme' ? 'dark' : 'colored'} />
         
-        <div className="card-header bg-white border-0 py-4">
+        <div className={`card-header py-4${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary rounded-top-4' : ' bg-white'}`}>
           <div className="d-flex align-items-center">
-            <i className="bi bi-journal-bookmark fs-2 text-primary me-3"></i>
+            <i className={`bi bi-journal-bookmark fs-2 me-3${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}></i>
             <h4 className="mb-0 fw-semibold">Academic Resources</h4>
           </div>
         </div>
 
-        <div className="card-body p-4">
+        <div className={`card-body p-4${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
           {/* Category Selection */}
           <div className="row g-3 mb-4">
             {(['Assignment', 'PYQ', 'Homework'] as AcademicResourceCategory[]).map((category) => {
@@ -543,11 +549,7 @@ const AcademicResources: React.FC = () => {
               return (
                 <div key={category} className="col-md-4">
                   <div
-                    className={`card h-100 cursor-pointer border-2 transition-all ${
-                      openCategory === category 
-                        ? 'border-primary bg-primary bg-opacity-10 shadow-sm' 
-                        : 'border-light hover:border-primary hover:shadow-sm'
-                    }`}
+                    className={`card h-100 cursor-pointer border-2 transition-all rounded-4 shadow${dataTheme === 'dark_data_theme' ? (openCategory === category ? ' bg-primary bg-opacity-10 border-primary text-light' : ' bg-dark border-secondary text-light') : (openCategory === category ? ' border-primary bg-primary bg-opacity-10' : ' border-light')}`}
                     onClick={() => toggleCategory(category)}
                     role="button"
                     style={{ cursor: 'pointer' }}
@@ -609,10 +611,10 @@ const AcademicResources: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-5">
+            <div className={`text-center py-5${dataTheme === 'dark_data_theme' ? ' bg-dark text-light rounded-4 shadow' : ''}`}>
               <i className="bi bi-journal-bookmark display-1 text-muted mb-4"></i>
-              <h3 className="fw-medium text-muted mb-3">Select a category to view resources</h3>
-              <p className="text-muted">Choose from Assignment, PYQ, or Homework to see available academic resources</p>
+              <h3 className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>Select a category to view resources</h3>
+              <p className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>Choose from Assignment, PYQ, or Homework to see available academic resources</p>
             </div>
           )}
         </div>
@@ -622,7 +624,7 @@ const AcademicResources: React.FC = () => {
              tabIndex={-1} 
              style={{ backgroundColor: showUpload ? 'rgba(0,0,0,0.5)' : undefined }}>
           <div className="modal-dialog modal-lg modal-dialog-centered">
-            <div className="modal-content">
+            <div className={`modal-content rounded-4 shadow-lg${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`}>
               <div className="modal-header">
                 <h5 className="modal-title">
                   <i className="bi bi-upload text-primary me-2"></i>
@@ -689,31 +691,69 @@ const AcademicResources: React.FC = () => {
           </div>
         </div>
 
-        {/* Preview Modal */}
-        <div className={`modal fade ${showPreview ? 'show d-block' : ''}`} 
-             tabIndex={-1} 
-             style={{ backgroundColor: showPreview ? 'rgba(0,0,0,0.5)' : undefined }}>
-          <div className="modal-dialog modal-xl modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  <i className="bi bi-eye text-success me-2"></i>
-                  File Preview
-                </h5>
-                <button type="button" className="btn-close" onClick={closePreviewModal}></button>
-              </div>
-              <div className="modal-body p-0" style={{ height: '70vh' }}>
-                {previewFile && (
-                  <iframe 
-                    src={previewFile} 
-                    className="w-100 h-100 border-0" 
-                    title="File Preview"
-                  />
-                )}
+        {/* Portal for Preview Modal */}
+        {showPreview && ReactDOM.createPortal(
+          <div
+            className={`modal fade show d-block`}
+            tabIndex={-1}
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 2000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
+            onClick={e => { if (e.target === e.currentTarget) closePreviewModal(); }}
+          >
+            <div className="modal-dialog modal-xl modal-dialog-centered" style={{ zIndex: 2100 }}>
+              <div className={`modal-content${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}> 
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    <i className="bi bi-eye text-success me-2"></i>
+                    File Preview
+                  </h5>
+                  <button type="button" className="btn-close" onClick={closePreviewModal}></button>
+                </div>
+                <div className="modal-body p-0" style={{ height: '70vh' }}>
+                  {previewFile && previewFile.match(/\.(jpeg|jpg|png|gif|bmp|webp)$/i) ? (
+                    <img src={previewFile} alt="Preview" className="w-100 h-100 object-fit-contain" style={{ maxHeight: '65vh', display: 'block', margin: '0 auto' }} />
+                  ) : previewFile ? (
+                    <div className="d-flex flex-column align-items-center justify-content-center h-100">
+                      <a href={previewFile} target="_blank" rel="noopener noreferrer" className="btn btn-primary mb-3">Download File</a>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted py-5">No file to preview</div>
+                  )}
+                  {previewDescription && (
+                    <div className="p-3">
+                      <h6>Description</h6>
+                      <p>{previewDescription}</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Portal for Title/Description Modal */}
+        {showTitleModal && ReactDOM.createPortal(
+          <div
+            className={`modal fade show d-block`}
+            tabIndex={-1}
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 2000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
+            onClick={e => { if (e.target === e.currentTarget) setShowTitleModal(false); }}
+          >
+            <div className="modal-dialog modal-md modal-dialog-centered" style={{ zIndex: 2100 }}>
+              <div className={`modal-content${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
+                <div className="modal-header">
+                  <h5 className="modal-title">{modalTitle}</h5>
+                  <button type="button" className="btn-close" onClick={() => setShowTitleModal(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <h6>Description</h6>
+                  <p>{modalDescription || 'No description available.'}</p>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     </ErrorBoundary>
   );
