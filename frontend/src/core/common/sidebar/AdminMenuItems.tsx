@@ -568,6 +568,16 @@ const AdminMenuItems = () => {
     }
 
 
+    {
+      "key": "NotificationModule",
+      "displayName": "Notification",
+      "subItems": [
+        { "name": "Channels", "route": all_routes.adminNotificationChannels, "icon": "ti ti-plug" },
+        { "name": "Send", "route": all_routes.adminSendNotification, "icon": "ti ti-send" },
+        { "name": "Trigger", "route": all_routes.adminTriggerNotification, "icon": "ti ti-rocket" },
+        { "name": "Logs", "route": all_routes.adminNotificationLogs, "icon": "ti ti-list" }
+      ]
+    },
   ];
 
   useEffect(() => {

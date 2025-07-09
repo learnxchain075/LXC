@@ -348,5 +348,11 @@ export const all_routes = {
   dailyAttendance: "/report/daily-attendance",
   studentDayWise: "/report/student-day-wise",
   teacherDayWise: "/report/teacher-day-wise",
+  adminNotificationChannels: "/admin/notifications/channels",
+  adminSendNotification: "/admin/notifications/send",
+  adminTriggerNotification: "/admin/notifications/trigger",
+  adminNotificationLogs: "/admin/notifications/logs",
+  superNotificationTemplates: "/superadmin/notifications/templates",
+  superNotificationLogs: "/superadmin/notifications/logs",
   staffDayWise: "/report/staff-day-wise",
 };
