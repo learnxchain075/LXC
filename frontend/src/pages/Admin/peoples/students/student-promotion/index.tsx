@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import ImageWithBasePath from "../../../../../core/common/imageWithBasePath";
 import { all_routes } from "../../../../../router/all_routes";
 import Table from "../../../../../core/common/dataTable/index";
@@ -18,13 +20,46 @@ import { bulkPromoteClass } from '../../../../../services/admin/studentPromotion
 import { getClasses } from '../../../../../services/teacher/classServices';
 import { getSections } from '../../../../../services/teacher/sectionServices';
 // import { bulkPromoteClass } from '../../../../services/admin/studentPromotionApi';
+import { useSelector } from 'react-redux';
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Student Promotion Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="alert alert-danger m-3">
+          <h5>Something went wrong with Student Promotion.</h5>
+          <p>Please try refreshing the page or contact support.</p>
+          <button className="btn btn-primary" onClick={() => window.location.reload()}>Refresh Page</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const StudentPromotion = () => {
+  const { isDark } = useSelector((state: any) => state.theme);
   const [isPromotion, setIsPromotion] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [classOptions, setClassOptions] = useState<{ value: string; label: string }[]>([]);
   const [fromSections, setFromSections] = useState<{ value: string; label: string }[]>([]);
   const [toSections, setToSections] = useState<{ value: string; label: string }[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [form, setForm] = useState({
     fromClassId: "",
     toClassId: "",
@@ -35,68 +70,135 @@ const StudentPromotion = () => {
   });
   const routes = all_routes;
 
-
+ 
   useEffect(() => {
-    getClasses()
-      .then((res) => {
+    const loadClasses = async () => {
+      try {
+        setLoading(true);
+        const res = await getClasses();
         const mapped = res.data.map((c: any) => ({ value: c.id, label: c.name }));
         setClassOptions(mapped);
-      })
-      .catch(() => setClassOptions([]));
+      } catch (error: any) {
+        console.error('Failed to load classes:', error);
+        toast.error('Failed to load classes. Please try again.');
+        setClassOptions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadClasses();
   }, []);
 
+ 
   useEffect(() => {
-    if (form.fromClassId) {
-      getSections(form.fromClassId)
-        .then((res) => setFromSections(res.data.map((s: any) => ({ value: s.id, label: s.name }))))
-        .catch(() => setFromSections([]));
-    } else {
-      setFromSections([]);
-    }
+    const loadFromSections = async () => {
+      if (!form.fromClassId) {
+        setFromSections([]);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const res = await getSections(form.fromClassId);
+        const mapped = res.data.map((s: any) => ({ value: s.id, label: s.name }));
+        setFromSections(mapped);
+      } catch (error: any) {
+        console.error('Failed to load from sections:', error);
+        toast.error('Failed to load sections. Please try again.');
+        setFromSections([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFromSections();
   }, [form.fromClassId]);
 
-
+ 
   useEffect(() => {
-    if (form.toClassId) {
-      getSections(form.toClassId)
-        .then((res) => setToSections(res.data.map((s: any) => ({ value: s.id, label: s.name }))))
-        .catch(() => setToSections([]));
-    } else {
-      setToSections([]);
-    }
+    const loadToSections = async () => {
+      if (!form.toClassId) {
+        setToSections([]);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const res = await getSections(form.toClassId);
+        const mapped = res.data.map((s: any) => ({ value: s.id, label: s.name }));
+        setToSections(mapped);
+      } catch (error: any) {
+        console.error('Failed to load to sections:', error);
+        toast.error('Failed to load sections. Please try again.');
+        setToSections([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadToSections();
   }, [form.toClassId]);
 
-
-  // useEffect(() => {
-  //   if (form.toClassId) {
-  //     getSections(form.toClassId)
-  //       .then((res) => setToSections(res.data.map((s: any) => ({ value: s.id, label: s.name }))))
-  //       .catch(() => setToSections([]));
-  //   } else {
-  //     setToSections([]);
-  //   }
-  // }, [form.toClassId]);
-
-
   const handlePromoteStudents = async () => {
+    if (!form.fromClassId || !form.toClassId || !form.fromSection || !form.toSection) {
+      toast.error('Please fill in all required fields before promoting students.');
+      return;
+    }
+
     try {
-      await bulkPromoteClass({
-        fromClassId: "class1",
-        toClassId: "class2",
-        fromSection: "A",
-        toSection: "B",
-        academicYear: "2024-2025",
-        toSession: "2025-2026",
+      setLoading(true);
+      const response = await bulkPromoteClass({
+        fromClassId: form.fromClassId,
+        toClassId: form.toClassId,
+        fromSection: form.fromSection,
+        toSection: form.toSection,
+        academicYear: form.academicYear,
+        toSession: form.toSession,
+        excludeIds: selectedStudents.length > 0 ? selectedStudents : undefined,
       });
 
-
-
-      console.log("Promotion request sent");
-    } catch (error) {
-      console.error("Promotion error", error);
+      if (response.data?.message) {
+        toast.success(`Successfully promoted ${response.data.count || 0} students!`);
+        setIsPromotion(false);
+        // Reset form
+        setForm({
+          fromClassId: "",
+          toClassId: "",
+          fromSection: "",
+          toSection: "",
+          academicYear: "2024-2025",
+          toSession: "2025-2026",
+        });
+        setSelectedStudents([]);
+      } else {
+        toast.error('Failed to promote students. Please try again.');
+      }
+    } catch (error: any) {
+      console.error("Promotion error:", error);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to promote students. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
-  // const data = Studentlist;
+
+  const handleStudentSelection = (studentId: string, selected: boolean) => {
+    if (selected) {
+      setSelectedStudents(prev => [...prev, studentId]);
+    } else {
+      setSelectedStudents(prev => prev.filter(id => id !== studentId));
+    }
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedStudents(students.map(s => s.id));
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
   const columns = [
     {
       title: "Admission No",
@@ -128,7 +230,7 @@ const StudentPromotion = () => {
             />
           </Link>
           <div className="ms-2">
-            <p className="text-dark mb-0">
+            <p className={`mb-0 ${isDark ? 'text-light' : 'text-dark'}`}>
               <Link to="#">{text}</Link>
             </p>
           </div>
@@ -177,36 +279,47 @@ const StudentPromotion = () => {
     {
       title: "Action",
       dataIndex: "promotion",
-      render: (res: any) => (
-        <>
-          <div className="table-select mb-0">
-            <CommonSelect
-              className="select"
-              options={promotion}
-              defaultValue={promotion[res]}
-            />
-          </div>
-        </>
+      render: (res: any, record: any) => (
+        <div className="table-select mb-0">
+          <CommonSelect
+            className="select"
+            options={promotion}
+            defaultValue={promotion[res]}
+            onChange={(option) => {
+              if (option?.value === 'promote') {
+                handleStudentSelection(record.id, true);
+              } else if (option?.value === 'exclude') {
+                handleStudentSelection(record.id, false);
+              }
+            }}
+          />
+        </div>
       ),
 
     },
   ];
   return (
-    <>
-      <div className="page-wrapper">
+    <ErrorBoundary>
+      <div className={`page-wrapper ${isDark ? 'dark-mode' : ''}`}>
+        <ToastContainer 
+          position="top-center" 
+          autoClose={3000} 
+          theme={isDark ? 'dark' : 'colored'}
+          toastClassName={`${isDark ? 'bg-dark text-light' : ''}`}
+        />
         <div className="content">
           <div className="row">
             <div className="col-md-12">
               <div className="d-md-flex d-block align-items-center justify-content-between mb-3">
                 <div className="my-auto mb-2">
-                  <h3 className="page-title mb-1">Student Promotion</h3>
+                  <h3 className={`page-title mb-1 ${isDark ? 'text-light' : ''}`}>Student Promotion</h3>
                   <nav>
                     <ol className="breadcrumb mb-0">
                       <li className="breadcrumb-item">
-                        <Link to={routes.adminDashboard}>Dashboard</Link>
+                        <Link to={routes.adminDashboard} className={isDark ? 'text-light' : ''}>Dashboard</Link>
                       </li>
                       <li className="breadcrumb-item">
-                        <Link to="#">Students</Link>
+                        <Link to="#" className={isDark ? 'text-light' : ''}>Students</Link>
                       </li>
                       <li className="breadcrumb-item active" aria-current="page">
                         Student Promotion
@@ -222,15 +335,15 @@ const StudentPromotion = () => {
 
                 </div>
               </div>
-              <div className="alert alert-outline-primary bg-primary-transparent p-2 d-flex align-items-center flex-wrap row-gap-2 mb-4">
+              <div className={`alert alert-outline-primary bg-primary-transparent p-2 d-flex align-items-center flex-wrap row-gap-2 mb-4 ${isDark ? 'bg-dark border-primary' : ''}`}>
                 <i className="ti ti-info-circle me-1" />
                 <strong>Note :</strong> Prompting Student from the Present class to
                 the Next Class will Create an enrollment of the student to the next
                 Session
               </div>
-              <div className="card">
+              <div className={`card ${isDark ? 'bg-dark text-light border-secondary' : ''}`}>
                 <div className="card-header border-0 pb-0">
-                  <div className="bg-light-gray p-3 rounded">
+                  <div className={`bg-light-gray p-3 rounded ${isDark ? 'bg-secondary' : ''}`}>
                     <h4>Promotion</h4>
                     <p>Select a Class to Promote next session and new class</p>
                   </div>
@@ -298,7 +411,7 @@ const StudentPromotion = () => {
                           </div>
                           <div>
                             <label className="form-label mb-2">
-                              Promotion from Class
+                              Promotion to Class
                               <span className="text-danger"> *</span>
                             </label>
                             <div className="d-block d-md-flex">
@@ -328,16 +441,42 @@ const StudentPromotion = () => {
                         <button
                           type="reset"
                           className="btn btn-light reset-promote me-3"
-                          onClick={() => setIsPromotion(false)}
+                          onClick={() => {
+                            setIsPromotion(false);
+                            setForm({
+                              fromClassId: "",
+                              toClassId: "",
+                              fromSection: "",
+                              toSection: "",
+                              academicYear: "2024-2025",
+                              toSession: "2025-2026",
+                            });
+                            setSelectedStudents([]);
+                          }}
+                          disabled={loading}
                         >
                           Reset Promotion
                         </button>
                         <button
                           type="button"
                           className="btn btn-primary promote-students-btn"
-                          onClick={() => setIsPromotion(true)}
+                          onClick={() => {
+                            if (!form.fromClassId || !form.toClassId || !form.fromSection || !form.toSection) {
+                              toast.error('Please fill in all required fields before proceeding.');
+                              return;
+                            }
+                            setIsPromotion(true);
+                          }}
+                          disabled={loading}
                         >
-                          Manage Promotion
+                          {loading ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              Loading...
+                            </>
+                          ) : (
+                            'Manage Promotion'
+                          )}
                         </button>
                       </div>
                     </div>
@@ -345,9 +484,9 @@ const StudentPromotion = () => {
                 </div>
               </div>
               <div className={`promote-card-main ${isPromotion && 'promote-card-main-show'}`}>
-                <div className="card">
+                <div className={`card ${isDark ? 'bg-dark text-light border-secondary' : ''}`}>
                   <div className="card-header border-0 pb-0">
-                    <div className="bg-light-gray p-3 rounded">
+                    <div className={`bg-light-gray p-3 rounded ${isDark ? 'bg-secondary' : ''}`}>
                       <h4>Map Class Sections</h4>
                       <p>Select section mapping of old class to new class</p>
                     </div>
@@ -361,7 +500,9 @@ const StudentPromotion = () => {
                               <label className="form-label">
                                 From Class<span className="text-danger">*</span>
                               </label>
-                              <div className="form-control-plaintext p-0">III</div>
+                              <div className="form-control-plaintext p-0">
+                                {classOptions.find(c => c.value === form.fromClassId)?.label || 'Not selected'}
+                              </div>
                             </div>
                             <div className="mb-0">
                               <label className="form-label d-block mb-3">
@@ -372,7 +513,9 @@ const StudentPromotion = () => {
                                 Student From Section
                                 <span className="text-danger"> *</span>
                               </label>
-                              <div className="form-control-plaintext p-0">A</div>
+                              <div className="form-control-plaintext p-0">
+                                {fromSections.find(s => s.value === form.fromSection)?.label || 'Not selected'}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -391,7 +534,9 @@ const StudentPromotion = () => {
                                 Promote to Session{" "}
                                 <span className="text-danger"> *</span>
                               </label>
-                              <div className="form-control-plaintext p-0">IV</div>
+                              <div className="form-control-plaintext p-0">
+                                {form.toSession}
+                              </div>
                             </div>
                             <div>
                               <label className="form-label mb-2">
@@ -401,11 +546,9 @@ const StudentPromotion = () => {
                               <div className="d-block d-md-flex">
                                 <div className=" flex-fill me-0">
                                   <label className="form-label">Class</label>
-                                  <CommonSelect
-                                    className="select"
-                                    options={classOptions}
-                                    defaultValue={classOptions[0]}
-                                  />
+                                  <div className="form-control-plaintext p-0">
+                                    {classOptions.find(c => c.value === form.toClassId)?.label || 'Not selected'}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -416,7 +559,7 @@ const StudentPromotion = () => {
                   </div>
                 </div>
                 {/* Students List */}
-                <div className="card">
+                <div className={`card ${isDark ? 'bg-dark text-light border-secondary' : ''}`}>
                   <div className="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
                     <h4 className="mb-3">Students List</h4>
                     <div className="d-flex align-items-center flex-wrap">
@@ -427,13 +570,13 @@ const StudentPromotion = () => {
                       <div className="dropdown mb-3">
                         <Link
                           to="#"
-                          className="btn btn-outline-light bg-white dropdown-toggle"
+                          className={`btn btn-outline-light dropdown-toggle ${isDark ? 'bg-dark text-light border-secondary' : 'bg-white'}`}
                           data-bs-toggle="dropdown"
                         >
                           <i className="ti ti-sort-ascending-2 me-2" />
                           Sort by A-Z{" "}
                         </Link>
-                        <ul className="dropdown-menu p-3">
+                        <ul className={`dropdown-menu p-3 ${isDark ? 'bg-dark text-light' : ''}`}>
                           <li>
                             <Link
                               to="#"
@@ -472,52 +615,38 @@ const StudentPromotion = () => {
                   </div>
                   <div className="card-body p-0 py-3">
                     {/* Student List */}
-                    {/* <Table dataSource={data} columns={columns} Selection={true} /> */}
-                    {/* /Student List */}
+                    {students.length > 0 ? (
+                      <Table 
+                        dataSource={students} 
+                        columns={columns} 
+                        Selection={true}
+                      />
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted">No students found for the selected criteria.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {/* /Students List */}
                 <div className="promoted-year text-center">
                   <p>
-                    Selected Students will be prormoted to 2025 - 2026 Academic
-                    Session
+                    Selected Students will be promoted to {form.toSession} Academic Session
                   </p>
                   <Link
                     to="#"
                     className="btn btn-primary"
                     data-bs-toggle="modal"
                     data-bs-target="#student_promote"
+                    onClick={(e) => {
+                      if (selectedStudents.length === 0) {
+                        e.preventDefault();
+                        toast.warning('Please select at least one student to promote.');
+                      }
+                    }}
                   >
-                    Promote Students
+                    Promote Students ({selectedStudents.length})
                   </Link>
-                </div>
-                <div className="toast-container success-msg-toast position-fixed">
-                  <div
-                    id="topright-Toast"
-                    className="toast"
-                    role="alert"
-                    aria-live="assertive"
-                    aria-atomic="true"
-                  >
-                    <div className="toast-header">
-                      <p className="me-auto">
-                        <span>
-                          <i className="ti ti-square-check-filled text-success" />
-                        </span>
-                        Successfully Promoted
-                      </p>
-                      <Link
-                        to="#"
-                        className="toast-close"
-                        data-bs-dismiss="toast"
-                        aria-label="Close"
-                      >
-                        <span>
-                          <i className="ti ti-x" />
-                        </span>
-                      </Link>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -526,12 +655,12 @@ const StudentPromotion = () => {
       </div>
       <div className="modal fade" id="student_promote">
         <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
+          <div className={`modal-content ${isDark ? 'bg-dark text-light' : ''}`}>
             <div className="modal-body text-center">
               <h4>Confirm Promotion</h4>
               <p>
-                Are you Sure, want to promote all 57 selected students to the next
-                academic session
+                Are you sure you want to promote {selectedStudents.length} selected students to the next
+                academic session?
               </p>
               <div className="d-flex justify-content-center">
                 <Link
@@ -541,21 +670,27 @@ const StudentPromotion = () => {
                 >
                   Cancel
                 </Link>
-                <Link
-                  to="#"
+                <button
                   className="btn btn-danger"
-                  id="toprightToastBtn"
                   data-bs-dismiss="modal"
                   onClick={handlePromoteStudents}
+                  disabled={loading}
                 >
-                  Promote
-                </Link>
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Promoting...
+                    </>
+                  ) : (
+                    'Promote'
+                  )}
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </ErrorBoundary>
   )
 }
 

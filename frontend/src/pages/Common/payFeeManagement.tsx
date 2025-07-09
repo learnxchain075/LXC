@@ -75,6 +75,8 @@ export const PayFeeManagement = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [razorpayKey, setRazorpayKey] = useState<string>("rzp_test_EJh0TkmUgkZNyG");
 const [receiptPreview, setReceiptPreview] = useState<{ userUrl: string; officeUrl?: string } | null>(null);
+//const [dataTheme, setDataTheme] = useState<'light' | 'dark'>('light');
+const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
 
 const fetchReceiptBlob = async (paymentId: string, copy: 'user' | 'office') => {
   const res = await BaseApi.getRequest(`/school/fee/receipt/${paymentId}?copy=${copy}`, { responseType: 'blob' });
@@ -478,7 +480,7 @@ const closeReceiptPreview = () => {
       fixed: "left" as const,
       render: (student: any, record: IFeeData) => (
         <div>
-          <div className="fw-bold">{record?.student?.user?.name || "N/A"}</div>
+          <div className="fw-bold">{record?.student?.name || "N/A"}</div>
           <div className="text-muted small">{record?.student?.rollNo || "N/A"}</div>
         </div>
       ),
@@ -619,8 +621,8 @@ const closeReceiptPreview = () => {
     ];
 
     return (
-      <div className="p-3 bg-light rounded">
-        <h6 className="mb-3 text-primary">Payment History</h6>
+      <div className={`p-3 rounded${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border border-secondary' : ' bg-light'}`}>
+        <h6 className={`mb-3${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}>Payment History</h6>
         <div className="table-responsive">
           <Table
             columns={paymentColumns}
@@ -628,6 +630,23 @@ const closeReceiptPreview = () => {
             pagination={false}
             size="small"
             rowKey="id"
+            className={dataTheme === 'dark_data_theme' ? 'dark-table' : ''}
+            style={dataTheme === 'dark_data_theme' ? { background: '#23233a', color: '#fff' } : {}}
+            locale={{
+              emptyText: dataTheme === 'dark_data_theme'
+                ? (
+                  <div className="d-flex flex-column align-items-center justify-content-center py-5 bg-dark text-light rounded-4 shadow border border-secondary">
+                    <i className="ti ti-inbox mb-3" style={{ fontSize: 48, color: '#888' }}></i>
+                    <div className="fw-semibold">No data</div>
+                  </div>
+                )
+                : (
+                  <div className="d-flex flex-column align-items-center justify-content-center py-5">
+                    <i className="ti ti-inbox mb-3" style={{ fontSize: 48, color: '#bbb' }}></i>
+                    <div className="fw-semibold text-muted">No data</div>
+                  </div>
+                )
+            }}
           />
         </div>
       </div>
@@ -639,41 +658,39 @@ const closeReceiptPreview = () => {
 
   return (
     <>
-      <div className={isAdminOrSuperadmin ? "page-wrapper min-vh-100" : "p-4 min-vh-100"}>
-        <ToastContainer position="top-center" autoClose={3000} />
+      <div className={isAdminOrSuperadmin ? `page-wrapper min-vh-100${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}` : `p-4 min-vh-100${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
+        <ToastContainer position="top-center" autoClose={3000} theme={dataTheme === 'dark_data_theme' ? 'dark' : 'colored'} />
 
         {/* Receipt Preview Modal */}
 
-        <Modal show={!!receiptPreview} onHide={closeReceiptPreview} size="lg" centered>
-
-          <Modal.Header closeButton>
+        <Modal show={!!receiptPreview} onHide={closeReceiptPreview} size="lg" centered
+          dialogClassName={dataTheme === 'dark_data_theme' ? 'modal-content bg-dark text-light border-secondary rounded-4' : ''}
+        >
+          <Modal.Header closeButton className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>
             <Modal.Title>Fee Receipt</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light' : ''}>
             {receiptPreview && (
               <iframe
                 title="Fee Receipt"
                 src={receiptPreview.userUrl}
-                style={{ width: '100%', height: '500px', border: '1px solid #ccc' }}
+                style={{ width: '100%', height: '500px', border: dataTheme === 'dark_data_theme' ? '1px solid #444' : '1px solid #ccc' }}
+                className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light' : ''}
               ></iframe>
             )}
           </Modal.Body>
-          <Modal.Footer>
+          <Modal.Footer className={dataTheme === 'dark_data_theme' ? 'bg-dark text-light border-secondary' : ''}>
             {receiptPreview?.userUrl && (
-
-              <a href={receiptPreview.userUrl} download={`receipt_user.pdf`} className="btn btn-primary">
-
+              <a href={receiptPreview.userUrl} download={`receipt_user.pdf`} className={`btn${dataTheme === 'dark_data_theme' ? ' btn-outline-light text-light border-secondary' : ' btn-primary'}`}>
                 Download User Copy
               </a>
             )}
             {receiptPreview?.officeUrl && (
-
-              <a href={receiptPreview.officeUrl} download={`receipt_office.pdf`} className="btn btn-secondary">
-
+              <a href={receiptPreview.officeUrl} download={`receipt_office.pdf`} className={`btn${dataTheme === 'dark_data_theme' ? ' btn-outline-light text-light border-secondary' : ' btn-secondary'}`}>
                 Download Office Copy
               </a>
             )}
-            <Button variant="secondary" onClick={() => { const win = window.open(receiptPreview?.userUrl || ''); win?.print(); }}>
+            <Button variant={dataTheme === 'dark_data_theme' ? 'outline-light' : 'secondary'} onClick={() => { const win = window.open(receiptPreview?.userUrl || ''); win?.print(); }}>
               Print
             </Button>
           </Modal.Footer>
@@ -681,10 +698,10 @@ const closeReceiptPreview = () => {
         
         {/* Payment Processing Overlay */}
         {paymentProcessing && (
-          <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
-               style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
-            <div className="bg-white p-4 rounded shadow text-center">
-              <div className="spinner-border text-primary mb-3" role="status">
+          <div className={`position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center${dataTheme === 'dark_data_theme' ? ' bg-dark bg-opacity-75 text-light' : ''}`}
+            style={{ zIndex: 9999 }}>
+            <div className={`p-4 rounded shadow text-center${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border border-secondary' : ' bg-white'}`}>
+              <div className={`spinner-border mb-3${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`} role="status">
                 <span className="visually-hidden">Processing Payment...</span>
               </div>
               <h5>Processing Payment...</h5>
@@ -697,8 +714,8 @@ const closeReceiptPreview = () => {
           <div className="row justify-content-center">
             <div className={isAdminOrSuperadmin ? "col-12" : "col-sm-12"}>
               {/* Main Payment Card */}
-              <div className="card shadow border-0">
-                <div className="card-header bg-light border-bottom">
+              <div className={`card shadow border-0${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary rounded-4' : ''}`}>
+                <div className={`card-header${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary rounded-top-4' : ' bg-light'}`}>
                   <div className="d-flex align-items-center justify-content-between">
                     <h6 className="mb-0 text-primary">
                       <i className="ti ti-wallet me-2"></i>
@@ -712,9 +729,9 @@ const closeReceiptPreview = () => {
                     )}
                   </div>
                 </div>
-                <div className="card-body p-4">
+                <div className={`card-body p-4${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
                   {loading ? (
-                    <div className="text-center py-5">
+                    <div className={`text-center py-5${dataTheme === 'dark_data_theme' ? ' bg-dark text-light rounded-4 shadow border border-secondary' : ''}`}>
                       <div className="spinner-border text-primary mb-3" role="status">
                         <span className="visually-hidden">Loading...</span>
                       </div>
@@ -827,11 +844,11 @@ const closeReceiptPreview = () => {
 
                       {/* Payment Summary Card */}
                       {formData.studentId && formData.category && formData.amount > 0 && (
-                        <div className="card bg-light border-primary mb-4">
+                        <div className={`card border-primary mb-4${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-light'}`}>
                           <div className="card-body">
                             <div className="row align-items-center">
                               <div className="col-md-8">
-                                <h6 className="mb-2 text-primary">
+                                <h6 className={`mb-2${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}> 
                                   <i className="ti ti-receipt me-2"></i>
                                   Payment Summary
                                 </h6>
@@ -839,9 +856,7 @@ const closeReceiptPreview = () => {
                                   <div>
                                     <small className="text-muted">Category:</small>
                                     <div>
-                                      <span className={`badge ${getCategoryBadgeColor(formData.category)}`}>
-                                        {getCategoryDisplayName(formData.category)}
-                                      </span>
+                                      <span className={`badge ${getCategoryBadgeColor(formData.category)}`}>{getCategoryDisplayName(formData.category)}</span>
                                     </div>
                                   </div>
                                   <div>
@@ -850,12 +865,19 @@ const closeReceiptPreview = () => {
                                   </div>
                                   <div>
                                     <small className="text-muted">Remaining:</small>
-                                    <div className="fw-bold text-danger">₹{(studentFee - paidFee - formData.amount).toLocaleString()}</div>
+                                    {(() => {
+                                      const remaining = studentFee - paidFee - formData.amount;
+                                      if (remaining < 0) {
+                                        return <div className="fw-bold text-success">+₹{Math.abs(remaining).toLocaleString()}</div>;
+                                      } else {
+                                        return <div className="fw-bold text-danger">₹{remaining.toLocaleString()}</div>;
+                                      }
+                                    })()}
                                   </div>
                                 </div>
                               </div>
                               <div className="col-md-4 text-end">
-                                <div className="h4 mb-0 text-primary">₹{formData.amount.toLocaleString()}</div>
+                                <div className={`h4 mb-0${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}>₹{formData.amount.toLocaleString()}</div>
                                 <small className="text-muted">Total Payment</small>
                               </div>
                             </div>
@@ -906,10 +928,10 @@ const closeReceiptPreview = () => {
 
                       {/* Fee Details Table */}
                       {formData.studentId && (
-                        <div className="mt-5">
+                        <div className={`mt-5${dataTheme === 'dark_data_theme' ? ' bg-dark text-light rounded-4 shadow border border-secondary p-3' : ''}`}>
                           <div className="d-flex align-items-center mb-3">
-                            <i className="ti ti-receipt me-2 text-primary"></i>
-                            <h6 className="mb-0 text-primary">Fee Payment Details</h6>
+                            <i className={`ti ti-receipt me-2${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}></i>
+                            <h6 className={`mb-0${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}>Fee Payment Details</h6>
                           </div>
                           <div className="table-responsive">
                             <Table
@@ -921,26 +943,42 @@ const closeReceiptPreview = () => {
                                 expandedRowRender,
                                 expandIcon: ({ expanded, onExpand, record }) => (
                                   <button 
-                                    className="btn btn-link btn-sm p-0 text-primary"
+                                    className={`btn btn-link btn-sm p-0${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}
                                     onClick={e => {
                                       e.preventDefault();
                                       e.stopPropagation();
                                       onExpand(record, e);
                                     }}
                                   >
-                                    <i className={`ti ti-chevron-${expanded ? 'down' : 'right'}`}></i>
+                                    <i className={`ti ti-chevron-${expanded ? 'down' : 'right'}${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>
                                   </button>
                                 ),
                               }}
                               scroll={{ x: true }}
-                              className="table-hover"
+                              className={`table-hover${dataTheme === 'dark_data_theme' ? ' table-dark text-light border-secondary' : ''}`}
+                              style={dataTheme === 'dark_data_theme' ? { background: '#23233a', color: '#fff' } : {}}
+                              locale={{
+                                emptyText: dataTheme === 'dark_data_theme'
+                                  ? (
+                                    <div className="d-flex flex-column align-items-center justify-content-center py-5 bg-dark text-light rounded-4 shadow border border-secondary">
+                                      <i className="ti ti-inbox mb-3" style={{ fontSize: 48, color: '#888' }}></i>
+                                      <div className="fw-semibold">No data</div>
+                                    </div>
+                                  )
+                                  : (
+                                    <div className="d-flex flex-column align-items-center justify-content-center py-5">
+                                      <i className="ti ti-inbox mb-3" style={{ fontSize: 48, color: '#bbb' }}></i>
+                                      <div className="fw-semibold text-muted">No data</div>
+                                    </div>
+                                  )
+                              }}
                             />
                           </div>
                         </div>
                       )}
                       
                       {fetchError && (
-                        <div className="alert alert-danger text-center my-3">
+                        <div className={`alert alert-danger${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`}>
                           <i className="ti ti-alert-circle me-2"></i>
                           {fetchError}
                         </div>
@@ -1017,11 +1055,11 @@ const closeReceiptPreview = () => {
 
                           {/* Payment Summary Card for Students */}
                           {formData.category && formData.amount > 0 && (
-                            <div className="card bg-light border-primary mb-4">
+                            <div className={`card border-primary mb-4${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-light'}`}>
                               <div className="card-body">
                                 <div className="row align-items-center">
                                   <div className="col-md-8">
-                                    <h6 className="mb-2 text-primary">
+                                    <h6 className={`mb-2${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}> 
                                       <i className="ti ti-receipt me-2"></i>
                                       Payment Summary
                                     </h6>
@@ -1029,9 +1067,7 @@ const closeReceiptPreview = () => {
                                       <div>
                                         <small className="text-muted">Category:</small>
                                         <div>
-                                          <span className={`badge ${getCategoryBadgeColor(formData.category)}`}>
-                                            {getCategoryDisplayName(formData.category)}
-                                          </span>
+                                          <span className={`badge ${getCategoryBadgeColor(formData.category)}`}>{getCategoryDisplayName(formData.category)}</span>
                                         </div>
                                       </div>
                                       <div>
@@ -1040,12 +1076,19 @@ const closeReceiptPreview = () => {
                                       </div>
                                       <div>
                                         <small className="text-muted">Remaining:</small>
-                                        <div className="fw-bold text-danger">₹{(studentFee - paidFee - formData.amount).toLocaleString()}</div>
+                                        {(() => {
+                                          const remaining = studentFee - paidFee - formData.amount;
+                                          if (remaining < 0) {
+                                            return <div className="fw-bold text-success">+₹{Math.abs(remaining).toLocaleString()}</div>;
+                                          } else {
+                                            return <div className="fw-bold text-danger">₹{remaining.toLocaleString()}</div>;
+                                          }
+                                        })()}
                                       </div>
                                     </div>
                                   </div>
                                   <div className="col-md-4 text-end">
-                                    <div className="h4 mb-0 text-primary">₹{formData.amount.toLocaleString()}</div>
+                                    <div className={`h4 mb-0${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}>₹{formData.amount.toLocaleString()}</div>
                                     <small className="text-muted">Total Payment</small>
                                   </div>
                                 </div>
@@ -1094,10 +1137,10 @@ const closeReceiptPreview = () => {
                       )}
                       
                       {/* Fee Details Table for Students */}
-                      <div className="mt-5">
+                      <div className={`mt-5${dataTheme === 'dark_data_theme' ? ' bg-dark text-light rounded-4 shadow border border-secondary p-3' : ''}`}>
                         <div className="d-flex align-items-center mb-3">
-                          <i className="ti ti-receipt me-2 text-primary"></i>
-                          <h6 className="mb-0 text-primary">Your Fee Details</h6>
+                          <i className={`ti ti-receipt me-2${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}></i>
+                          <h6 className={`mb-0${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}>Your Fee Details</h6>
                         </div>
                         <Table
                           columns={columns}
@@ -1108,19 +1151,35 @@ const closeReceiptPreview = () => {
                             expandedRowRender,
                             expandIcon: ({ expanded, onExpand, record }) => (
                               <button 
-                                className="btn btn-link btn-sm p-0 text-primary"
+                                className={`btn btn-link btn-sm p-0${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-primary'}`}
                                 onClick={e => {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   onExpand(record, e);
                                 }}
                               >
-                                <i className={`ti ti-chevron-${expanded ? 'down' : 'right'}`}></i>
+                                <i className={`ti ti-chevron-${expanded ? 'down' : 'right'}${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>
                               </button>
                             ),
                           }}
                           scroll={{ x: true }}
-                          className="table-hover"
+                          className={`table-hover${dataTheme === 'dark_data_theme' ? ' table-dark text-light border-secondary' : ''}`}
+                          style={dataTheme === 'dark_data_theme' ? { background: '#23233a', color: '#fff' } : {}}
+                          locale={{
+                            emptyText: dataTheme === 'dark_data_theme'
+                              ? (
+                                <div className="d-flex flex-column align-items-center justify-content-center py-5 bg-dark text-light rounded-4 shadow border border-secondary">
+                                  <i className="ti ti-inbox mb-3" style={{ fontSize: 48, color: '#888' }}></i>
+                                  <div className="fw-semibold">No data</div>
+                                </div>
+                              )
+                              : (
+                                <div className="d-flex flex-column align-items-center justify-content-center py-5">
+                                  <i className="ti ti-inbox mb-3" style={{ fontSize: 48, color: '#bbb' }}></i>
+                                  <div className="fw-semibold text-muted">No data</div>
+                                </div>
+                              )
+                          }}
                         />
                       </div>
                     </>

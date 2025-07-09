@@ -5,12 +5,13 @@ import {
   getMonthlyLeaderboard, 
   getClassInternalLeaderboard, 
   getRoadmapLeaderboard,
-  ILeaderboardEntry,
   IClassLeaderboardEntry,
   IRoadmapLeaderboardEntry,
   getStudentUserById
 } from '../../../../../services/student/StudentAllApi';
+import { useSelector } from 'react-redux';
 
+type LeaderboardEntry = IClassLeaderboardEntry | IRoadmapLeaderboardEntry;
 type LeaderboardType = 'monthly' | 'class' | 'roadmap';
 
 interface ErrorBoundaryState {
@@ -55,21 +56,27 @@ const SkeletonPlaceholder = ({ className = "", style = {} }: { className?: strin
   <span className={`placeholder bg-secondary ${className}`} style={style} />
 );
 
+// Helper to get student classId from localStorage or API
+// studentData is an object like:
+// {
+//   classId: string,
+//   student: { classId: string, ... },
+//   ...other fields
+// }
 const getStudentClassId = async (): Promise<string | null> => {
   // Try localStorage first
-  const studentData = localStorage.getItem('studentData');
-  if (studentData) {
+  const studentDataRaw = localStorage.getItem('studentData');
+  if (studentDataRaw) {
     try {
-      const parsed = JSON.parse(studentData);
-      if (parsed.classId) return parsed.classId;
-      if (parsed.student && parsed.student.classId) return parsed.student.classId;
+      const studentData = JSON.parse(studentDataRaw);
+      if (studentData.classId) return studentData.classId;
+      if (studentData.student && studentData.student.classId) return studentData.student.classId;
     } catch {}
   }
   // Fallback: fetch from API
   try {
     const res = await getStudentUserById();
     if (res.data && res.data.student && res.data.student.classId) {
-      // Optionally update localStorage for next time
       localStorage.setItem('studentData', JSON.stringify(res.data));
       return res.data.student.classId;
     }
@@ -78,15 +85,18 @@ const getStudentClassId = async (): Promise<string | null> => {
 };
 
 const Leaderboard = () => {
-  const [leaderboardData, setLeaderboardData] = useState<ILeaderboardEntry[] | IClassLeaderboardEntry[] | IRoadmapLeaderboardEntry[] | null>(null);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>('monthly');
   const [classId, setClassId] = useState<string>('');
+  const [search, setSearch] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
 
-  useEffect(() => {
     const fetchLeaderboard = async () => {
+    setIsLoading(true);
+    setError(null);
       try {
-        setIsLoading(true);
         let response;
         let effectiveClassId = classId;
         if ((leaderboardType === 'class' || leaderboardType === 'roadmap') && !effectiveClassId) {
@@ -94,7 +104,11 @@ const Leaderboard = () => {
           if (fetchedClassId) {
             effectiveClassId = fetchedClassId;
             setClassId(fetchedClassId);
-          }
+        } else {
+          setLeaderboardData([]);
+          setError('Your class information could not be found. Please try again or contact support.');
+          return;
+        }
         }
         switch (leaderboardType) {
           case 'monthly':
@@ -103,104 +117,86 @@ const Leaderboard = () => {
               setLeaderboardData(response.data.leaderboard);
               toast.success('🏆 Monthly leaderboard loaded successfully!', { autoClose: 3000 });
             } else {
-              throw new Error('Failed to load monthly leaderboard');
+            setLeaderboardData([]);
+            setError('Failed to load monthly leaderboard.');
             }
             break;
           case 'class':
-            if (!effectiveClassId) throw new Error('Class ID not available');
+          if (!effectiveClassId) {
+            setLeaderboardData([]);
+            setError('Class ID not available.');
+            return;
+          }
             response = await getClassInternalLeaderboard(effectiveClassId);
+          if (typeof response.data === 'string' && (response.data as string).includes('Cannot GET')) {
+            setLeaderboardData([]);
+            setError('Coming Soon');
+            toast.info('Class leaderboard is coming soon!', { autoClose: 3000 });
+            return;
+          }
             if (response.data.success) {
               setLeaderboardData(response.data.leaderboard);
               toast.success('📚 Class leaderboard loaded successfully!', { autoClose: 3000 });
             } else {
-              throw new Error('Failed to load class leaderboard');
+            setLeaderboardData([]);
+            setError('Failed to load class leaderboard.');
             }
             break;
           case 'roadmap':
-            if (!effectiveClassId) throw new Error('Class ID not available');
+          if (!effectiveClassId) {
+            setLeaderboardData([]);
+            setError('Class ID not available.');
+            return;
+          }
             response = await getRoadmapLeaderboard(effectiveClassId);
+          if (typeof response.data === 'string' && (response.data as string).includes('Cannot GET')) {
+            setLeaderboardData([]);
+            setError('Coming Soon');
+            toast.info('Roadmap leaderboard is coming soon!', { autoClose: 3000 });
+            return;
+          }
             setLeaderboardData(response.data.leaderboard);
             toast.success('🗺️ Roadmap leaderboard loaded successfully!', { autoClose: 3000 });
             break;
           default:
-            throw new Error('Invalid leaderboard type');
-        }
-      } catch (error: any) {
-        console.error('Error fetching leaderboard:', error);
-        toast.error(error.message || 'Failed to load leaderboard data', { autoClose: 3000 });
-        
-        // Fallback to mock data
-        const mockData = [
-          { id: "1", name: "Minal Setia", position: 1, totalPoints: 950, profilePic: "", rank: 1 },
-          { id: "2", name: "John Doe", position: 2, totalPoints: 870, profilePic: "", rank: 2 },
-          { id: "3", name: "Jane Smith", position: 3, totalPoints: 820, profilePic: "", rank: 3 },
-          { id: "4", name: "Alex Johnson", position: 4, totalPoints: 750, profilePic: "", rank: 4 },
-          { id: "5", name: "Sarah Brown", position: 5, totalPoints: 680, profilePic: "", rank: 5 },
-        ];
-        setLeaderboardData(mockData as any);
-        toast.warn('Using sample data due to API error', { autoClose: 3000 });
+          setLeaderboardData([]);
+          setError('Invalid leaderboard type.');
+      }
+    } catch (err: any) {
+      console.error('Error fetching leaderboard:', err);
+      setLeaderboardData([]);
+      setError(err.message || 'Failed to load leaderboard data. Please try again.');
+      toast.error(err.message || 'Failed to load leaderboard data', { autoClose: 3000 });
       } finally {
         setIsLoading(false);
       }
     };
 
+  useEffect(() => {
     fetchLeaderboard();
+    // eslint-disable-next-line
   }, [leaderboardType, classId]);
 
+  // UI helpers
   const getRankBadge = (rank: number) => {
     switch (rank) {
       case 1:
-        return (
-          <div className="d-flex align-items-center">
-            <div className="bg-warning rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '40px', height: '40px' }}>
-              <i className="bi bi-trophy-fill text-dark fs-3"></i>
-            </div>
-            <span className="badge bg-warning text-dark fs-4 fw-bold px-4 py-3">
-              <i className="bi bi-medal me-2 fs-4"></i>1st
-            </span>
-          </div>
-        );
+        return <span className="badge bg-warning text-dark fs-6 px-3 py-2">🥇 1st</span>;
       case 2:
-        return (
-          <div className="d-flex align-items-center">
-            <div className="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '40px', height: '40px' }}>
-              <i className="bi bi-trophy-fill text-white fs-3"></i>
-            </div>
-            <span className="badge bg-secondary fs-4 fw-bold px-4 py-3">
-              <i className="bi bi-medal me-2 fs-4"></i>2nd
-            </span>
-          </div>
-        );
+        return <span className="badge bg-secondary text-light fs-6 px-3 py-2">🥈 2nd</span>;
       case 3:
-        return (
-          <div className="d-flex align-items-center">
-            <div className="bg-danger rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '40px', height: '40px' }}>
-              <i className="bi bi-trophy-fill text-white fs-3"></i>
-            </div>
-            <span className="badge bg-danger fs-4 fw-bold px-4 py-3">
-              <i className="bi bi-medal me-2 fs-4"></i>3rd
-            </span>
-          </div>
-        );
+        return <span className="badge bg-bronze text-light fs-6 px-3 py-2" style={{background:'#cd7f32'}}>🥉 3rd</span>;
       default:
-        return (
-          <span className="badge bg-light text-dark fs-6 px-3 py-2">
-            <i className="bi bi-hash me-1"></i>{rank}th
-          </span>
-        );
+        return <span className="badge bg-light text-dark fs-6 px-3 py-2">{rank}th</span>;
     }
   };
 
   const getLeaderboardTitle = () => {
     switch (leaderboardType) {
-      case 'monthly':
-        return 'Monthly Leaderboard';
-      case 'class':
-        return 'Class Internal Leaderboard';
-      case 'roadmap':
-        return 'Roadmap Leaderboard';
-      default:
-        return 'Leaderboard';
+      case 'monthly': return 'Monthly Leaderboard';
+      case 'class': return 'Class Internal Leaderboard';
+      case 'roadmap': return 'Roadmap Leaderboard';
+      default: return 'Leaderboard';
     }
   };
 
@@ -230,123 +226,104 @@ const Leaderboard = () => {
     }
   };
 
-  const handleRefresh = () => {
-    setIsLoading(true);
-    setLeaderboardData(null);
-    // Trigger useEffect by changing a dependency
-    setClassId(prev => prev + '');
-  };
+  // Filter leaderboard by participant name
+  const filteredLeaderboard = leaderboardData.filter(entry => {
+    const name = (entry as any).name || '';
+    return name.toLowerCase().includes(search.toLowerCase());
+  });
 
-  const handleLeaderboardTypeChange = (type: LeaderboardType) => {
-    setLeaderboardType(type);
-    setLeaderboardData(null);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="card flex-fill p-4 bg-white rounded-lg shadow-sm border-0">
-        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }} role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <h5 className="text-primary mb-2">Loading Leaderboard</h5>
-          <p className="text-muted mb-0">Please wait while we fetch the latest rankings...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Responsive, competitive, visually appealing UI
   return (
     <ErrorBoundary>
-      <div className="card flex-fill p-4 bg-white rounded-lg shadow-sm border-0">
-        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
-        
+      <div className={`card flex-fill p-4 rounded-lg shadow-sm border-0${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-white'}`}>
+        <ToastContainer position="top-center" autoClose={3000} theme={dataTheme === 'dark_data_theme' ? 'dark' : 'colored'} />
         {/* Header */}
-        <div className="card-header bg-transparent border-0 mb-4">
-          <div className="d-flex align-items-center justify-content-between mb-3">
+        <div className={`card-header bg-transparent border-0 mb-4${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>
+          <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3 gap-3">
             <div>
-              <h4 className="fw-bold text-dark mb-1">
-                <i className="bi bi-trophy text-warning me-2"></i>
+              <h3 className={`fw-bold mb-1 d-flex align-items-center gap-2${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-dark'}`}> 
+                <i className="bi bi-trophy text-warning fs-2"></i>
                 {getLeaderboardTitle()}
-              </h4>
-              <p className="text-muted mb-0">{getLeaderboardDescription()}</p>
+              </h3>
+              <p className={`mb-0${dataTheme === 'dark_data_theme' ? ' text-secondary' : ' text-muted'}`}>Compete, climb, and celebrate your achievements!</p>
             </div>
+            <div className="d-flex gap-2 align-items-center">
+              <input
+                type="text"
+                className={`form-control form-control-lg shadow-sm${dataTheme === 'dark_data_theme' ? ' bg-secondary text-light border-0' : ''}`}
+                placeholder="Search participant..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ maxWidth: 220 }}
+              />
             <button 
-              className="btn btn-outline-primary btn-sm"
-              onClick={handleRefresh}
-              disabled={isLoading}
-            >
-              <i className="bi bi-arrow-clockwise me-1"></i>
-              Refresh
-            </button>
-          </div>
-
-          {/* Leaderboard Type Tabs */}
-          <div className="nav nav-pills nav-fill" role="tablist">
-            <button 
-              className={`nav-link ${leaderboardType === 'monthly' ? 'active' : ''}`}
-              onClick={() => handleLeaderboardTypeChange('monthly')}
-            >
-              <i className="bi bi-calendar-month me-1"></i>
-              Monthly
+                className={`btn btn-outline-primary btn-lg${dataTheme === 'dark_data_theme' ? ' border-secondary' : ''}`}
+                onClick={() => setLeaderboardType('monthly')}
+                disabled={leaderboardType === 'monthly'}
+              >
+                <i className="bi bi-calendar-month me-1"></i> Monthly
             </button>
             <button 
-              className={`nav-link ${leaderboardType === 'class' ? 'active' : ''}`}
-              onClick={() => handleLeaderboardTypeChange('class')}
+                className={`btn btn-outline-primary btn-lg${dataTheme === 'dark_data_theme' ? ' border-secondary' : ''}`}
+                onClick={() => setLeaderboardType('class')}
+                disabled={leaderboardType === 'class'}
             >
-              <i className="bi bi-people me-1"></i>
-              Class
+                <i className="bi bi-people me-1"></i> Class
             </button>
             <button 
-              className={`nav-link ${leaderboardType === 'roadmap' ? 'active' : ''}`}
-              onClick={() => handleLeaderboardTypeChange('roadmap')}
+                className={`btn btn-outline-primary btn-lg${dataTheme === 'dark_data_theme' ? ' border-secondary' : ''}`}
+                onClick={() => setLeaderboardType('roadmap')}
+                disabled={leaderboardType === 'roadmap'}
             >
-              <i className="bi bi-map me-1"></i>
-              Roadmap
+                <i className="bi bi-map me-1"></i> Roadmap
             </button>
+            </div>
           </div>
             </div>
-
         {/* Leaderboard Content */}
         <div className="card-body p-0">
-          {leaderboardData && leaderboardData.length > 0 ? (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="table-primary">
+          {isLoading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }} role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <h5 className="text-primary mb-2">Loading Leaderboard</h5>
+              <p className="text-muted mb-0">Please wait while we fetch the latest rankings...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-5">
+              <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '80px', height: '80px' }}>
+                <i className="bi bi-exclamation-triangle text-danger" style={{ fontSize: '2rem' }}></i>
+              </div>
+              <h5 className="text-danger mb-2">{error}</h5>
+              <button className="btn btn-outline-primary" onClick={fetchLeaderboard}>
+                <i className="bi bi-arrow-clockwise me-2"></i>
+                Retry
+              </button>
+            </div>
+          ) : filteredLeaderboard.length > 0 ? (
+            <div className="table-responsive" style={{ maxHeight: 500 }}>
+              <table className="table table-hover table-striped align-middle mb-0">
+                <thead className="table-primary sticky-top">
                   <tr>
-                    <th scope="col" className="border-0 text-white">
-                      <i className="bi bi-hash me-1"></i>
-                      Rank
-                    </th>
-                    <th scope="col" className="border-0 text-white">
-                      <i className="bi bi-person me-1"></i>
-                      Student
-                    </th>
-                    <th scope="col" className="border-0 text-white">
-                      <i className="bi bi-star me-1"></i>
-                      {getPointsLabel()}
-                    </th>
-                    <th scope="col" className="border-0 text-white">
-                      <i className="bi bi-graph-up me-1"></i>
-                      Progress
-                    </th>
+                    <th scope="col" className="border-0 text-white">Rank</th>
+                    <th scope="col" className="border-0 text-white">Student</th>
+                    <th scope="col" className="border-0 text-white">Points</th>
+                    <th scope="col" className="border-0 text-white">Progress</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {leaderboardData.map((entry: any, index: number) => {
-                    const isTopThree = entry.rank <= 3;
-                    const maxPoints = Math.max(...leaderboardData.map((e: any) => e.totalPoints || e.score || 0));
+                  {filteredLeaderboard.map((entry: any, index: number) => {
+                    const rank = entry.rank;
+                    const isTopThree = rank <= 3;
+                    const maxPoints = Math.max(...filteredLeaderboard.map((e: any) => e.totalPoints || e.score || 0));
                     const progressPercentage = maxPoints > 0 ? ((entry.totalPoints || entry.score || 0) / maxPoints) * 100 : 0;
-                    
                     return (
                       <tr key={entry.userId || entry.studentId || entry.id} className={isTopThree ? "table-light" : ""}>
+                        <td>{getRankBadge(rank)}</td>
                         <td>
-                          {getRankBadge(entry.rank)}
-                        </td>
-                        <td>
-                          <div className="d-flex align-items-center">
-                            <div className="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px' }}>
+                          <div className="d-flex align-items-center gap-2">
+                            <div className="bg-light rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '40px', height: '40px' }}>
                               {entry.profilePic ? (
                                 <img 
                                   src={entry.profilePic} 
@@ -367,55 +344,12 @@ const Leaderboard = () => {
                           </div>
                         </td>
                       <td>
-                        <div className="d-flex align-items-center">
-                            <span className="fw-bold text-primary me-2">
-                              {entry.totalPoints || entry.score || 0}
-                            </span>
-                            {leaderboardType === 'monthly' && (
-                              <div className="d-flex gap-1">
-                                <span className="badge bg-info bg-opacity-10 text-info small">
-                                  Q: {entry.quizScore || 0}
-                                </span>
-                                <span className="badge bg-success bg-opacity-10 text-success small">
-                                  N: {entry.newspaperScore || 0}
-                                </span>
-                                <span className="badge bg-warning bg-opacity-10 text-warning small">
-                                  D: {entry.doubtsSolved || 0}
-                                </span>
-                              </div>
-                            )}
-                            {leaderboardType === 'class' && (
-                              <div className="d-flex gap-1">
-                                <span className="badge bg-info bg-opacity-10 text-info small">
-                                  HW: {entry.homeworkCount || 0}
-                                </span>
-                                <span className="badge bg-success bg-opacity-10 text-success small">
-                                  A: {entry.assignmentScore || 0}
-                                </span>
-                                <span className="badge bg-warning bg-opacity-10 text-warning small">
-                                  E: {entry.examScore || 0}
-                                </span>
-                              </div>
-                            )}
-                            {leaderboardType === 'roadmap' && (
-                              <div className="d-flex gap-1">
-                                <span className="badge bg-info bg-opacity-10 text-info small">
-                                  S: {entry.streak || 0}
-                                </span>
-                                <span className="badge bg-success bg-opacity-10 text-success small">
-                                  C: {entry.coins || 0}
-                                </span>
-                                <span className="badge bg-warning bg-opacity-10 text-warning small">
-                                  CR: {entry.completionRate || 0}%
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          <span className="fw-bold text-primary me-2">{entry.totalPoints || entry.score || 0}</span>
                         </td>
                         <td>
                           <div className="progress" style={{ height: "8px" }}>
                             <div
-                              className={`progress-bar ${entry.rank === 1 ? 'bg-warning' : entry.rank === 2 ? 'bg-secondary' : entry.rank === 3 ? 'bg-danger' : 'bg-primary'}`}
+                              className={`progress-bar ${rank === 1 ? 'bg-warning' : rank === 2 ? 'bg-secondary' : rank === 3 ? 'bg-danger' : 'bg-primary'}`}
                               role="progressbar"
                               style={{ width: `${progressPercentage}%` }}
                               aria-valuenow={entry.totalPoints || entry.score || 0}
@@ -438,34 +372,33 @@ const Leaderboard = () => {
               </div>
               <h5 className="text-dark mb-2">No Leaderboard Data Available</h5>
               <p className="text-muted mb-3">There are no rankings available for this period.</p>
-              <button className="btn btn-outline-primary" onClick={handleRefresh}>
+              <button className="btn btn-outline-primary" onClick={fetchLeaderboard}>
                 <i className="bi bi-arrow-clockwise me-2"></i>
                 Try Again
               </button>
             </div>
           )}
         </div>
-
         {/* Footer */}
-        {leaderboardData && leaderboardData.length > 0 && (
-          <div className="card-footer bg-transparent border-0 pt-3">
+        {filteredLeaderboard.length > 0 && (
+          <div className={`card-footer bg-transparent border-0 pt-3${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}>
             <div className="row text-center">
               <div className="col-md-4">
-                <small className="text-muted">
+                <small className={dataTheme === 'dark_data_theme' ? 'text-secondary' : 'text-muted'}>
                   <i className="bi bi-info-circle me-1"></i>
                   Rankings updated daily
                 </small>
               </div>
               <div className="col-md-4">
-                <small className="text-muted">
+                <small className={dataTheme === 'dark_data_theme' ? 'text-secondary' : 'text-muted'}>
                   <i className="bi bi-calendar me-1"></i>
                   Current month
                 </small>
               </div>
               <div className="col-md-4">
-                <small className="text-muted">
+                <small className={dataTheme === 'dark_data_theme' ? 'text-secondary' : 'text-muted'}>
                   <i className="bi bi-people me-1"></i>
-                  {leaderboardData.length} participants
+                  {filteredLeaderboard.length} participants
                 </small>
               </div>
             </div>

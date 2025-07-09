@@ -1,4 +1,8 @@
 // Lesson-related interfaces
+
+import { IquizResult } from "../types/teacher/quizeResultService";
+
+
 export interface ILessonResponse {
   success: boolean;
   lessons: ILesson[];
@@ -148,8 +152,6 @@ export interface IPyq {
   createdAt: string;
 }
 
-import { AxiosResponse } from "axios";
-import BaseApi from "../BaseApi";
 
 export const getLessonsByStudentId = async (
   studentId: string
@@ -402,17 +404,17 @@ export interface IStudent {
   motherEmail: string;
   motherPhone: string;
   motherOccupation: string;
-  gardianName: string;
-  gardianRealtion: string;
-  gardianEmail: string;
-  gardianPhone: string;
-  gardianOccupation: string;
-  gardianAddress: string;
+  guardianName: string;
+  guardianRelation: string;
+  guardianEmail: string;
+  guardianPhone: string;
+  guardianOccupation: string;
+  guardianAddress: string;
   areSiblingStudying: string;
   siblingName: string;
   siblingClass: string;
   siblingRollNo: string;
-  sibllingAdmissionNo: string;
+  siblingAdmissionNo: string;
   currentAddress: string;
   permanentAddress: string;
   vehicleNumber: string | null;
@@ -422,7 +424,7 @@ export interface IStudent {
   roomNumber: string;
   medicalCertificate: string;
   transferCertificate: string;
-  medicaConditon: string;
+  medicalCondition: string;
   allergies: string;
   medicationName: string;
   schoolName: string;
@@ -678,5 +680,60 @@ export const getStudentLeaveRequests = async (): Promise<AxiosResponse<ILeaveReq
 };
 
 export const getStudentUserDetails = async (userId: string) => {
+ // console.log("Fetching student user details for userId:", userId);
   return await BaseApi.getRequest(`/student/user/${userId}`);
+};
+
+/**
+ * Fetch all exams for a student by studentId
+ * @param studentId - The student's unique ID
+ * @returns AxiosResponse<{ success: boolean; exams: IExam[] }>
+ */
+export const getAllExamsForStudent = async (
+  studentId: string
+): Promise<AxiosResponse<{ success: boolean; exams: IExam[] }>> => {
+  return await BaseApi.getRequest(`/student/${studentId}/exams-results`);
+};
+
+// Quiz Result Endpoints for Students
+import BaseApi from "../BaseApi";
+import { AxiosResponse } from "axios";
+
+export const createQuizResult = async (
+  data: IquizResult
+): Promise<AxiosResponse<IquizResult>> => {
+  return await BaseApi.postRequest(`/quiz-results`, {
+    userId: data.userId,
+    quizId: data.quizId,
+    score: data.score,
+  });
+};
+
+export const getQuizResultById = async (
+  resultId: string
+): Promise<AxiosResponse<IquizResult>> => {
+  return await BaseApi.getRequest(`/quiz-results/${resultId}`);
+};
+
+export const getQuizResultsByUserId = async (
+  userId: string
+): Promise<AxiosResponse<IquizResult[]>> => {
+  return await BaseApi.getRequest(`/users/${userId}/quiz-results`);
+};
+
+export const updateQuizResult = async (
+  resultId: string,
+  data: Partial<IquizResult>
+): Promise<AxiosResponse<IquizResult>> => {
+  return await BaseApi.putRequest(`/quiz-results/${resultId}`, {
+    ...(data.userId && { userId: data.userId }),
+    ...(data.quizId && { quizId: data.quizId }),
+    ...(typeof data.score === "number" && { score: data.score }),
+  });
+};
+
+export const deleteQuizResult = async (
+  resultId: string
+): Promise<AxiosResponse<IquizResult>> => {
+  return await BaseApi.deleteRequest(`/quiz-results/${resultId}`);
 };

@@ -1,142 +1,8 @@
-
-// import React, { useState, useEffect } from 'react';
-// import { toast, ToastContainer } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css';
-// import { getDashboardResourcesByStudentId, IHoliday, INotice } from '../../../../../services/student/StudentAllApi';
-
-// type Notice = {
-//   key: string;
-//   title: string;
-//   date: string;
-//   description: string;
-//   attachment: string;
-//   noticeDate: string;
-//   publishDate: string;
-// };
-
-// type Holiday = {
-//   key: string;
-//   title: string;
-//   startDate: string;
-//   endDate: string;
-// };
-
-// type NoticeBoardData = {
-//   notices: Notice[];
-//   holidays: Holiday[];
-// };
-
-// const NoticeBoardstudent = () => {
-//   const [data, setData] = useState<NoticeBoardData | null>(null);
-
-//   useEffect(() => {
-//     toast.promise(
-//       getDashboardResourcesByStudentId()
-//         .then((response) => {
-//           if (response.data.success) {
-//             const notices = response.data.notices.map((notice: INotice) => ({
-//               key: notice.id,
-//               title: notice.title,
-//               date: new Date(notice.noticeDate).toLocaleDateString('en-US', {
-//                 year: 'numeric',
-//                 month: 'short',
-//                 day: 'numeric',
-//               }),
-//               description: notice.message,
-//               attachment: notice.attachment,
-//               noticeDate: new Date(notice.noticeDate).toLocaleDateString('en-US', {
-//                 year: 'numeric',
-//                 month: 'short',
-//                 day: 'numeric',
-//               }),
-//               publishDate: new Date(notice.publishDate).toLocaleDateString('en-US', {
-//                 year: 'numeric',
-//                 month: 'short',
-//                 day: 'numeric',
-//               }),
-//             }));
-//             const holidays = response.data.holidays.map((holiday: IHoliday) => ({
-//               key: holiday.id,
-//               title: holiday.name,
-//               startDate: new Date(holiday.date).toLocaleDateString('en-US', {
-//                 year: 'numeric',
-//                 month: 'short',
-//                 day: 'numeric',
-//               }),
-//               endDate: holiday.toDay
-//                 ? new Date(holiday.toDay).toLocaleDateString('en-US', {
-//                     year: 'numeric',
-//                     month: 'short',
-//                     day: 'numeric',
-//                   })
-//                 : new Date(holiday.date).toLocaleDateString('en-US', {
-//                     year: 'numeric',
-//                     month: 'short',
-//                     day: 'numeric',
-//                   }),
-//             }));
-//             return { notices, holidays };
-//           }
-//           throw new Error('API response unsuccessful');
-//         }),
-//       {
-//        // pending: 'Fetching notices and holidays...',
-//         success: 'Notices and holidays loaded!',
-//         error: 'Failed to load notices and holidays.',
-//       }
-//     )
-//       .then((transformedData) => setData(transformedData))
-//       .catch((error) => console.error(error));
-//   }, []);
-
-//   if (!data) return <div className="text-center dark:text-white">Loading...</div>;
-
-//   return (
-//     <div className="card flex-fill">
-//       <ToastContainer position="top-right" autoClose={3000} />
-//       <div className="card-header">
-//         <h5 className="dark:text-white">Notice Board & Holidays</h5>
-//       </div>
-//       <div className="card-body">
-//         <h6 className="font-bold mb-2 dark:text-white">Notices</h6>
-//         {data.notices.map((notice) => (
-//           <div key={notice.key} className="mb-4 p-2 border rounded dark:border-gray-600">
-//             <h6 className="font-bold dark:text-white">{notice.title}</h6>
-//             <p className="text-sm text-gray-500 dark:text-gray-400">Notice Date: {notice.noticeDate}</p>
-//             <p className="text-sm text-gray-500 dark:text-gray-400">Publish Date: {notice.publishDate}</p>
-//             <p className="dark:text-white">{notice.description}</p>
-//             {notice.attachment && (
-//               <a
-//                 href={notice.attachment}
-//                 target="_blank"
-//                 rel="noopener noreferrer"
-//                 className="text-sm text-blue-500 hover:underline dark:text-blue-400"
-//               >
-//                 View Attachment
-//               </a>
-//             )}
-//           </div>
-//         ))}
-//         <h6 className="font-bold mb-2 mt-4 dark:text-white">Holidays</h6>
-//         {data.holidays.map((holiday) => (
-//           <div key={holiday.key} className="mb-4 p-2 border rounded dark:border-gray-600">
-//             <h6 className="font-bold dark:text-white">{holiday.title}</h6>
-//             <p className="text-sm text-gray-500 dark:text-gray-400">
-//               {holiday.startDate} to {holiday.endDate}
-//             </p>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default NoticeBoardstudent;
-
 import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getDashboardResourcesByStudentId, IHoliday, INotice } from '../../../../../services/student/StudentAllApi';
+import { useSelector } from 'react-redux';
 
 type Notice = {
   key: string;
@@ -153,6 +19,7 @@ type Holiday = {
   title: string;
   startDate: string;
   endDate: string;
+  description: string;
 };
 
 type Event = {
@@ -202,6 +69,13 @@ const NoticeBoardstudent = () => {
   const [data, setData] = useState<NoticeBoardData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [refreshKey, setRefreshKey] = useState<number>(0);
+  const [search, setSearch] = useState('');
+  const [show, setShow] = useState({ notices: true, events: true, holidays: true });
+  const [openHolidayDesc, setOpenHolidayDesc] = useState<{ [key: string]: boolean }>({});
+
+  // Get theme from Redux
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
+  const isDark = dataTheme === 'dark_data_theme';
 
   const SkeletonPlaceholder = ({ className = "", style = {} }: { className?: string; style?: React.CSSProperties }) => (
     <span className={`placeholder bg-secondary ${className}`} style={style} />
@@ -228,8 +102,9 @@ const NoticeBoardstudent = () => {
 
   useEffect(() => {
     setIsLoading(true);
+    const studentId = localStorage.getItem('studentId') || '';
     toast.promise(
-      getDashboardResourcesByStudentId()
+      getDashboardResourcesByStudentId(studentId)
         .then((response) => {
           if (response.data.success) {
             const notices = response.data.notices
@@ -259,8 +134,9 @@ const NoticeBoardstudent = () => {
             const holidays = response.data.holidays.map((holiday: IHoliday) => ({
               key: holiday.id,
               title: holiday.name,
-              startDate: holiday.date,
-              endDate: holiday.toDay || holiday.date,
+              startDate: holiday.fromday || holiday.date,
+              endDate: holiday.toDay || '',
+              description: holiday.description || '',
             }));
             return { notices, holidays, events };
           }
@@ -275,143 +151,155 @@ const NoticeBoardstudent = () => {
         setData(transformedData);
         setIsLoading(false);
       })
-      .catch((error) => {
-        setIsLoading(false);
-      });
+      .catch(() => setIsLoading(false));
   }, [refreshKey]);
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
+  const handleToggle = (section: keyof typeof show) => setShow((prev) => ({ ...prev, [section]: !prev[section] }));
+  const handleHolidayClick = (key: string) => {
+    setOpenHolidayDesc((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Filtered data
+  const filterText = (text: string) => text.toLowerCase().includes(search.toLowerCase());
+  const filtered = data
+    ? {
+        notices: data.notices.filter(
+          (n) => filterText(n.title) || filterText(n.description)
+        ),
+        events: data.events.filter(
+          (e) => filterText(e.title) || filterText(e.description)
+        ),
+        holidays: data.holidays.filter(
+          (h) => filterText(h.title)
+        ),
+      }
+    : { notices: [], events: [], holidays: [] };
 
   return (
     <ErrorBoundary>
       <style>{animationStyles}</style>
-      <div className="container-fluid p-4 bg-light min-vh-100">
-        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h5 className="fw-bold text-dark mb-0">
-            <i className="bi bi-megaphone me-2"></i>
+      <div className={`container py-4${isDark ? ' bg-dark text-light' : ''}`} style={{ minHeight: '100vh' }}>
+        <ToastContainer position="top-center" autoClose={3000} theme={isDark ? 'dark' : 'colored'} />
+        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+          <h3 className="fw-bold mb-0 d-flex align-items-center gap-2">
+            <i className="bi bi-megaphone text-primary fs-2"></i>
             Notice Board
-          </h5>
-          <button className="btn btn-outline-primary btn-sm" onClick={handleRefresh} disabled={isLoading}>
+          </h3>
+          <div className="d-flex gap-2 align-items-center w-100 w-md-auto">
+            <input
+              type="text"
+              className={`form-control form-control-lg shadow-sm${isDark ? ' bg-secondary text-light border-0' : ''}`}
+              placeholder="Search notices, events, holidays..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ maxWidth: 320 }}
+            />
+            <button className="btn btn-outline-primary btn-lg" onClick={handleRefresh} disabled={isLoading}>
             <i className="bi bi-arrow-clockwise me-1"></i>Refresh
           </button>
+          </div>
         </div>
         {isLoading ? (
-          <div className="placeholder-glow">
-            <SkeletonPlaceholder className="col-6 mb-4" style={{ height: "2rem" }} />
-            {['Events', 'Notices', 'Holidays'].map((category, index) => (
-              <div key={index} className="mb-5">
-                <SkeletonPlaceholder className="col-4 mb-3" style={{ height: "1.5rem" }} />
-                {[...Array(3)].map((_, idx) => (
-                  <div key={idx} className="card mb-3 p-3 shadow-sm bg-white">
-                    <div className="d-flex align-items-center mb-2">
-                      <SkeletonPlaceholder className="rounded-circle me-3" style={{ width: "40px", height: "40px" }} />
-                      <SkeletonPlaceholder className="col-4" style={{ height: "1.2rem" }} />
-                    </div>
-                    <SkeletonPlaceholder className="col-6 mb-2" style={{ height: "1rem" }} />
-                    <SkeletonPlaceholder className="col-8" style={{ height: "1rem" }} />
-                  </div>
-                ))}
-              </div>
-            ))}
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary mb-3" role="status" />
+            <div>Loading...</div>
           </div>
         ) : data ? (
-          <div className="card flex-fill shadow-sm bg-white p-4">
-            <div className="mb-5">
-              <h6 className="fw-bold text-lg mb-3 text-dark">
-                <i className="bi bi-calendar-event me-2"></i>
-                Events <span className="badge bg-primary ms-2">{data.events.length}</span>
-              </h6>
-              {data.events.length > 0 ? (
-                data.events.map((event) => (
-                  <div key={event.key} className="card mb-3 p-3 shadow-sm bg-white" style={isNew(event.date) ? highlightStyle : {}}>
-                    <div className="d-flex align-items-center mb-2">
-                      <span className="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3">
-                        <i className="bi bi-calendar-event fs-5" />
-                      </span>
-                      <span className="badge bg-primary">Event</span>
+          <div className="row g-4">
+            {/* Notices */}
+            <div className="col-12 col-lg-4">
+              <div className={`card shadow-sm h-100${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
+                <div className="card-header bg-warning bg-opacity-25 d-flex align-items-center gap-2">
+                  <i className="bi bi-bell text-warning fs-4"></i>
+                  <span className="fw-bold">Notices</span>
+                  <span className="badge bg-warning ms-auto">{filtered.notices.length}</span>
+                  <button className="btn btn-sm btn-link ms-2" onClick={() => handleToggle('notices')}>
+                    <i className={`bi ${show.notices ? 'bi-caret-down-fill' : 'bi-caret-right-fill'}`}></i>
+                  </button>
                     </div>
-                    <h6 className="fw-bold text-dark mb-2">{event.title}</h6>
-                    <p className="text-muted mb-2">
-                      <i className="bi bi-clock me-1" /> {new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </p>
-                    <p className="text-dark mb-2">{event.description}</p>
-                    {event.attachment && (
-                      <a
-                        href={event.attachment}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary text-decoration-none"
-                      >
-                        <i className="bi bi-paperclip me-1"></i>
-                        View Attachment
+                {show.notices && (
+                  <ul className="list-group list-group-flush">
+                    {filtered.notices.length > 0 ? filtered.notices.map((notice) => (
+                      <li key={notice.key} className={`list-group-item${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
+                        <div className="fw-bold mb-1">{notice.title}</div>
+                        <div className="text-muted small mb-1">{new Date(notice.noticeDate).toLocaleDateString()}</div>
+                        <div className="mb-1">{notice.description}</div>
+                        {notice.attachment && (
+                          <a href={notice.attachment} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">
+                            <i className="bi bi-paperclip"></i> Attachment
                       </a>
+                        )}
+                      </li>
+                    )) : <li className={`list-group-item text-muted${isDark ? ' bg-dark border-secondary' : ''}`}>No notices found.</li>}
+                  </ul>
                     )}
                   </div>
-                ))
-              ) : (
-                <p className="text-center text-muted">No upcoming events.</p>
-              )}
             </div>
-            <div className="mb-5">
-              <h6 className="fw-bold text-lg mb-3 text-dark">
-                <i className="bi bi-bell me-2"></i>
-                Notices <span className="badge bg-warning ms-2">{data.notices.length}</span>
-              </h6>
-              {data.notices.length > 0 ? (
-                data.notices.map((notice) => (
-                  <div key={notice.key} className="card mb-3 p-3 shadow-sm bg-white" style={isNew(notice.publishDate) ? highlightStyle : {}}>
-                    <div className="d-flex align-items-center mb-2">
-                      <span className="bg-warning bg-opacity-10 text-warning rounded-circle p-2 me-3">
-                        <i className="bi bi-bell fs-5" />
-                      </span>
-                      <span className="badge bg-warning">Notice</span>
+            {/* Events */}
+            <div className="col-12 col-lg-4">
+              <div className={`card shadow-sm h-100${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
+                <div className="card-header bg-primary bg-opacity-25 d-flex align-items-center gap-2">
+                  <i className="bi bi-calendar-event text-primary fs-4"></i>
+                  <span className="fw-bold">Events</span>
+                  <span className="badge bg-primary ms-auto">{filtered.events.length}</span>
+                  <button className="btn btn-sm btn-link ms-2" onClick={() => handleToggle('events')}>
+                    <i className={`bi ${show.events ? 'bi-caret-down-fill' : 'bi-caret-right-fill'}`}></i>
+                  </button>
                     </div>
-                    <h6 className="fw-bold text-dark mb-2">{notice.title}</h6>
-                    <p className="text-muted mb-2">
-                      <i className="bi bi-clock me-1" /> Notice Date: {new Date(notice.noticeDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} | Publish Date: {new Date(notice.publishDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </p>
-                    <p className="text-dark mb-2">{notice.description}</p>
-                    {notice.attachment && (
-                      <a
-                        href={notice.attachment}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary text-decoration-none"
-                      >
-                        <i className="bi bi-paperclip me-1"></i>
-                        View Attachment
-                      </a>
+                {show.events && (
+                  <ul className="list-group list-group-flush">
+                    {filtered.events.length > 0 ? filtered.events.map((event) => (
+                      <li key={event.key} className={`list-group-item${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
+                        <div className="fw-bold mb-1">{event.title}</div>
+                        <div className="text-muted small mb-1">{new Date(event.date).toLocaleDateString()}</div>
+                        <div className="mb-1">{event.description}</div>
+                        {event.attachment && (
+                          <a href={event.attachment} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">
+                            <i className="bi bi-paperclip"></i> Attachment
+                          </a>
+                        )}
+                      </li>
+                    )) : <li className={`list-group-item text-muted${isDark ? ' bg-dark border-secondary' : ''}`}>No events found.</li>}
+                  </ul>
                     )}
                   </div>
-                ))
-              ) : (
-                <p className="text-center text-muted">No notices available.</p>
-              )}
             </div>
-            <div>
-              <h6 className="fw-bold text-lg mb-3 text-dark">
-                <i className="bi bi-calendar-check me-2"></i>
-                Holidays <span className="badge bg-success ms-2">{data.holidays.length}</span>
-              </h6>
-              {data.holidays.length > 0 ? (
-                data.holidays.map((holiday) => (
-                  <div key={holiday.key} className="card mb-3 p-3 shadow-sm bg-white" style={isNew(holiday.startDate) ? highlightStyle : {}}>
-                    <div className="d-flex align-items-center mb-2">
-                      <span className="bg-success bg-opacity-10 text-success rounded-circle p-2 me-3">
-                        <i className="bi bi-calendar-check fs-5" />
-                      </span>
-                      <span className="badge bg-success">Holiday</span>
+            {/* Holidays */}
+            <div className="col-12 col-lg-4">
+              <div className={`card shadow-sm h-100${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
+                <div className="card-header bg-success bg-opacity-25 d-flex align-items-center gap-2">
+                  <i className="bi bi-calendar-check text-success fs-4"></i>
+                  <span className="fw-bold">Holidays</span>
+                  <span className="badge bg-success ms-auto">{filtered.holidays.length}</span>
+                  <button className="btn btn-sm btn-link ms-2" onClick={() => handleToggle('holidays')}>
+                    <i className={`bi ${show.holidays ? 'bi-caret-down-fill' : 'bi-caret-right-fill'}`}></i>
+                  </button>
                     </div>
-                    <h6 className="fw-bold text-dark mb-2">{holiday.title}</h6>
-                    <p className="text-muted mb-2">
-                      <i className="bi bi-clock me-1" /> {new Date(holiday.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} to {new Date(holiday.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </p>
+                {show.holidays && (
+                  <ul className="list-group list-group-flush">
+                    {filtered.holidays.length > 0 ? filtered.holidays.map((holiday) => (
+                      <li key={holiday.key} className={`list-group-item${isDark ? ' bg-dark text-light border-secondary' : ''}`}>
+                        <div
+                          className="fw-bold mb-1 holiday-title clickable"
+                          style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                          onClick={() => handleHolidayClick(holiday.key)}
+                        >
+                          {holiday.title}
+                        </div>
+                        <div className="text-muted small mb-1">
+                          {holiday.endDate
+                            ? `${new Date(holiday.startDate).toLocaleDateString()} to ${new Date(holiday.endDate).toLocaleDateString()}`
+                            : new Date(holiday.startDate).toLocaleDateString()}
                   </div>
-                ))
-              ) : (
-                <p className="text-center text-muted">No holidays scheduled.</p>
+                        {openHolidayDesc[holiday.key] && holiday.description && (
+                          <div className="mb-1">{holiday.description}</div>
+                        )}
+                      </li>
+                    )) : <li className={`list-group-item text-muted${isDark ? ' bg-dark border-secondary' : ''}`}>No holidays found.</li>}
+                  </ul>
               )}
+              </div>
             </div>
           </div>
         ) : (

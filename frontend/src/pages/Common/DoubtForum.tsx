@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -43,7 +41,7 @@ const DoubtForum = () => {
 
   
   const formatRelativeTime = (dateString: string) => {
-    const currentTime = new Date("2025-05-31T05:47:00.000Z"); 
+    const currentTime = new Date(); 
     const targetTime = new Date(dateString);
     const diffMs = currentTime.getTime() - targetTime.getTime();
     const diffSeconds = Math.floor(diffMs / 1000);
@@ -70,10 +68,14 @@ const DoubtForum = () => {
     try {
       const teacherId = user?.teacherId || localStorage.getItem("teacherId") || "";
       const schoolId = localStorage.getItem("schoolId") || "";
-      const response = user.role === "admin"
-        ? await getClassByschoolId(schoolId)
-        : await getClassesByTeacherId(teacherId);
-      setClassList(response?.data?.classes || []);
+      if (user.role !== "student" && user.role !== "guardian") {
+        const response = user.role === "admin"
+          ? await getClassByschoolId(schoolId)
+          : await getClassesByTeacherId(teacherId);
+        setClassList(response?.data?.classes || []);
+      } else {
+        setClassList([]);
+      }
     } catch (error) {
       console.error("Error fetching classes:", error);
       toast.error("Failed to load classes.", { autoClose: 3000 });
@@ -87,6 +89,7 @@ const DoubtForum = () => {
       const response = user.role === "admin"
         ? await getDoubtsBySchoolId(schoolId)
         : await getDoubtsByUserId(userId);
+       // console.log("object", response.data);
       setDoubts(response.data || []);
     } catch (error) {
       console.error("Error fetching doubts:", error);
@@ -130,7 +133,7 @@ const DoubtForum = () => {
       fetchDoubts();
       setNewDoubt({ title: "", content: "", classId: "", subjectId: "" });
     } catch (error) {
-      console.error("Error creating doubt:", error);
+     // console.error("Error creating doubt:", error);
       toast.error("Failed to create doubt.", { autoClose: 3000 });
     } finally {
       setIsPosting(false); 
@@ -263,7 +266,7 @@ const DoubtForum = () => {
                     <div className="flex-grow-1">
                       <p className="text-dark mb-2">{answer.content}</p>
                       <p className="text-xs text-muted">
-                        By <span className="fw-medium text-primary">{answer.user?.name || "Unknown"}</span>
+                        By <span className="fw-medium text-primary">{answer.userId || "Unknown"}</span>
                         {answer.createdAt && ` on ${formatRelativeTime(answer.createdAt)}`}
                       </p>
                     </div>

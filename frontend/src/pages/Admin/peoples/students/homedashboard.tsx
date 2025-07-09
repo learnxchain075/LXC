@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AxiosResponse } from 'axios';
+import axios from 'axios';
 import {
   getStudentUserById,
   IStudentUser,
@@ -118,6 +119,13 @@ const HomeDashboard = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
+
+  // Add state for quiz modal and attempted quizzes
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState<IQuiz | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [attemptedQuizzes, setAttemptedQuizzes] = useState<Set<string>>(new Set());
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
 
   const currentDate = new Date();
   const currentTime = currentDate.getTime();
@@ -312,6 +320,19 @@ const HomeDashboard = () => {
 
     fetchDashboardData();
   }, []);
+
+  // On mount, mark already attempted quizzes
+  useEffect(() => {
+    if (data && data.quizzes) {
+      const attempted = new Set<string>();
+      data.quizzes.forEach((quiz) => {
+        if (quiz.score !== null && quiz.score !== undefined) {
+          attempted.add(quiz.id);
+        }
+      });
+      setAttemptedQuizzes(attempted);
+    }
+  }, [data]);
 
   const formatTime = (isoTime: string) => {
     if (!isoTime) return 'N/A';
@@ -744,9 +765,19 @@ const HomeDashboard = () => {
                               <h6 className="fw-bold text-dark mb-2">{quiz.question}</h6>
                               <div className="d-flex justify-content-between align-items-center">
                                 <small className="text-muted">
-                                  Score: {quiz.score || 'Not attempted'}
+                                  Score: {quiz.score !== null && quiz.score !== undefined ? quiz.score : 'Not attempted'}
                                 </small>
-                                <button className="btn btn-sm btn-primary">Take Quiz</button>
+                                <button
+                                  className="btn btn-sm btn-primary"
+                                  disabled={attemptedQuizzes.has(quiz.id)}
+                                  onClick={() => {
+                                    setSelectedQuiz(quiz);
+                                    setSelectedOption(null);
+                                    setShowQuizModal(true);
+                                  }}
+                                >
+                                  {attemptedQuizzes.has(quiz.id) ? 'Attempted' : 'Take Quiz'}
+                                </button>
                               </div>
                             </div>
                           ))}
@@ -865,6 +896,71 @@ const HomeDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Quiz Modal */}
+      {showQuizModal && selectedQuiz && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 2000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }} onClick={e => { if (e.target === e.currentTarget) setShowQuizModal(false); }}>
+          <div className="modal-dialog modal-md modal-dialog-centered" style={{ zIndex: 2100 }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Quiz</h5>
+                <button type="button" className="btn-close" onClick={() => setShowQuizModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <h6>{selectedQuiz.question}</h6>
+                <div className="mb-3">
+                  {selectedQuiz.options && selectedQuiz.options.map((option: string, idx: number) => (
+                    <div key={idx} className="form-check">
+                      <input
+                        type="radio"
+                        className="form-check-input"
+                        name="quiz_option"
+                        value={option}
+                        checked={selectedOption === option}
+                        onChange={() => setSelectedOption(option)}
+                        disabled={submittingQuiz}
+                      />
+                      <label className="form-check-label">{option}</label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowQuizModal(false)} disabled={submittingQuiz}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={!selectedOption || submittingQuiz}
+                  onClick={async () => {
+                    if (!selectedQuiz || !selectedOption) return;
+                    setSubmittingQuiz(true);
+                    try {
+                      // Calculate score (1 if correct, 0 if not)
+                      const score = selectedOption === selectedQuiz.answer ? 1 : 0;
+                      const userId = localStorage.getItem('userId');
+                      if (!userId) throw new Error('User ID not found');
+                      await axios.post('/quiz-results', {
+                        userId,
+                        quizId: selectedQuiz.id,
+                        score,
+                      });
+                      toast.success('Quiz submitted successfully!', { autoClose: 3000 });
+                      setAttemptedQuizzes(prev => new Set(prev).add(selectedQuiz.id));
+                      setShowQuizModal(false);
+                    } catch (err: any) {
+                      toast.error(err.response?.data?.error || err.message || 'Failed to submit quiz', { autoClose: 3000 });
+                    } finally {
+                      setSubmittingQuiz(false);
+                    }
+                  }}
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </ErrorBoundary>
   );
 };

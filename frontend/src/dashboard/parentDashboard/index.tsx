@@ -1956,6 +1956,22 @@ const darkModeStyles = `
   .dark-modal .modal-content {
     background: #2d2d2d !important;
   }
+
+  .modal-backdrop.show {
+    background-color: #111 !important;  /* or #000 for pure black */
+    opacity: 0.5 !important;           /* more transparent for dark mode */
+  }
+
+  body.dark-mode .modal-backdrop.show {
+    background-color: #000 !important;
+    opacity: 0.5 !important;
+  }
+
+  /* Make Ant Design modal mask (backdrop) transparent in dark mode */
+  .dark-antd-modal .ant-modal-root .ant-modal-mask {
+    background-color: #111 !important;
+    opacity: 0.5 !important;
+  }
 `;
 
 // Inject styles

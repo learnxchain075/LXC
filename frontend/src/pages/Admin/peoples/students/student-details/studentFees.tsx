@@ -11,6 +11,7 @@ import useMobileDetection from "../../../../../core/common/mobileDetection";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getFeesByStudentId, IFee } from "../../../../../services/student/StudentAllApi";
+import { useSelector } from 'react-redux';
 
 const StudentFees = () => {
   const routes = all_routes;
@@ -18,79 +19,15 @@ const StudentFees = () => {
   const [feesData, setFeesData] = useState<IFee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState('2024 / 2025');
-
-  // Mock fees data for fallback
-  const mockFeesData = [
-    {
-      id: '1',
-      studentId: '1',
-      schoolId: '1',
-      amount: 2000,
-      amountPaid: 2000,
-      dueDate: '2024-03-25',
-      category: 'Admission Fees',
-      finePerDay: 10,
-      status: 'Paid',
-      discount: 200,
-      scholarship: 0,
-      paymentDate: '2024-01-25',
-      createdAt: '2024-01-01',
-      updatedAt: '2024-01-25',
-      lastReminderSentAt: null,
-      Payment: [{
-        id: '1',
-        amount: 2000,
-        status: 'Completed',
-        method: 'Cash',
-        razorpayOrderId: 'order_123',
-        razorpayPaymentId: 'pay_123',
-        paymentDate: '2024-01-25',
-        createdAt: '2024-01-25'
-      }],
-      school: {
-        id: '1',
-        schoolName: 'Sample School'
-      }
-    },
-    {
-      id: '2',
-      studentId: '1',
-      schoolId: '1',
-      amount: 2500,
-      amountPaid: 2500,
-      dueDate: '2024-04-10',
-      category: 'Monthly Fees',
-      finePerDay: 10,
-      status: 'Paid',
-      discount: 250,
-      scholarship: 0,
-      paymentDate: '2024-04-03',
-      createdAt: '2024-01-01',
-      updatedAt: '2024-04-03',
-      lastReminderSentAt: null,
-      Payment: [{
-        id: '2',
-        amount: 2500,
-        status: 'Completed',
-        method: 'Cash',
-        razorpayOrderId: 'order_124',
-        razorpayPaymentId: 'pay_124',
-        paymentDate: '2024-04-03',
-        createdAt: '2024-04-03'
-      }],
-      school: {
-        id: '1',
-        schoolName: 'Sample School'
-      }
-    }
-  ];
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
 
   useEffect(() => {
     const fetchFeesData = async () => {
       try {
         setIsLoading(true);
-        const response = await getFeesByStudentId('current-student-id');
-        
+        const studentId = localStorage.getItem('studentId');
+        if (!studentId) throw new Error('Student ID not found');
+        const response = await getFeesByStudentId(studentId);
         if (response.data.success) {
           setFeesData(response.data.fees);
           toast.success('Fees data loaded successfully!', { autoClose: 3000 });
@@ -98,14 +35,13 @@ const StudentFees = () => {
           throw new Error('Failed to load fees data');
         }
       } catch (error: any) {
-        console.error('Error fetching fees data:', error);
-        setFeesData(mockFeesData);
-        toast.warning('Using sample data due to API error', { autoClose: 3000 });
+       // console.error('Error fetching fees data:', error);
+        setFeesData([]);
+        toast.error('No fees data found or API error', { autoClose: 3000 });
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchFeesData();
   }, []);
 
@@ -164,12 +100,12 @@ const StudentFees = () => {
 
   if (isLoading) {
     return (
-      <div className={isMobile ? "page-wrapper" : "p-3"}>
-        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
+      <div className={isMobile ? "page-wrapper" : `p-3${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
+        <ToastContainer position="top-center" autoClose={3000} theme={dataTheme === 'dark_data_theme' ? 'dark' : 'colored'} />
         <div className="content">
           <div className="row">
             <div className="col-12">
-              <div className="card">
+              <div className={`card${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`}>
                 <div className="card-body text-center py-5">
                   <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
@@ -186,28 +122,28 @@ const StudentFees = () => {
 
   return (
    <>
-      <div className={isMobile ? "page-wrapper" : "p-3"}>
-        <ToastContainer position="top-center" autoClose={3000} theme="colored" />
+      <div className={isMobile ? "page-wrapper" : `p-3${dataTheme === 'dark_data_theme' ? ' bg-dark text-light' : ''}`}>
+        <ToastContainer position="top-center" autoClose={3000} theme={dataTheme === 'dark_data_theme' ? 'dark' : 'colored'} />
         <div className="content">
           <div className="row">
             <div className="col-12 d-flex flex-column">
               <div className="row">
                 <div className="col-md-12">
-                  <div className="card border-0 shadow-sm">
-                    <div className="card-header bg-white border-0 d-flex align-items-center justify-content-between flex-wrap pb-0">
-                      <h4 className="mb-3 fw-bold text-dark">
-                        <i className="bi bi-credit-card me-2"></i>
+                  <div className={`card border-0 shadow-sm${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ''}`}>
+                    <div className={`card-header${dataTheme === 'dark_data_theme' ? ' bg-dark text-light border-secondary' : ' bg-white' } border-0 d-flex align-items-center justify-content-between flex-wrap pb-0`}>
+                      <h4 className={`mb-3 fw-bold${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-dark'}`}>
+                        <i className={`bi bi-credit-card me-2${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>
                         Fees Management
                       </h4>
                       <div className="d-flex align-items-center flex-wrap">
                         <div className="dropdown mb-3 me-2">
                           <button
-                            className="btn btn-outline-primary dropdown-toggle"
+                            className={`btn btn-outline-primary dropdown-toggle${dataTheme === 'dark_data_theme' ? ' border-secondary btn-outline-light text-light' : ''}`}
                             type="button"
                             data-bs-toggle="dropdown"
                             data-bs-auto-close="outside"
                           >
-                            <i className="bi bi-calendar me-2" />
+                            <i className={`bi bi-calendar me-2${dataTheme === 'dark_data_theme' ? ' text-light' : ''}`}></i>
                             Year: {selectedYear}
                           </button>
                           <ul className="dropdown-menu p-3">
@@ -242,8 +178,8 @@ const StudentFees = () => {
                     <div className="card-body p-0 py-3">
                       {feesData.length > 0 ? (
                         <div className="table-responsive">
-                          <table className="table table-hover">
-                            <thead className="table-light">
+                          <table className={`table table-hover${dataTheme === 'dark_data_theme' ? ' table-dark text-light border-secondary' : ''}`}>
+                            <thead className={dataTheme === 'dark_data_theme' ? 'table-dark text-light border-secondary' : 'table-light'}>
                             <tr>
                               <th>Fees Group</th>
                               <th>Fees Code</th>
@@ -293,26 +229,26 @@ const StudentFees = () => {
                               </td>
                             </tr>
                               ))}
-                              <tr className="table-dark">
-                                <td className="text-white fw-bold">Total</td>
-                                <td className="text-white"></td>
-                                <td className="text-white"></td>
-                                <td className="text-white fw-bold">${calculateTotal().toLocaleString()}</td>
-                                <td className="text-white"></td>
-                                <td className="text-white"></td>
-                                <td className="text-white"></td>
-                                <td className="text-white"></td>
-                                <td className="text-white fw-bold">${calculateTotalDiscount()}</td>
-                                <td className="text-white fw-bold">$0</td>
+                              <tr className={dataTheme === 'dark_data_theme' ? 'table-secondary' : 'table-dark'}>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark fw-bold' : 'text-white fw-bold'}>Total</td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark' : 'text-white'}></td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark' : 'text-white'}></td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark fw-bold' : 'text-white fw-bold'}>${calculateTotal().toLocaleString()}</td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark' : 'text-white'}></td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark' : 'text-white'}></td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark' : 'text-white'}></td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark' : 'text-white'}></td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark fw-bold' : 'text-white fw-bold'}>${calculateTotalDiscount()}</td>
+                                <td className={dataTheme === 'dark_data_theme' ? 'text-dark fw-bold' : 'text-white fw-bold'}>$0</td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
                       ) : (
-                        <div className="text-center py-5">
-                          <i className="bi bi-credit-card display-4 text-muted mb-3"></i>
-                          <h5>No fees records found</h5>
-                          <p className="text-muted">No fees have been assigned to this student yet.</p>
+                        <div className={`text-center py-5${dataTheme === 'dark_data_theme' ? ' bg-dark text-light rounded-4 shadow border border-secondary' : ''}`}>
+                          <i className={`bi bi-credit-card display-4 mb-3${dataTheme === 'dark_data_theme' ? ' text-light' : ' text-muted'}`}></i>
+                          <h5 className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>No fees records found</h5>
+                          <p className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>No fees have been assigned to this student yet.</p>
                         </div>
                       )}
                     </div>

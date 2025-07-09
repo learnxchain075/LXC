@@ -12,6 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Table as AntdTable, Button as AntdButton, Modal as AntdModal, Tooltip } from 'antd';
 import { useSelector } from 'react-redux';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
+import { CloudLightning } from 'react-feather';
 
 
 const Loader = () => <div className="text-center py-4"><LoadingSkeleton lines={4} height={20} /></div>;
@@ -144,7 +145,13 @@ export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}>
+    <Modal
+      show={show}
+      onHide={onHide}
+      centered
+      backdrop={false}
+      className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}
+    >
       <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
         <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
           <i className="ti ti-user me-2"></i>
@@ -272,63 +279,171 @@ export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean
   );
 }
 
+// Add this helper near the top (with other helpers):
+const formatDisplayDate = (date: string) => {
+  if (!date) return '-';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return date;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 // Attendance & Leave Modal
 export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [applySuccess, setApplySuccess] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    reason: '',
+    fromDate: '',
+    toDate: '',
+  });
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
-  
-  useEffect(() => {
-    if (!show) return;
+  const userObj = useSelector((state: any) => state.auth.userObj);
+
+  const userId = userObj?.id || data?.student?.userId || localStorage.getItem('userId') || '';
+
+  const fetchAttendanceLeaves = () => {
     setLoading(true);
+    setError(null);
     getAttendanceLeavesByStudentId(studentId)
       .then(res => { setData(res.data); })
       .catch(() => setError('Failed to load attendance/leave'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!show) return;
+   // console.log('Selected child/studentId:', studentId);
+    fetchAttendanceLeaves();
   }, [show, studentId]);
+
+  const handleApplyLeave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setApplyLoading(true);
+    setApplyError(null);
+    setApplySuccess(null);
+    if (!form.reason.trim() || !form.fromDate || !form.toDate) {
+      setApplyError('All fields are required.');
+      setApplyLoading(false);
+      return;
+    }
+    if (!userId) {
+      setApplyError('User session not found. Please log in again.');
+      setApplyLoading(false);
+      return;
+    }
+    try {
+   // console.log(studentId);
+      await applyStudentLeave({
+        userId: studentId,
+        reason: form.reason.trim(),
+        fromDate: form.fromDate,
+        toDate: form.toDate,
+      });
+      setApplySuccess('Leave request submitted successfully!');
+      setForm({ reason: '', fromDate: '', toDate: '' });
+      setTimeout(() => {
+        setShowApplyModal(false);
+        setApplySuccess(null);
+        fetchAttendanceLeaves();
+      }, 1200);
+    } catch (err: any) {
+      setApplyError(err?.response?.data?.message || err?.message || 'Failed to submit leave request.');
+    } finally {
+      setApplyLoading(false);
+    }
+  };
+
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}>
-      <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
-        <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
-          <i className="ti ti-calendar-due me-2"></i>Attendance & Leave
-        </Modal.Title>
-      </Modal.Header>
-      <Modal.Body className={dataTheme === "dark_data_theme" ? "bg-dark text-white" : ""}>
-        {loading && <Loader />}
-        {error && <ErrorMsg msg={error} />}
-        {data && (
-          (data.attendance?.length > 0 || data.leaveRequests?.length > 0) ? (
-            <Tabs defaultActiveKey="attendance" className="mb-3">
-              <Tab eventKey="attendance" title="Attendance">
-                {data.attendance?.length > 0 ? (
-                  <Table striped bordered hover size="sm" className={dataTheme === "dark_data_theme" ? "table-dark" : ""}>
-                    <thead><tr><th>Date</th><th>Status</th></tr></thead>
-                    <tbody>
-                      {data.attendance.map((a: any) => (
-                        <tr key={a.id}><td>{formatDate(a.date)}</td><td>{a.present ? 'Present' : 'Absent'}</td></tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                ) : <EmptyMsg msg="No attendance data available." />}
-              </Tab>
-              <Tab eventKey="leave" title="Leave Requests">
-                {data.leaveRequests?.length > 0 ? (
-                  <Table striped bordered hover size="sm" className={dataTheme === "dark_data_theme" ? "table-dark" : ""}>
-                    <thead><tr><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr></thead>
-                    <tbody>
-                      {data.leaveRequests.map((l: any) => (
-                        <tr key={l.id}><td>{formatDate(l.startDate)}</td><td>{formatDate(l.endDate)}</td><td>{l.reason}</td><td>{l.status}</td></tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                ) : <EmptyMsg msg="No leave requests found." />}
-              </Tab>
-            </Tabs>
-          ) : <EmptyMsg msg="No attendance or leave data available." />
-        )}
-      </Modal.Body>
-    </Modal>
+    <>
+      <Modal
+        show={show}
+        onHide={onHide}
+        size="lg"
+        centered
+        backdrop={false}
+        className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}
+      >
+        <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
+          <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
+            <i className="ti ti-calendar-due me-2"></i>Attendance & Leave
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={dataTheme === "dark_data_theme" ? "bg-dark text-white" : ""}>
+          {loading && <Loader />}
+          {error && <ErrorMsg msg={error} />}
+          {data && (
+            (data.attendance?.length > 0 || data.leaveRequests?.length > 0) ? (
+              <Tabs defaultActiveKey="attendance" className="mb-3">
+                <Tab eventKey="attendance" title="Attendance">
+                  {data.attendance?.length > 0 ? (
+                    <Table striped bordered hover size="sm" className={dataTheme === "dark_data_theme" ? "table-dark" : ""}>
+                      <thead><tr><th>Date</th><th>Status</th></tr></thead>
+                      <tbody>
+                        {data.attendance.map((a: any) => (
+                          <tr key={a.id}><td>{formatDate(a.date)}</td><td>{a.present ? 'Present' : 'Absent'}</td></tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  ) : <EmptyMsg msg="No attendance data available." />}
+                </Tab>
+                <Tab eventKey="leave" title="Leave Requests">
+                  <div className="d-flex justify-content-end mb-2">
+                    <Button size="sm" variant="primary" onClick={() => setShowApplyModal(true)}>
+                      Apply Leave
+                    </Button>
+                  </div>
+                  {data.leaveRequests?.length > 0 ? (
+                    <Table striped bordered hover size="sm" className={dataTheme === "dark_data_theme" ? "table-dark" : ""}>
+                      <thead><tr><th>From</th><th>To</th><th>Reason</th><th>Status</th></tr></thead>
+                      <tbody>
+                        {data.leaveRequests.map((l: any) => (
+                          <tr key={l.id}><td>{formatDisplayDate(l.fromDate)}</td><td>{formatDisplayDate(l.toDate)}</td><td>{l.reason}</td><td>{l.status}</td></tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  ) : <EmptyMsg msg="No leave requests found." />}
+                </Tab>
+              </Tabs>
+            ) : <EmptyMsg msg="No attendance or leave data available." />
+          )}
+        </Modal.Body>
+      </Modal>
+      {/* Apply Leave Modal */}
+      <Modal show={showApplyModal} onHide={() => { setShowApplyModal(false); setApplyError(null); setApplySuccess(null); }} centered className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}>
+        <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
+          <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
+            <i className="ti ti-calendar-plus me-2"></i>Apply for Leave
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={dataTheme === "dark_data_theme" ? "bg-dark text-white" : ""}>
+          {applySuccess && <Alert variant="success">{applySuccess}</Alert>}
+          {applyError && <Alert variant="danger">{applyError}</Alert>}
+          <Form onSubmit={handleApplyLeave}>
+            <Form.Group className="mb-3">
+              <Form.Label className={dataTheme === "dark_data_theme" ? "text-white" : ""}>Reason</Form.Label>
+              <Form.Control as="textarea" rows={2} value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} required disabled={applyLoading} className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""} />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label className={dataTheme === "dark_data_theme" ? "text-white" : ""}>From Date</Form.Label>
+              <Form.Control type="date" value={form.fromDate} onChange={e => setForm(f => ({ ...f, fromDate: e.target.value }))} required disabled={applyLoading} className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""} />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label className={dataTheme === "dark_data_theme" ? "text-white" : ""}>To Date</Form.Label>
+              <Form.Control type="date" value={form.toDate} onChange={e => setForm(f => ({ ...f, toDate: e.target.value }))} required disabled={applyLoading} className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""} />
+            </Form.Group>
+            <div className="d-flex justify-content-end gap-2">
+              <Button variant="secondary" onClick={() => setShowApplyModal(false)} disabled={applyLoading}>Cancel</Button>
+              <Button variant="primary" type="submit" disabled={applyLoading}>{applyLoading ? 'Submitting...' : 'Submit'}</Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+    </>
   );
 }
 
@@ -573,7 +688,14 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpd
   return (
     <>
       <ToastContainer position="top-center" autoClose={3000} />
-      <Modal show={show} onHide={onHide} size="lg" centered className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}>
+      <Modal
+        show={show}
+        onHide={onHide}
+        size="lg"
+        centered
+        backdrop={false}
+        className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}
+      >
         <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
           <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
             <i className="ti ti-report-money me-2"></i>Fees
@@ -745,7 +867,14 @@ export function TimetableModal({ show, onHide, studentId }: { show: boolean, onH
       .finally(() => setLoading(false));
   }, [show, studentId]);
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}>
+    <Modal
+      show={show}
+      onHide={onHide}
+      size="lg"
+      centered
+      backdrop={false}
+      className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}
+    >
       <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
         <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
           <i className="ti ti-calendar me-2"></i>Timetable
@@ -792,7 +921,14 @@ export function AssignmentsModal({ show, onHide, studentId }: { show: boolean, o
       .finally(() => setLoading(false));
   }, [show, studentId]);
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}>
+    <Modal
+      show={show}
+      onHide={onHide}
+      size="lg"
+      centered
+      backdrop={false}
+      className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}
+    >
       <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
         <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
           <i className="ti ti-book me-2"></i>Assignments & Homework
@@ -1144,7 +1280,14 @@ export function ExamResultsModal({ show, onHide, studentId }: { show: boolean, o
   }, [show, studentId]);
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}>
+    <Modal
+      show={show}
+      onHide={onHide}
+      size="lg"
+      centered
+      backdrop={false}
+      className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}
+    >
       <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
         <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
           <i className="ti ti-award me-2"></i>Exam & Result
@@ -1550,7 +1693,13 @@ export function ContactModal({ show, onHide, studentId, parentId }: { show: bool
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}>
+    <Modal
+      show={show}
+      onHide={onHide}
+      size="lg"
+      centered
+      className={dataTheme === "dark_data_theme" ? "dark-modal" : ""}
+    >
       <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}>
         <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
           <i className="ti ti-phone me-2"></i>
