@@ -49,13 +49,13 @@ const ParentDashboard = () => {
   const [guardianStudents, setGuardianStudents] = useState<any>(null);
   const [detailsModal, setDetailsModal] = useState<{ type: 'student' | 'parent' | 'communication' | null, data: any }>({ type: null, data: null });
   
-  const [studentDetailsModal, setStudentDetailsModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
-  const [attendanceModal, setAttendanceModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
-  const [feesModal, setFeesModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
-  const [timetableModal, setTimetableModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
-  const [assignmentsModal, setAssignmentsModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
-  const [noticesModal, setNoticesModal] = useState<{ show: boolean, studentId: string | null }>({ show: false, studentId: null });
-  const [examResultsModal, setExamResultsModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
+  const [studentDetailsModal, setStudentDetailsModal] = useState<{ show: boolean, userId: string }>({ show: false, userId: '' });
+  const [attendanceModal, setAttendanceModal] = useState<{ show: boolean, studentId: string, userId: string }>({ show: false, studentId: '', userId: '' });
+  const [feesModal, setFeesModal] = useState<{ show: boolean, studentId: string, userId: string }>({ show: false, studentId: '', userId: '' });
+  const [timetableModal, setTimetableModal] = useState<{ show: boolean, studentId: string, userId: string }>({ show: false, studentId: '', userId: '' });
+  const [assignmentsModal, setAssignmentsModal] = useState<{ show: boolean, studentId: string, userId: string }>({ show: false, studentId: '', userId: '' });
+  const [noticesModal, setNoticesModal] = useState<{ show: boolean, studentId: string | null, userId: string }>({ show: false, studentId: null, userId: '' });
+  const [examResultsModal, setExamResultsModal] = useState<{ show: boolean, studentId: string, userId: string }>({ show: false, studentId: '', userId: '' });
   const [addTicketModal, setAddTicketModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
   const [contactModal, setContactModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
 
@@ -150,33 +150,59 @@ const ParentDashboard = () => {
     const handleOpenParentModal = (event: CustomEvent) => {
       const { modalType, studentId } = event.detail;
       
+      if (!dashboardData || !dashboardData.students) {
+        toast.error('Dashboard data not loaded yet. Please try again.');
+        return;
+      }
+      
+      if (!activeStudent) {
+        toast.error('Please select a student first');
+        return;
+      }
+      
+      const student = dashboardData.students.find(s => s.studentId === activeStudent);
+      
+      if (!student) {
+        toast.error('Selected student not found in dashboard data');
+        return;
+      }
+      
+      const userId = student.studentInfo?.userId;
+      
+      if (!userId) {
+        toast.error('Student user ID not found in dashboard data');
+        return;
+      }
+      
+
+      
       switch (modalType) {
         case 'studentDetails':
-          setStudentDetailsModal({ show: true, studentId });
+          setStudentDetailsModal({ show: true, userId });
           break;
         case 'attendance':
-          setAttendanceModal({ show: true, studentId });
+          setAttendanceModal({ show: true, studentId: activeStudent, userId });
           break;
         case 'fees':
-          setFeesModal({ show: true, studentId });
+          setFeesModal({ show: true, studentId: activeStudent, userId });
           break;
         case 'timetable':
-          setTimetableModal({ show: true, studentId });
+          setTimetableModal({ show: true, studentId: activeStudent, userId });
           break;
         case 'assignments':
-          setAssignmentsModal({ show: true, studentId });
+          setAssignmentsModal({ show: true, studentId: activeStudent, userId });
           break;
         case 'notices':
-          setNoticesModal({ show: true, studentId });
+          setNoticesModal({ show: true, studentId: activeStudent, userId });
           break;
         case 'examResults':
-          setExamResultsModal({ show: true, studentId });
+          setExamResultsModal({ show: true, studentId: activeStudent, userId });
           break;
         case 'addTicket':
-          setAddTicketModal({ show: true, studentId: '' }); // Parent action, no student required
+          setAddTicketModal({ show: true, studentId: '' });
           break;
         case 'contact':
-          setContactModal({ show: true, studentId: '' }); // Parent action, no student required
+          setContactModal({ show: true, studentId: '' });
           break;
         default:
           break;
@@ -203,7 +229,7 @@ const ParentDashboard = () => {
       window.removeEventListener('openParentModal', handleOpenParentModal as EventListener);
       window.removeEventListener('showToast', handleShowToast as EventListener);
     };
-  }, []);
+  }, [dashboardData, activeStudent]);
  
   const getActiveStudent = (): Student | null => {
     if (!dashboardData || !activeStudent) return null;
@@ -652,14 +678,13 @@ const ParentDashboard = () => {
                       className={`btn btn-outline-${action.color} d-flex flex-column align-items-center p-2 p-md-3 rounded-4 shadow-sm border-0 w-100 h-100 ${dataTheme === "dark_data_theme" ? "dark-mode-btn" : ""}`}
                       style={{ minHeight: isMobile ? 120 : 140 }}
                   onClick={() => {
-                    const studentId = getStudentId();
-                    if (!studentId) {
+                    if (!activeStudent) {
                       toast.error('Please select a student first');
                       return;
                     }
                     
                     const event = new CustomEvent('openParentModal', {
-                      detail: { modalType: action.key, studentId }
+                      detail: { modalType: action.key, studentId: activeStudent }
                     });
                     window.dispatchEvent(event);
                   }}
@@ -725,14 +750,13 @@ const ParentDashboard = () => {
                           className={`btn btn-sm btn-outline-primary rounded-circle ms-2 ${dataTheme === "dark_data_theme" ? "btn-outline-light" : ""}`}
                           title="View Academic Details"
                           onClick={() => {
-                            const studentId = getStudentId();
-                            if (!studentId) {
+                            if (!activeStudent) {
                               toast.error('Please select a student first');
                               return;
                             }
                             
                             const event = new CustomEvent('openParentModal', {
-                              detail: { modalType: 'studentDetails', studentId }
+                              detail: { modalType: 'studentDetails', studentId: activeStudent }
                             });
                             window.dispatchEvent(event);
                           }}
@@ -760,7 +784,7 @@ const ParentDashboard = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                        </div>
                 )}
 
                 {/* Academic Report Graph */}
@@ -1100,7 +1124,7 @@ const ParentDashboard = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                        </div>
                 )}
 
                 {/* Quick Stats */}
@@ -1158,7 +1182,7 @@ const ParentDashboard = () => {
                 </div>
                   </>
                 ) : (
-                  <div className="col-12 mb-4">
+                    <div className="col-12 mb-4">
                     <div className={`card border-0 shadow-sm ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : ""}`}>
                       <div className={`card-body text-center py-5 ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
                         <i className="ti ti-users fs-1 text-muted mb-3"></i>
@@ -1171,68 +1195,7 @@ const ParentDashboard = () => {
                   </div>
                 )}
 
-                {/* Pending Fees */}
-                {activeStudentData && activeStudentData.fees.pendingFees.length > 0 && (
-                    <div className="col-12 mb-4">
-                    <div className={`card ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-secondary" : "border-warning"}`}>
-                      <div className={`card-header ${dataTheme === "dark_data_theme" ? "bg-dark border-secondary" : "bg-warning text-white"}`}>
-                        <h5 className={`mb-0 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>
-                          <i className="ti ti-alert-triangle me-2"></i>
-                          Pending Fees
-                        </h5>
-                      </div>
-                      <div className={`card-body ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
-                          <AntdTable
-                            columns={[
-                              { 
-                                title: 'Fee Category', 
-                                dataIndex: 'feeCategory', 
-                                key: 'feeCategory', 
-                                ellipsis: true, 
-                                responsive: ['md'],
-                                render: (text: string) => <span className={dataTheme === "dark_data_theme" ? "text-white" : ""}>{text}</span>
-                              },
-                              { 
-                                title: 'Amount', 
-                                dataIndex: 'amount', 
-                                key: 'amount', 
-                                render: (amount) => <span className={dataTheme === "dark_data_theme" ? "text-white" : ""}>{formatCurrency(amount || 0)}</span>
-                              },
-                              { 
-                                title: 'Due Date', 
-                                dataIndex: 'dueDate', 
-                                key: 'dueDate', 
-                                render: (dueDate) => <span className={dataTheme === "dark_data_theme" ? "text-white" : ""}>{dueDate ? formatDate(dueDate) : 'Not specified'}</span>, 
-                                responsive: ['md']
-                              },
-                              { 
-                                title: 'Action', 
-                                key: 'action', 
-                                render: (_, record) => (
-                                record.dueDate ? (
-                                      <Link to={routes.studentFees} className={`btn btn-sm btn-primary ${dataTheme === "dark_data_theme" ? "btn-outline-light" : ""}`}>
-                                        Pay Now
-                                      </Link>
-                                ) : null
-                                )
-                              },
-                            ]}
-                            dataSource={activeStudentData.fees.pendingFees.map((fee, index) => ({
-                              key: index,
-                              feeCategory: fee.feeCategory || fee.feeCategory,
-                              amount: fee.amount || 0,
-                              dueDate: fee.dueDate,
-                            }))}
-                            pagination={false}
-                            size="small"
-                            scroll={{ x: true }}
-                            locale={{ emptyText: 'No pending fees.' }}
-                            className={dataTheme === "dark_data_theme" ? "dark-table" : ""}
-                          />
-                      </div>
-                    </div>
-                  </div>
-                )}
+
 
                 {/* Recent Payments */}
                 {activeStudentData && activeStudentData.fees.paymentHistory.length > 0 && (
@@ -1425,18 +1388,20 @@ const ParentDashboard = () => {
       {/* Parent Quick Actions Modals */}
       <StudentDetailsModal 
         show={studentDetailsModal.show} 
-        onHide={() => setStudentDetailsModal({ show: false, studentId: '' })} 
-        studentId={studentDetailsModal.studentId} 
+        onHide={() => setStudentDetailsModal({ show: false, userId: '' })} 
+        userId={studentDetailsModal.userId} 
       />
       <AttendanceLeaveModal 
         show={attendanceModal.show} 
-        onHide={() => setAttendanceModal({ show: false, studentId: '' })} 
+        onHide={() => setAttendanceModal({ show: false, studentId: '', userId: '' })} 
         studentId={attendanceModal.studentId} 
+        userId={attendanceModal.userId}
       />
       <FeesModal 
         show={feesModal.show} 
-        onHide={() => setFeesModal({ show: false, studentId: '' })} 
+        onHide={() => setFeesModal({ show: false, studentId: '', userId: '' })} 
         studentId={feesModal.studentId} 
+        userId={feesModal.userId}
         refetchDashboard={() => {
         }}
         onFeesUpdated={(updatedFees) => {
@@ -1467,23 +1432,27 @@ const ParentDashboard = () => {
       />
       <TimetableModal 
         show={timetableModal.show} 
-        onHide={() => setTimetableModal({ show: false, studentId: '' })} 
+        onHide={() => setTimetableModal({ show: false, studentId: '', userId: '' })} 
         studentId={timetableModal.studentId} 
+        userId={timetableModal.userId}
       />
       <AssignmentsModal 
         show={assignmentsModal.show} 
-        onHide={() => setAssignmentsModal({ show: false, studentId: '' })} 
+        onHide={() => setAssignmentsModal({ show: false, studentId: '', userId: '' })} 
         studentId={assignmentsModal.studentId} 
+        userId={assignmentsModal.userId}
       />
       <NoticesModal 
         show={noticesModal.show} 
-          onHide={() => setNoticesModal({ show: false, studentId: null })}
+          onHide={() => setNoticesModal({ show: false, studentId: null, userId: '' })}
           studentId={noticesModal.studentId || ''}
+          userId={noticesModal.userId}
       />
       <ExamResultsModal 
         show={examResultsModal.show} 
-        onHide={() => setExamResultsModal({ show: false, studentId: '' })} 
+        onHide={() => setExamResultsModal({ show: false, studentId: '', userId: '' })} 
         studentId={examResultsModal.studentId} 
+        userId={examResultsModal.userId}
       />
               <AddTicketModal
           show={addTicketModal.show}

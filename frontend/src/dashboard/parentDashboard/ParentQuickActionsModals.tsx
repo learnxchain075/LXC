@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Spinner, Tab, Tabs, Table, Alert, Button, Form, Image } from 'react-bootstrap';
-import { getstudentprofiledetails, getAttendanceLeavesByStudentId, applyStudentLeave, getFeesByStudentId, getLessonsByStudentId, getResourcesByStudentId, getStudentLibraryBooks, getDashboardResourcesByStudentId, getstudentprofiledetailsparents, getExamsResultsByStudentIdParam, IExam } from '../../services/student/StudentAllApi';
+import { getstudentprofiledetails, getAttendanceLeavesByStudentId, applyStudentLeave, getFeesByStudentId, getLessonsByStudentId, getResourcesByStudentId, getStudentLibraryBooks, getDashboardResourcesByStudentId, getstudentprofiledetailsparents, getExamsResultsByStudentIdParam, IExam, getStudentUserDetails } from '../../services/student/StudentAllApi';
 import { getStudentTimetable } from '../../services/student/StudentDashboardApi';
-import { createFeeOrder, verifyFeePayment } from '../../services/payfee';
+import { createFeeOrder, verifyFeePayment, downloadFeeInvoice, downloadFeeReceipt } from '../../services/payfee';
 import BaseApi from '../../services/BaseApi';
 import { getFeesByStudent } from '../../services/accounts/feesServices';
 import { createTicket } from '../../services/superadmin/ticketApi';
@@ -65,27 +65,27 @@ function FeePaymentModal({ show, onHide, fee }: { show: boolean, onHide: () => v
 }
 
 // Student Details Modal
-export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function StudentDetailsModal({ show, onHide, userId }: { show: boolean, onHide: () => void, userId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   
   useEffect(() => {
-    if (!show || !studentId) return;
+    if (!show || !userId) return;
     setLoading(true);
     setError(null);
     
  
-    getstudentprofiledetails(studentId)
+    getStudentUserDetails(userId)
       .then(res => { 
-        console.log('Student Details Response:', res.data);
+       // console.log('Student Details Response:', res.data);
         setData(res.data); 
       })
       .catch((err) => {
         console.error('Student Details Error:', err);
         if (err?.response?.status === 404) {
-          setError('Student not found. Please check the student ID.');
+          setError('Student not found. Please check the user ID.');
         } else if (err?.response?.status === 403) {
           setError('Access denied. You may not have permission to view this student\'s details.');
         } else if (err?.message?.includes('Network')) {
@@ -95,7 +95,7 @@ export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean
         }
       })
       .finally(() => setLoading(false));
-  }, [show, studentId]);
+  }, [show, userId]);
 
   // Helper function to format currency
   const formatCurrency = (amount: number): string => {
@@ -178,10 +178,10 @@ export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean
               <div className="col-md-9">
                 <h5 className={`mb-2 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>{data.name || data.studentName || 'Student Name'}</h5>
                 <div className="row">
-                  <div className="col-md-6">
-                    <p className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-light" : ""}`}><strong>Student ID:</strong> {studentId}</p>
+                  {/* <div className="col-md-6">
+                    <p className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-light" : ""}`}><strong>User ID:</strong> {userId}</p>
                     <p className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-light" : ""}`}><strong>School ID:</strong> {data.schoolId || '-'}</p>
-                  </div>
+                  </div> */}
                   <div className="col-md-6">
                     <p className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-light" : ""}`}><strong>Class:</strong> {data.student?.class?.name || '-'}</p>
                   </div>
@@ -287,7 +287,7 @@ const formatDisplayDate = (date: string) => {
 };
 
 // Attendance & Leave Modal
-export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function AttendanceLeaveModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -303,7 +303,7 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const userObj = useSelector((state: any) => state.auth.userObj);
 
-  const userId = userObj?.id || data?.student?.userId || localStorage.getItem('userId') || '';
+  const currentUserId =  userId || '';
 
   const fetchAttendanceLeaves = () => {
     setLoading(true);
@@ -330,15 +330,15 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
       setApplyLoading(false);
       return;
     }
-    if (!userId) {
-      setApplyError('User session not found. Please log in again.');
-      setApplyLoading(false);
-      return;
-    }
+    // if (!currentUserId) {
+    //   setApplyError('User session not found. Please log in again.');
+    //   setApplyLoading(false);
+    //   return;
+    // }
     try {
-   // console.log(studentId);
+   //console.log(currentUserId);
       await applyStudentLeave({
-        userId: studentId,
+        userId: currentUserId,
         reason: form.reason.trim(),
         fromDate: form.fromDate,
         toDate: form.toDate,
@@ -375,7 +375,7 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
           {loading && <Loader />}
           {error && <ErrorMsg msg={error} />}
           {data && (
-            (data.attendance?.length > 0 || data.leaveRequests?.length > 0) ? (
+            // (data.attendance?.length > 0 || data.leaveRequests?.length > 0) ? (
               <Tabs defaultActiveKey="attendance" className="mb-3">
                 <Tab eventKey="attendance" title="Attendance">
                   {data.attendance?.length > 0 ? (
@@ -419,7 +419,7 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
                   ) : <EmptyMsg msg="No leave requests found." />}
                 </Tab>
               </Tabs>
-            ) : <EmptyMsg msg="No attendance or leave data available." />
+            // ) : <EmptyMsg msg="No attendance or leave data available." />
           )}
         </Modal.Body>
       </Modal>
@@ -458,10 +458,11 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
 }
 
 
-export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpdated }: { 
+export function FeesModal({ show, onHide, studentId, userId, refetchDashboard, onFeesUpdated }: { 
   show: boolean, 
   onHide: () => void, 
   studentId: string, 
+  userId: string,
   refetchDashboard?: () => void,
   onFeesUpdated?: (updatedFees: any) => void 
 }) {
@@ -683,73 +684,92 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpd
       }
   }
 
-  async function handleDownloadReceipt(payment: any, type: 'receipt' | 'invoice' = 'receipt') {
-    setDownloading(payment.id);
+    async function handleDownloadReceipt(payment: any, type: 'receipt' | 'invoice' = 'receipt') {
+    const paymentId = payment.id || payment.receiptId || payment.paymentId || payment.razorpayPaymentId;
+    setDownloading(paymentId);
+    
     try {
-      let downloadUrl = '';
+      if (!paymentId) {
+        throw new Error('Payment ID not found in payment data');
+      }
+      
       let filename = '';
       
       if (type === 'invoice') {
-        // Use the invoice URL from the payment response
-        downloadUrl = payment.invoiceUrl || payment.officeInvoiceUrl;
-        filename = payment.invoiceNumber ? `${payment.invoiceNumber}.pdf` : `invoice_${payment.id}.pdf`;
+        filename = payment.invoiceNumber ? `${payment.invoiceNumber}.pdf` : `invoice_${paymentId}.pdf`;
       } else {
-        // Use the receipt URL from the payment response
-        downloadUrl = payment.receiptUrl || payment.invoiceUrl;
-        filename = payment.invoiceNumber ? `receipt_${payment.invoiceNumber}.pdf` : `receipt_${payment.id}.pdf`;
+        filename = payment.invoiceNumber ? `receipt_${payment.invoiceNumber}.pdf` : `receipt_${paymentId}.pdf`;
       }
       
-      if (!downloadUrl) {
-        throw new Error(`${type.charAt(0).toUpperCase() + type.slice(1)} URL not available`);
-      }
+      let response;
+      response = await downloadFeeInvoice(paymentId);
       
-      // Ensure URL is absolute
-      if (!downloadUrl.startsWith('http')) {
-        downloadUrl = `https://api.learnxchain.io${downloadUrl}`;
-      }
-      
-      // Download the file directly from the URL
+      // Create blob and download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = url;
       link.download = filename;
-      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
-      link.parentNode?.removeChild(link);
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
       toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} downloaded successfully`);
-    } catch (err: any) {
-      const errorMessage = err?.message || `Failed to download ${type}. Please try again later.`;
-      toast.error(errorMessage);
+    } catch (error: any) {
+      console.error('Download error:', error);
+      if (error.response?.status === 401) {
+        toast.error('Authentication failed. Please log in again.');
+      } else if (error.response?.status === 404) {
+        toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not found.`);
+      } else if (error.response?.status === 403) {
+        toast.error('You are not authorized to download this document.');
+      } else {
+        toast.error(`Failed to download ${type}. ${error.response?.data?.message || error.message}`);
+      }
     } finally {
       setDownloading(null);
     }
   }
 
-  const handleViewDocument = (payment: any, type: 'receipt' | 'invoice' = 'receipt') => {
+    const handleViewDocument = async (payment: any, type: 'receipt' | 'invoice' = 'receipt') => {
     try {
-      let viewUrl = '';
+      const paymentId = payment.id || payment.receiptId || payment.paymentId || payment.razorpayPaymentId;
       
-      if (type === 'invoice') {
-        viewUrl = payment.invoiceUrl || payment.officeInvoiceUrl;
-      } else {
-        viewUrl = payment.receiptUrl || payment.invoiceUrl;
-      }
-      
-      if (!viewUrl) {
-        toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} URL not available`);
+      if (!paymentId) {
+        toast.error('not found in payment data');
         return;
       }
       
-      // Ensure URL is absolute
-      if (!viewUrl.startsWith('http')) {
-        viewUrl = `https://api.learnxchain.io${viewUrl}`;
+      let response;
+      response = await downloadFeeInvoice(paymentId);
+      
+      // Create blob URL and open
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const newWindow = window.open(url, '_blank');
+      
+      if (!newWindow) {
+        toast.error(`Failed to open ${type}. Pop-up may be blocked.`);
+        return;
       }
       
-      // Open the document in a new tab
-      window.open(viewUrl, '_blank');
-    } catch (err: any) {
-      toast.error(`Failed to open ${type}. Please try again later.`);
+      // Clean up the blob URL after a delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
+      
+    } catch (error: any) {
+      console.error('View document error:', error);
+      if (error.response?.status === 401) {
+        toast.error('Authentication failed. Please log in again.');
+      } else if (error.response?.status === 404) {
+        toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not found.`);
+      } else if (error.response?.status === 403) {
+        toast.error('You are not authorized to view this document.');
+      } else {
+        toast.error(`Failed to open ${type}. ${error.response?.data?.message || error.message}`);
+      }
     }
   };
 
@@ -1099,7 +1119,7 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpd
                                      size="sm" 
                                      variant="outline-success" 
                                      onClick={() => handleDownloadReceipt(p, 'invoice')} 
-                                     disabled={downloading === p.id} 
+                                     disabled={downloading === (p.id || p.receiptId || p.paymentId || p.razorpayPaymentId)} 
                                      title="Download Invoice"
                                      className="btn-sm"
                                    >
@@ -1124,7 +1144,7 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpd
                                  size="sm" 
                                  variant="outline-primary" 
                                  onClick={() => handleDownloadReceipt(p, 'receipt')} 
-                                 disabled={downloading === p.id || !p.id} 
+                                 disabled={downloading === (p.id || p.receiptId || p.paymentId || p.razorpayPaymentId) || !(p.id || p.receiptId || p.paymentId || p.razorpayPaymentId)} 
                                  title="Download Receipt"
                                  className="btn-sm"
                                >
@@ -1333,7 +1353,7 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpd
 }
 
 
-export function TimetableModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function TimetableModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1392,7 +1412,7 @@ export function TimetableModal({ show, onHide, studentId }: { show: boolean, onH
   );
 }
 
-export function AssignmentsModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function AssignmentsModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1469,7 +1489,7 @@ export function AssignmentsModal({ show, onHide, studentId }: { show: boolean, o
   );
 }
 
-export function NoticesModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function NoticesModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [attachmentModal, setAttachmentModal] = useState<{ show: boolean, url: string | null }>({ show: false, url: null });
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -1759,7 +1779,7 @@ export function NoticeAttachmentModal({ show, onHide, url }: { show: boolean, on
   );
 }
 
-export function ExamResultsModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function ExamResultsModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exams, setExams] = useState<IExam[]>([]);
@@ -1868,11 +1888,9 @@ export function AddTicketModal({ show, onHide, studentId, parentId }: { show: bo
     }
     
     // Get user ID from multiple sources
-    const userId = currentUser?.id || 
-                   parentId ||
+    const userId = 
                    localStorage.getItem('userId') || 
-                   localStorage.getItem('parentId') ||
-                   localStorage.getItem('guardianId') ||
+                
                    '';
     
     if (!userId) {

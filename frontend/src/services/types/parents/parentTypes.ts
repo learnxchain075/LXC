@@ -89,6 +89,7 @@ export interface IParentStudent {
 
 // Dashboard specific types
 export interface StudentInfo {
+  userId: string;
   name: string;
   class: string;
   rollNo: string;
