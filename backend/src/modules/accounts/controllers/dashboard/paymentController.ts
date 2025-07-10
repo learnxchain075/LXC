@@ -34,21 +34,25 @@ export async function recordCashPayment(req: Request, res: Response, next: NextF
       },
     });
 
-    const totalPayments = await prisma.payment.aggregate({
-      where: { feeId, status: "Success" },
-      _sum: { amount: true },
-    });
+    const newAmountPaid = (fee.amountPaid ?? 0) + amount;
+    const newStatus =
+      newAmountPaid >= fee.amount
+        ? "PAID"
+        : newAmountPaid > 0
+        ? "PARTIAL"
+        : "PENDING";
 
-    if ((totalPayments._sum.amount || 0) >= fee.amount) {
-      await prisma.fee.update({
-        where: { id: feeId },
-        data: { status: "Paid" },
-      });
-    }
+    const updatedFee = await prisma.fee.update({
+      where: { id: feeId },
+      data: {
+        amountPaid: newAmountPaid,
+        status: newStatus,
+      },
+    });
 
     const receipt = await createCashFeeReceipts(payment.id, req.user?.name || '', 'Cash');
 
-    res.status(201).json({ payment, receipt });
+    res.status(201).json({ payment, fee: updatedFee, receipt });
   } catch (error) {
     next(error);
   }
@@ -147,12 +151,20 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
         _sum: { amount: true },
       });
 
-      if ((totalPayments._sum.amount || 0) >= fee.amount) {
-        await prisma.fee.update({
-          where: { id: payment.feeId ?? undefined },
-          data: { status: "Paid" },
-        });
-      }
+      const totalPaid = totalPayments._sum.amount || 0;
+      const newStatus =
+        totalPaid >= fee.amount
+          ? "PAID"
+          : totalPaid > 0
+          ? "PARTIAL"
+          : "PENDING";
+
+      const updatedFee = await prisma.fee.update({
+        where: { id: payment.feeId ?? undefined },
+        data: { amountPaid: totalPaid, status: newStatus },
+      });
+
+      return res.json({ message: "Webhook handled successfully", fee: updatedFee });
     }
 
     res.json({ message: "Webhook handled successfully" });
