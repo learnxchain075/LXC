@@ -177,7 +177,7 @@ async function getFees(studentId: string) {
   });
 
   const pendingFees = fees
-    .filter((f) => f.status === "Pending" || f.status === "Overdue")
+    .filter((f) => f.amount - f.amountPaid > 0)
     .map((f) => ({
       id: f.id,
       category: f.category,

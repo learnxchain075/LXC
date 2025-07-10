@@ -157,6 +157,7 @@ async function getAttendance(studentId: string) {
 async function getFees(studentId: string) {
   const fees = await prisma.fee.findMany({
     where: { studentId },
+    orderBy: { dueDate: "asc" },
     select: {
       id: true,
       category: true,
@@ -175,7 +176,7 @@ async function getFees(studentId: string) {
     },
   });
 
-  const pendingFees = fees.filter((f) => f.status === "Pending" || f.status === "Overdue");
+  const pendingFees = fees.filter((f) => f.amount - f.amountPaid > 0);
 
   const totalPending = pendingFees.reduce((sum, fee) => sum + (fee.amount - fee.amountPaid), 0);
 
