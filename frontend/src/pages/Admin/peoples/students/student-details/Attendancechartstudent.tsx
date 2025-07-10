@@ -180,9 +180,9 @@ const Attendancechartstudent: React.FC = () => {
     if (leaveRequests.length > 0) {
       const approvedIds = leaveRequests.filter(l => l.status === 'APPROVED').map(l => l.id);
       const newApproved = approvedIds.filter(id => !prevApprovedIds.includes(id));
-      if (newApproved.length > 0) {
-        toast.success('Your leave has been approved!');
-      }
+      // if (newApproved.length > 0) {
+      //   toast.success('Your leave has been approved!');
+      // }
       setPrevApprovedIds(approvedIds);
     }
   }, [leaveRequests]);

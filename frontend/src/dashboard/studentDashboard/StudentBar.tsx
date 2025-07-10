@@ -13,6 +13,7 @@ const StudentBar: React.FC<StudentBarProps> = ({ activeTab, setActiveTab }) => {
   const isDark = dataTheme === "dark_data_theme";
 
   const tabs = [
+    { key: routes.studenthomedashboard, label: "Home", icon: "ti ti-bookmark-edit" },
     { key: routes.studentTimeTable, label: "Time Table", icon: "ti ti-table-options" },
     { key: routes.payfee, label: " Fee", icon: "ti ti-report-money" },
     { key: routes.AcademicResourcesstudent, label: "Academics Resources", icon: "ti ti-report-money" },
@@ -23,7 +24,7 @@ const StudentBar: React.FC<StudentBarProps> = ({ activeTab, setActiveTab }) => {
     { key: routes.DoubtForum, label: "Doubt Forum", icon: "ti ti-message-circle" },
     { key: routes.studentlearderboard, label: "LeaderBoard", icon: "ti ti-bookmark-edit" },
     { key: routes.studentDetail, label: "My Profile", icon: "ti ti-school" },  
-    { key: routes.studenthomedashboard, label: "homepage", icon: "ti ti-bookmark-edit" },
+  
    // { key: routes.studentDetail, label: "My Profile", icon: "ti ti-school" },  
     // { key: routes.FeesOverviewstudent, label: "Fees Overview", icon: "ti ti-report-money" },
     // { key: routes.studentLeaves, label: "Leave & Attendance", icon: "ti ti-calendar-due" },

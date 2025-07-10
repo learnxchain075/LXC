@@ -27,7 +27,7 @@ import HomeDashboard from "../../pages/Admin/peoples/students/homedashboard";
 const StudentDashboard = () => {
   const routes = all_routes;
   const isMobile = useMobileDetection();
-  const [activeTab, setActiveTab] = useState(routes.studentDetail);
+  const [activeTab, setActiveTab] = useState(routes.studenthomedashboard);
 
   const renderContent = () => {
     switch (activeTab) {

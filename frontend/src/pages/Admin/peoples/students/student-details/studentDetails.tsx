@@ -205,13 +205,13 @@ const StudentDetails: React.FC = () => {
   const allergies = student?.allergies && student.allergies !== 'NA' ? student.allergies.split(',') : [];
   const medications = student?.medicationName || 'None';
 
-  const handleDownload = (fileUrl: string, fileName: string) => {
+  const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      if (!fileUrl || fileUrl === '') {
-        toast.error('Document URL not available');
+      if (!fileUrl) {
+        toast.error(' not available');
         return;
       }
-      
+
       const link = document.createElement('a');
       link.href = fileUrl;
       link.download = `${username}_${fileName}`;
@@ -219,12 +219,19 @@ const StudentDetails: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       toast.success('Download started');
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Failed to download document');
     }
+  };
+
+  const handleView = (fileUrl: string) => {
+    if (!fileUrl) {
+      toast.error(' not available');
+      return;
+    }
+    window.open(fileUrl, '_blank');
   };
 
   return (
@@ -408,14 +415,26 @@ const StudentDetails: React.FC = () => {
                                   <p className={`text-truncate fw-medium${isDark ? ' text-light' : ' text-dark'}`}>{doc.name}</p>
                                 </div>
                               </div>
-                              <button 
-                                type="button" 
-                                className={`btn btn-icon btn-sm${isDark ? ' btn-outline-light' : ' btn-dark'}`} 
-                                onClick={() => handleDownload(doc.url, doc.name)}
-                                disabled={!doc.url || doc.url === ''}
-                              >
-                                <i className="ti ti-download" />
-                              </button>
+                              <div className="d-flex gap-2">
+                                <button 
+                                  type="button" 
+                                  className={`btn btn-icon btn-sm${isDark ? ' btn-outline-info' : ' btn-info'}`} 
+                                  onClick={() => handleView(doc.url)}
+                                  disabled={!doc.url}
+                                  title="View PDF"
+                                >
+                                  <i className="ti ti-eye" />
+                                </button>
+                                <button 
+                                  type="button" 
+                                  className={`btn btn-icon btn-sm${isDark ? ' btn-outline-light' : ' btn-dark'}`} 
+                                  onClick={() => handleDownload(doc.url, doc.name)}
+                                  disabled={!doc.url}
+                                  title="Download PDF"
+                                >
+                                  <i className="ti ti-download" />
+                                </button>
+                              </div>
                             </div>
                           ))
                         ) : (

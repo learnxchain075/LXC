@@ -110,8 +110,16 @@ export interface AttendanceData {
 export interface AcademicPerformance {
   averages: Array<{
     subject?: string;
+    average?: number;
     score?: number;
     grade?: string;
+    gradePoint?: number | null;
+    recentScores?: Array<{
+      type: string;
+      title: string;
+      score: number;
+      date: string;
+    }>;
   }>;
 }
 
@@ -136,9 +144,17 @@ export interface EventData {
   events: any[];
   announcements: any[];
   notices: Array<{
+    id: string;
     title: string;
-    content: string;
-    date: string;
+    message: string;
+    publishDate: string;
+    attachment?: string;
+    createdAt: string;
+    creator: {
+      id: string;
+      name: string;
+      role: string;
+    };
   }>;
 }
 
