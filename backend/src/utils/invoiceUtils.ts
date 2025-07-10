@@ -2,6 +2,7 @@ import { prisma } from "../db/prisma";
 import puppeteer from "puppeteer";
 import QRCode from "qrcode";
 import { uploadFile } from "../config/upload";
+import { slugify } from "./slugify";
 import {
   generatePlanInvoiceHtml,
   generateFeeInvoiceHtml,
@@ -90,7 +91,7 @@ export const createPlanInvoice = async (
   if (!invoiceUrl) {
     const upload = await uploadFile(
       pdfBuffer,
-      "invoices",
+      "plan_invoices",
       "raw",
       `plan_${invoiceNumber}.pdf`
     );
@@ -164,7 +165,7 @@ export const createFeeInvoice = async (
   if (!invoiceUrl) {
     const upload = await uploadFile(
       pdfBuffer,
-      "invoices",
+      `school_invoices/${slugify(fee.school.schoolName)}`,
       "raw",
       `fee_${invoiceNumber}.pdf`
     );
@@ -293,7 +294,12 @@ export const createCashFeeReceipts = async (
     await page.setContent(html, { waitUntil: 'networkidle0' });
     const pdfBuffer = (await page.pdf({ format: 'A4' })) as Buffer;
     await browser.close();
-    const upload = await uploadFile(pdfBuffer, 'invoices', 'raw', `fee_${invoiceNumber}_${copyType.replace(/\s+/g,'').toLowerCase()}.pdf`);
+    const upload = await uploadFile(
+      pdfBuffer,
+      `school_invoices/${slugify(fee.school.schoolName)}`,
+      'raw',
+      `fee_${invoiceNumber}_${copyType.replace(/\s+/g,'').toLowerCase()}.pdf`
+    );
     return upload.url;
   };
 

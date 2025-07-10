@@ -5,6 +5,7 @@ import { Role } from "@prisma/client";
 import axios from "axios";
 import { prisma } from "../../db/prisma";
 import { uploadFile } from "../../config/upload";
+import { slugify } from "../../utils/slugify";
 import {
   generatePlanInvoiceHtml,
   generateFeeInvoiceHtml,
@@ -95,7 +96,7 @@ export const downloadPlanInvoice: RequestHandler = async (req, res) => {
 
       const upload = await uploadFile(
         pdfBuffer,
-        "invoices",
+        "plan_invoices",
         "raw",
         `plan_${invoiceNumber}.pdf`
       );
@@ -205,7 +206,7 @@ export const downloadFeeInvoice: RequestHandler = async (req, res) => {
     if (!invoiceUrl) {
       const upload = await uploadFile(
         pdfBuffer,
-        "invoices",
+        `school_invoices/${slugify(fee.school.schoolName)}`,
         "raw",
         `fee_${invoiceNumber}.pdf`
       );
