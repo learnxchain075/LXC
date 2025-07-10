@@ -80,6 +80,7 @@ export const getParentDashboard = async (req: Request, res: Response): Promise<a
 /** Student Info */
 function getStudentInfo(student: any) {
   return {
+    userId: student.user.id,
     name: student.user.name,
     class: student.class.name,
     rollNo: student.rollNo,
