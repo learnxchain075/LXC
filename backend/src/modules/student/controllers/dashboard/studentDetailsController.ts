@@ -19,6 +19,7 @@ export const getStudentDetails = async (req: Request, res: Response, next: NextF
             class: {
               include: {
                 Subject: true,
+                Section: true,
               },
             },
             // Todo: Send Subject and subject id also
