@@ -33,7 +33,7 @@ const formatTime = (date: string) => {
   return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
-// Razorpay loader utility
+
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
     if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
@@ -684,93 +684,28 @@ export function FeesModal({ show, onHide, studentId, userId, refetchDashboard, o
       }
   }
 
-    async function handleDownloadReceipt(payment: any, type: 'receipt' | 'invoice' = 'receipt') {
-    const paymentId = payment.id || payment.receiptId || payment.paymentId || payment.razorpayPaymentId;
-    setDownloading(paymentId);
-    
-    try {
-      if (!paymentId) {
-        throw new Error('Payment ID not found in payment data');
-      }
-      
-      let filename = '';
-      
-      if (type === 'invoice') {
-        filename = payment.invoiceNumber ? `${payment.invoiceNumber}.pdf` : `invoice_${paymentId}.pdf`;
-      } else {
-        filename = payment.invoiceNumber ? `receipt_${payment.invoiceNumber}.pdf` : `receipt_${paymentId}.pdf`;
-      }
-      
-      let response;
-      response = await downloadFeeInvoice(paymentId);
-      
-      // Create blob and download
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} downloaded successfully`);
-    } catch (error: any) {
-      console.error('Download error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Authentication failed. Please log in again.');
-      } else if (error.response?.status === 404) {
-        toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not found.`);
-      } else if (error.response?.status === 403) {
-        toast.error('You are not authorized to download this document.');
-      } else {
-        toast.error(`Failed to download ${type}. ${error.response?.data?.message || error.message}`);
-      }
-    } finally {
-      setDownloading(null);
+    async function handleDownloadReceipt(payment: any, type: 'receipt' | 'invoice' | 'office' = 'receipt') {
+    let url = payment._customUrl || (type === 'office' ? payment.officeInvoiceUrl : payment.invoiceUrl || payment.officeInvoiceUrl);
+    let fileName = type === 'office'
+      ? (payment.invoiceNumber ? `${payment.invoiceNumber}_officecopy.pdf` : `office_invoice_${payment.id || payment.razorpayPaymentId}.pdf`)
+      : (payment.invoiceNumber ? `${type === 'invoice' ? payment.invoiceNumber : 'receipt_' + payment.invoiceNumber}.pdf` : `${type}_${payment.id || payment.razorpayPaymentId}.pdf`);
+    if (!url) {
+      toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not available.`);
+      return;
     }
+    await fetchAndHandlePDF(url, fileName, 'download');
   }
 
-    const handleViewDocument = async (payment: any, type: 'receipt' | 'invoice' = 'receipt') => {
-    try {
-      const paymentId = payment.id || payment.receiptId || payment.paymentId || payment.razorpayPaymentId;
-      
-      if (!paymentId) {
-        toast.error('not found in payment data');
-        return;
-      }
-      
-      let response;
-      response = await downloadFeeInvoice(paymentId);
-      
-      // Create blob URL and open
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const newWindow = window.open(url, '_blank');
-      
-      if (!newWindow) {
-        toast.error(`Failed to open ${type}. Pop-up may be blocked.`);
-        return;
-      }
-      
-      // Clean up the blob URL after a delay
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 1000);
-      
-    } catch (error: any) {
-      console.error('View document error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Authentication failed. Please log in again.');
-      } else if (error.response?.status === 404) {
-        toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not found.`);
-      } else if (error.response?.status === 403) {
-        toast.error('You are not authorized to view this document.');
-      } else {
-        toast.error(`Failed to open ${type}. ${error.response?.data?.message || error.message}`);
-      }
+  const handleViewDocument = async (payment: any, type: 'receipt' | 'invoice' | 'office' = 'receipt') => {
+    let url = payment._customUrl || (type === 'office' ? payment.officeInvoiceUrl : payment.invoiceUrl || payment.officeInvoiceUrl);
+    let fileName = type === 'office'
+      ? (payment.invoiceNumber ? `${payment.invoiceNumber}_officecopy.pdf` : `office_invoice_${payment.id || payment.razorpayPaymentId}.pdf`)
+      : (payment.invoiceNumber ? `${type === 'invoice' ? payment.invoiceNumber : 'receipt_' + payment.invoiceNumber}.pdf` : `${type}_${payment.id || payment.razorpayPaymentId}.pdf`);
+    if (!url) {
+      toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not available.`);
+      return;
     }
+    await fetchAndHandlePDF(url, fileName, 'view');
   };
 
   const getStatusBadge = (status: string) => {
@@ -1104,56 +1039,52 @@ export function FeesModal({ show, onHide, studentId, userId, refetchDashboard, o
                            </div>
                                                      <div className="col-md-2">
                              <div className="d-flex gap-1 flex-wrap">
-                               {p.status === 'PAID' && (p.invoiceUrl || p.officeInvoiceUrl) && (
+                               {/* Main Invoice/Receipt (use only one label) */}
+                               {p.invoiceUrl && (
                                  <>
-                                   <Button 
-                                     size="sm" 
-                                     variant="outline-success" 
-                                     onClick={() => handleViewDocument(p, 'invoice')} 
+                                   <Button
+                                     size="sm"
+                                     variant="outline-success"
+                                     onClick={() => handleViewDocument({ ...p, _customUrl: p.invoiceUrl }, 'invoice')}
                                      title="View Invoice"
                                      className="btn-sm"
                                    >
-                                     <i className="ti ti-eye"></i>
-                          </Button>
-                                   <Button 
-                                     size="sm" 
-                                     variant="outline-success" 
-                                     onClick={() => handleDownloadReceipt(p, 'invoice')} 
-                                     disabled={downloading === (p.id || p.receiptId || p.paymentId || p.razorpayPaymentId)} 
+                                     <i className="ti ti-eye"></i> Invoice
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     variant="outline-success"
+                                     onClick={() => handleDownloadReceipt({ ...p, _customUrl: p.invoiceUrl }, 'invoice')}
                                      title="Download Invoice"
                                      className="btn-sm"
                                    >
-                                     {downloading === p.id ? (
-                                       <LoadingSkeleton lines={1} height={12} />
-                                     ) : (
-                                       <i className="ti ti-file-text"></i>
-                                     )}
+                                     <i className="ti ti-download"></i> Invoice
                                    </Button>
                                  </>
                                )}
-                               <Button 
-                                 size="sm" 
-                                 variant="outline-info" 
-                                 onClick={() => handleViewDocument(p, 'receipt')} 
-                                 title="View Receipt"
-                                 className="btn-sm"
-                               >
-                                 <i className="ti ti-eye"></i>
-                               </Button>
-                               <Button 
-                                 size="sm" 
-                                 variant="outline-primary" 
-                                 onClick={() => handleDownloadReceipt(p, 'receipt')} 
-                                 disabled={downloading === (p.id || p.receiptId || p.paymentId || p.razorpayPaymentId) || !(p.id || p.receiptId || p.paymentId || p.razorpayPaymentId)} 
-                                 title="Download Receipt"
-                                 className="btn-sm"
-                               >
-                                 {downloading === p.id ? (
-                                   <LoadingSkeleton lines={1} height={12} />
-                                 ) : (
-                                   <i className="ti ti-download"></i>
-                                 )}
-                               </Button>
+                               {/* Office Copy (if it exists and is different) */}
+                               {p.officeInvoiceUrl && p.officeInvoiceUrl !== p.invoiceUrl && (
+                                 <>
+                                   <Button
+                                     size="sm"
+                                     variant="outline-warning"
+                                     onClick={() => handleViewDocument({ ...p, _customUrl: p.officeInvoiceUrl }, 'office')}
+                                     title="View Office Copy"
+                                     className="btn-sm"
+                                   >
+                                     <i className="ti ti-eye"></i> Office Copy
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     variant="outline-warning"
+                                     onClick={() => handleDownloadReceipt({ ...p, _customUrl: p.officeInvoiceUrl }, 'office')}
+                                     title="Download Office Copy"
+                                     className="btn-sm"
+                                   >
+                                     <i className="ti ti-download"></i> Office Copy
+                                   </Button>
+                                 </>
+                               )}
                              </div>
                            </div>
                         </div>
@@ -3129,3 +3060,57 @@ if (typeof document !== 'undefined') {
     document.head.appendChild(style);
   }
 } 
+
+// Helper to fetch and download/view PDF securely
+const fetchAndHandlePDF = async (fileUrl: string, fileName: string, action: 'download' | 'view') => {
+  try {
+    const response = await fetch(fileUrl, {
+      method: 'GET',
+      // credentials: 'include', // Uncomment if you need cookies for auth
+      // headers: { Authorization: `Bearer ${token}` }, // Add if you use JWT
+    });
+    if (!response.ok) throw new Error('Failed to fetch document');
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    if (action === 'download') {
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } else if (action === 'view') {
+      window.open(blobUrl, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000 * 60);
+    }
+  } catch (err) {
+    toast.error('Failed to open/download document');
+  }
+};
+
+// Replace handleDownloadReceipt and handleViewDocument for invoice/receipt with the new helper
+const handleDownloadReceipt = async (payment: any, type: 'receipt' | 'invoice' | 'office' = 'receipt') => {
+  let url = payment._customUrl || (type === 'office' ? payment.officeInvoiceUrl : payment.invoiceUrl || payment.officeInvoiceUrl);
+  let fileName = type === 'office'
+    ? (payment.invoiceNumber ? `${payment.invoiceNumber}_officecopy.pdf` : `office_invoice_${payment.id || payment.razorpayPaymentId}.pdf`)
+    : (payment.invoiceNumber ? `${type === 'invoice' ? payment.invoiceNumber : 'receipt_' + payment.invoiceNumber}.pdf` : `${type}_${payment.id || payment.razorpayPaymentId}.pdf`);
+  if (!url) {
+    toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not available.`);
+    return;
+  }
+  await fetchAndHandlePDF(url, fileName, 'download');
+};
+
+const handleViewDocument = async (payment: any, type: 'receipt' | 'invoice' | 'office' = 'receipt') => {
+  let url = payment._customUrl || (type === 'office' ? payment.officeInvoiceUrl : payment.invoiceUrl || payment.officeInvoiceUrl);
+  let fileName = type === 'office'
+    ? (payment.invoiceNumber ? `${payment.invoiceNumber}_officecopy.pdf` : `office_invoice_${payment.id || payment.razorpayPaymentId}.pdf`)
+    : (payment.invoiceNumber ? `${type === 'invoice' ? payment.invoiceNumber : 'receipt_' + payment.invoiceNumber}.pdf` : `${type}_${payment.id || payment.razorpayPaymentId}.pdf`);
+  if (!url) {
+    toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not available.`);
+    return;
+  }
+  await fetchAndHandlePDF(url, fileName, 'view');
+};
