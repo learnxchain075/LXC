@@ -7,6 +7,7 @@ import { getUserProfile } from "../services/authService";
 import { all_routes } from "../router/all_routes";
 import AppConfig from "../config/config";
 import CustomLoader from "../components/Loader";
+import useUsageLogger from "../hooks/useUsageLogger";
 
 const CommonRouteWrapper = () => {
   const dispatch = useDispatch();
@@ -14,6 +15,8 @@ const CommonRouteWrapper = () => {
   const location = useLocation();
   const isLoggedIn = useSelector((state: any) => state.auth.isLoggedIn);
   const triggerPostLogin = useSelector((state: any) => state.auth.triggerPostLogin);
+
+  useUsageLogger();
 
   const [showLoader, setShowLoader] = useState<boolean>(true);
   const [accessToken, setAccessToken] = useState<string>("");

@@ -2409,6 +2409,20 @@ model ModuleUsageLog {
   timestamp  DateTime @default(now())
 }
 
+/// Enhanced usage log with richer metadata
+model UsageLog {
+  id         String   @id @default(cuid())
+  userId     String
+  role       Role
+  schoolId   String
+  module     String
+  deviceType String
+  timestamp  DateTime @default(now())
+
+  @@index([userId])
+  @@index([schoolId])
+}
+
 model OtpToken {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
