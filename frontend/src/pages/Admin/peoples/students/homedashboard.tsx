@@ -25,6 +25,8 @@ import {
   IQuizNewspaperResponse,
   IQuiz,
   INewspaper,
+  getResourcesByStudentId,
+  IAssignment,
 } from '../../../../services/student/StudentAllApi';
 
 interface DashboardData {
@@ -56,11 +58,11 @@ interface DashboardData {
   };
   timetable: ILesson[];
   notices: Array<{
-  key: string;
-  title: string;
-  date: string;
-  description: string;
-  attachment: string;
+    key: string;
+    title: string;
+    date: string;
+    description: string;
+    attachment: string;
   }>;
   events: Array<{
     id: string;
@@ -68,14 +70,7 @@ interface DashboardData {
     date: string;
     description: string;
   }>;
-  assignments: Array<{
-  id: string;
-    title: string;
-    description: string;
-    dueDate: string;
-    status: string;
-    subject: string;
-  }>;
+  assignments: IAssignment[];
   exams: IExam[];
   quizzes: IQuiz[];
   newspapers: INewspaper[];
@@ -120,6 +115,20 @@ const HomeDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
 
+  // Check if user is logged in
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      setError('Please login to access the dashboard');
+      setIsLoading(false);
+      setTimeout(() => {
+        localStorage.clear();
+        window.location.href = '/login';
+      }, 2000);
+      return;
+    }
+  }, []);
+
   // Add state for quiz modal and attempted quizzes
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<IQuiz | null>(null);
@@ -138,28 +147,36 @@ const HomeDashboard = () => {
         setIsLoading(true);
         setError(null);
 
-        const studentId = localStorage.getItem('studentId');
-        if (!studentId) {
-          throw new Error('Student ID not found');
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+          throw new Error('User ID not found. Please login again.');
         }
 
-        // Fetch all data in parallel
+        // First, get the student user data to extract the studentId
+        const userResponse = await getStudentUserById();
+        const studentId = userResponse.data.student?.id;
+        
+        if (!studentId) {
+          throw new Error('Student profile not found. Please contact support.');
+        }
+
+        // Fetch all data in parallel using the correct studentId
         const [
-          userResponse,
           lessonsResponse,
           resourcesResponse,
           feesResponse,
           attendanceResponse,
           examsResponse,
           quizNewspaperResponse,
+          assignmentsResponse,
         ] = await Promise.all([
-          getStudentUserById(),
           getLessonsByStudentId(studentId),
           getDashboardResourcesByStudentId(),
           getFeesByStudentId(studentId),
           getAttendanceLeavesByStudentId(studentId),
           getExamsResultsByStudentId(),
           getQuizNewspaperByStudentId(),
+          getResourcesByStudentId(studentId),
         ]);
 
         // Process personal info
@@ -268,25 +285,10 @@ const HomeDashboard = () => {
               }))
           : [];
 
-        // Process assignments (mock data for now)
-        const assignments = [
-          {
-            id: '1',
-            title: 'Mathematics Assignment',
-            description: 'Complete exercises 1-10 from Chapter 5',
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'Pending',
-            subject: 'Mathematics',
-          },
-          {
-            id: '2',
-            title: 'English Essay',
-            description: 'Write a 500-word essay on environmental conservation',
-            dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'Pending',
-            subject: 'English',
-          },
-        ];
+        // Process assignments from API
+        const assignments = assignmentsResponse.data.success 
+          ? assignmentsResponse.data.assignments
+          : [];
 
         // Process exams
         const exams = examsResponse.data.success ? examsResponse.data.exams.slice(0, 5) : [];
@@ -313,12 +315,23 @@ const HomeDashboard = () => {
         const errorMessage = err.response?.data?.error || err.message || 'Failed to load dashboard data';
         setError(errorMessage);
         toast.error(errorMessage, { autoClose: 3000 });
+        
+        
+        if (err.response?.status === 401 || errorMessage.includes('User ID not found')) {
+          setTimeout(() => {
+            localStorage.clear();
+            window.location.href = '/login';
+          }, 2000);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchDashboardData();
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      fetchDashboardData();
+    }
   }, []);
 
   // On mount, mark already attempted quizzes
@@ -408,12 +421,16 @@ const HomeDashboard = () => {
         <ToastContainer position="top-center" autoClose={3000} theme="colored" />
         <div className="alert alert-danger d-flex justify-content-between align-items-start">
           <div>
-            <h5 className="alert-heading">Error Loading Dashboard</h5>
+            <h5 className="alert-heading">
+              {error.includes('login') || error.includes('User ID not found') ? 'Authentication Required' : 'Error Loading Dashboard'}
+            </h5>
             <p className="mb-0">{error}</p>
           </div>
-          <button className="btn btn-outline-primary btn-sm" onClick={() => window.location.reload()}>
-            <i className="bi bi-arrow-clockwise me-1"></i>Retry
-          </button>
+          {!error.includes('login') && !error.includes('User ID not found') && (
+            <button className="btn btn-outline-primary btn-sm" onClick={() => window.location.reload()}>
+              <i className="bi bi-arrow-clockwise me-1"></i>Retry
+            </button>
+          )}
         </div>
       </div>
     );
@@ -594,7 +611,7 @@ const HomeDashboard = () => {
                               <div className="d-flex justify-content-between align-items-start mb-2">
                                 <span className="badge bg-primary">
                                   <i className="bi bi-building me-1"></i>
-                                  Room {lesson.roomNumber || 'N/A'}
+                                  Room {lesson.subject?.name || 'N/A'}
                                 </span>
                                 {isLessonOngoing(lesson.startTime, lesson.endTime) && (
                                   <span className="badge bg-success">
@@ -670,7 +687,7 @@ const HomeDashboard = () => {
                                 <p className="text-muted mb-2 small">{assignment.description}</p>
                                 <p className="text-muted mb-0">
                                   <i className="bi bi-book me-1"></i>
-                                  {assignment.subject}
+                                  {assignment.subject?.name || 'N/A'}
                                 </p>
                               </div>
                             </div>
