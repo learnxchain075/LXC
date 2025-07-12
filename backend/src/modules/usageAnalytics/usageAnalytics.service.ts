@@ -66,3 +66,5 @@ export async function getUsageAnalytics(query: UsageAnalyticsQuery) {
   };
   return result;
 }
+
+// test function to log usage
