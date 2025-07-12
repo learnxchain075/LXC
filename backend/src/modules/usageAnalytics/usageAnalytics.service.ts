@@ -14,7 +14,7 @@ import type { Role } from "@prisma/client";
 export async function logUsage(data: {
   userId: string;
   role: string;
-  schoolId: string;
+  schoolId?: string;
   module: string;
   deviceType: string;
 }) {

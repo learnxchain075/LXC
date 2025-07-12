@@ -5,7 +5,7 @@ export async function postUsageLog(req: Request, res: Response, next: NextFuncti
   try {
     const userId = req.user?.id as string;
     const role = req.user?.role as string;
-    const schoolId = req.user?.schoolId as string || req.body.schoolId;
+    const schoolId = (req.user?.schoolId as string | undefined) || req.body.schoolId;
     const { module, deviceType } = req.body;
     await logUsage({ userId, role, schoolId, module, deviceType });
     res.json({ success: true });

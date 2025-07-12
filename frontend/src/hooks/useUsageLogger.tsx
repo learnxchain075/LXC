@@ -10,7 +10,8 @@ const useUsageLogger = () => {
   useEffect(() => {
     if (!user) return;
     const deviceType = /Mobi/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
-    logUsage({ module: location.pathname, deviceType }).catch(() => {});
+    const schoolId = user.schoolId || localStorage.getItem("schoolId") || undefined;
+    logUsage({ module: location.pathname, deviceType, schoolId }).catch(() => {});
   }, [location.pathname, user]);
 };
 

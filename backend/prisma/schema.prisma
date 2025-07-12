@@ -2414,7 +2414,7 @@ model UsageLog {
   id         String   @id @default(cuid())
   userId     String
   role       Role
-  schoolId   String
+  schoolId   String?
   module     String
   deviceType String
   timestamp  DateTime @default(now())
