@@ -244,7 +244,7 @@ const StudentResult = () => {
                                   <span className="badge bg-light text-dark border ms-2">
                                     {examDate}
                                   </span>
-                                  <span className="badge bg-info text-dark ms-2">
+                                  <span className="badge bg-info text-white ms-2">
                                     {exam.subject?.name} ({exam.subject?.code})
                                 </span>
                               </button>
@@ -259,19 +259,19 @@ const StudentResult = () => {
                                     <table className="table table-hover align-middle mb-0">
                                       <thead className="table-light sticky-top">
                                       <tr>
-                                          <th>Subject</th>
-                                          <th>Max Marks</th>
-                                          <th>Min Marks</th>
-                                          <th>Marks Obtained</th>
-                                          <th className="text-end">Result</th>
+                                          <th className="text-dark">Subject</th>
+                                          <th className="text-dark">Max Marks</th>
+                                          <th className="text-dark">Min Marks</th>
+                                          <th className="text-dark">Marks Obtained</th>
+                                          <th className="text-dark text-end">Result</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                          <td>{exam.subject?.name} ({exam.subject?.code})</td>
-                                          <td>{totalMarks}</td>
-                                          <td>{passMark}</td>
-                                          <td>{marksObtained !== null ? marksObtained : <span className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>Not Published</span>}</td>
+                                          <td className="text-dark">{exam.subject?.name} ({exam.subject?.code})</td>
+                                          <td className="text-dark">{totalMarks}</td>
+                                          <td className="text-dark">{passMark}</td>
+                                          <td className="text-dark">{marksObtained !== null ? marksObtained : <span className="text-muted">Not Published</span>}</td>
                                           <td className="text-end">
                                             <span className={`badge ${result === 'Pass' ? 'bg-success' : result === 'Fail' ? 'bg-danger' : 'bg-secondary'}`}>{result}</span>
                                           </td>
