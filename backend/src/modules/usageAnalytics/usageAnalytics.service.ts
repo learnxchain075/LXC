@@ -9,6 +9,8 @@ export interface UsageAnalyticsQuery {
   schoolId?: string;
 }
 
+import type { Role } from "@prisma/client";
+
 export async function logUsage(data: {
   userId: string;
   role: string;
@@ -16,7 +18,12 @@ export async function logUsage(data: {
   module: string;
   deviceType: string;
 }) {
-  await prisma.usageLog.create({ data });
+  await prisma.usageLog.create({
+    data: {
+      ...data,
+      role: data.role as Role,
+    },
+  });
 }
 
 export async function getUsageAnalytics(query: UsageAnalyticsQuery) {
