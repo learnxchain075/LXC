@@ -2413,10 +2413,13 @@ model ModuleUsageLog {
 model UsageLog {
   id         String   @id @default(cuid())
   userId     String
-  role       Role
-  schoolId   String?
+  schoolId   String
   module     String
+  role       Role
   deviceType String
+  duration   Int?
+  lat        Float?
+  lng        Float?
   timestamp  DateTime @default(now())
 
   @@index([userId])
