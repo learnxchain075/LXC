@@ -110,6 +110,7 @@ export const createPlanInvoice = async (
   return { invoiceNumber, url: invoiceUrl };
 };
 
+// Create inovice for fee payments
 export const createFeeInvoice = async (
   paymentId: string
 ): Promise<{ invoiceNumber: string; url: string } | undefined> => {
