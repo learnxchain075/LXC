@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Spinner, Tab, Tabs, Table, Alert, Button, Form, Image } from 'react-bootstrap';
-import { getstudentprofiledetails, getAttendanceLeavesByStudentId, applyStudentLeave, getFeesByStudentId, getLessonsByStudentId, getResourcesByStudentId, getStudentLibraryBooks, getDashboardResourcesByStudentId, getstudentprofiledetailsparents, getExamsResultsByStudentIdParam, IExam } from '../../services/student/StudentAllApi';
+import { getstudentprofiledetails, getAttendanceLeavesByStudentId, applyStudentLeave, getFeesByStudentId, getLessonsByStudentId, getResourcesByStudentId, getStudentLibraryBooks, getDashboardResourcesByStudentId, getstudentprofiledetailsparents, getExamsResultsByStudentIdParam, IExam, getStudentUserDetails } from '../../services/student/StudentAllApi';
 import { getStudentTimetable } from '../../services/student/StudentDashboardApi';
-import { createFeeOrder, verifyFeePayment } from '../../services/payfee';
+import { createFeeOrder, verifyFeePayment, downloadFeeInvoice, downloadFeeReceipt } from '../../services/payfee';
 import BaseApi from '../../services/BaseApi';
 import { getFeesByStudent } from '../../services/accounts/feesServices';
 import { createTicket } from '../../services/superadmin/ticketApi';
@@ -33,7 +33,7 @@ const formatTime = (date: string) => {
   return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
-// Razorpay loader utility
+
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
     if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
@@ -65,27 +65,27 @@ function FeePaymentModal({ show, onHide, fee }: { show: boolean, onHide: () => v
 }
 
 // Student Details Modal
-export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function StudentDetailsModal({ show, onHide, userId }: { show: boolean, onHide: () => void, userId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   
   useEffect(() => {
-    if (!show || !studentId) return;
+    if (!show || !userId) return;
     setLoading(true);
     setError(null);
     
  
-    getstudentprofiledetails(studentId)
+    getStudentUserDetails(userId)
       .then(res => { 
-        console.log('Student Details Response:', res.data);
+       // console.log('Student Details Response:', res.data);
         setData(res.data); 
       })
       .catch((err) => {
         console.error('Student Details Error:', err);
         if (err?.response?.status === 404) {
-          setError('Student not found. Please check the student ID.');
+          setError('Student not found. Please check the user ID.');
         } else if (err?.response?.status === 403) {
           setError('Access denied. You may not have permission to view this student\'s details.');
         } else if (err?.message?.includes('Network')) {
@@ -95,7 +95,7 @@ export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean
         }
       })
       .finally(() => setLoading(false));
-  }, [show, studentId]);
+  }, [show, userId]);
 
   // Helper function to format currency
   const formatCurrency = (amount: number): string => {
@@ -178,10 +178,10 @@ export function StudentDetailsModal({ show, onHide, studentId }: { show: boolean
               <div className="col-md-9">
                 <h5 className={`mb-2 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}>{data.name || data.studentName || 'Student Name'}</h5>
                 <div className="row">
-                  <div className="col-md-6">
-                    <p className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-light" : ""}`}><strong>Student ID:</strong> {studentId}</p>
+                  {/* <div className="col-md-6">
+                    <p className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-light" : ""}`}><strong>User ID:</strong> {userId}</p>
                     <p className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-light" : ""}`}><strong>School ID:</strong> {data.schoolId || '-'}</p>
-                  </div>
+                  </div> */}
                   <div className="col-md-6">
                     <p className={`mb-1 ${dataTheme === "dark_data_theme" ? "text-light" : ""}`}><strong>Class:</strong> {data.student?.class?.name || '-'}</p>
                   </div>
@@ -287,7 +287,7 @@ const formatDisplayDate = (date: string) => {
 };
 
 // Attendance & Leave Modal
-export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function AttendanceLeaveModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -303,7 +303,7 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const userObj = useSelector((state: any) => state.auth.userObj);
 
-  const userId = userObj?.id || data?.student?.userId || localStorage.getItem('userId') || '';
+  const currentUserId =  userId || '';
 
   const fetchAttendanceLeaves = () => {
     setLoading(true);
@@ -330,15 +330,15 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
       setApplyLoading(false);
       return;
     }
-    if (!userId) {
-      setApplyError('User session not found. Please log in again.');
-      setApplyLoading(false);
-      return;
-    }
+    // if (!currentUserId) {
+    //   setApplyError('User session not found. Please log in again.');
+    //   setApplyLoading(false);
+    //   return;
+    // }
     try {
-   // console.log(studentId);
+   //console.log(currentUserId);
       await applyStudentLeave({
-        userId: studentId,
+        userId: currentUserId,
         reason: form.reason.trim(),
         fromDate: form.fromDate,
         toDate: form.toDate,
@@ -375,7 +375,7 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
           {loading && <Loader />}
           {error && <ErrorMsg msg={error} />}
           {data && (
-            (data.attendance?.length > 0 || data.leaveRequests?.length > 0) ? (
+            // (data.attendance?.length > 0 || data.leaveRequests?.length > 0) ? (
               <Tabs defaultActiveKey="attendance" className="mb-3">
                 <Tab eventKey="attendance" title="Attendance">
                   {data.attendance?.length > 0 ? (
@@ -419,7 +419,7 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
                   ) : <EmptyMsg msg="No leave requests found." />}
                 </Tab>
               </Tabs>
-            ) : <EmptyMsg msg="No attendance or leave data available." />
+            // ) : <EmptyMsg msg="No attendance or leave data available." />
           )}
         </Modal.Body>
       </Modal>
@@ -458,10 +458,11 @@ export function AttendanceLeaveModal({ show, onHide, studentId }: { show: boolea
 }
 
 
-export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpdated }: { 
+export function FeesModal({ show, onHide, studentId, userId, refetchDashboard, onFeesUpdated }: { 
   show: boolean, 
   onHide: () => void, 
   studentId: string, 
+  userId: string,
   refetchDashboard?: () => void,
   onFeesUpdated?: (updatedFees: any) => void 
 }) {
@@ -683,74 +684,28 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpd
       }
   }
 
-  async function handleDownloadReceipt(payment: any, type: 'receipt' | 'invoice' = 'receipt') {
-    setDownloading(payment.id);
-    try {
-      let downloadUrl = '';
-      let filename = '';
-      
-      if (type === 'invoice') {
-        // Use the invoice URL from the payment response
-        downloadUrl = payment.invoiceUrl || payment.officeInvoiceUrl;
-        filename = payment.invoiceNumber ? `${payment.invoiceNumber}.pdf` : `invoice_${payment.id}.pdf`;
-      } else {
-        // Use the receipt URL from the payment response
-        downloadUrl = payment.receiptUrl || payment.invoiceUrl;
-        filename = payment.invoiceNumber ? `receipt_${payment.invoiceNumber}.pdf` : `receipt_${payment.id}.pdf`;
-      }
-      
-      if (!downloadUrl) {
-        throw new Error(`${type.charAt(0).toUpperCase() + type.slice(1)} URL not available`);
-      }
-      
-      // Ensure URL is absolute
-      if (!downloadUrl.startsWith('http')) {
-        downloadUrl = `https://api.learnxchain.io${downloadUrl}`;
-      }
-      
-      // Download the file directly from the URL
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      
-      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} downloaded successfully`);
-    } catch (err: any) {
-      const errorMessage = err?.message || `Failed to download ${type}. Please try again later.`;
-      toast.error(errorMessage);
-    } finally {
-      setDownloading(null);
+    async function handleDownloadReceipt(payment: any, type: 'receipt' | 'invoice' | 'office' = 'receipt') {
+    let url = payment._customUrl || (type === 'office' ? payment.officeInvoiceUrl : payment.invoiceUrl || payment.officeInvoiceUrl);
+    let fileName = type === 'office'
+      ? (payment.invoiceNumber ? `${payment.invoiceNumber}_officecopy.pdf` : `office_invoice_${payment.id || payment.razorpayPaymentId}.pdf`)
+      : (payment.invoiceNumber ? `${type === 'invoice' ? payment.invoiceNumber : 'receipt_' + payment.invoiceNumber}.pdf` : `${type}_${payment.id || payment.razorpayPaymentId}.pdf`);
+    if (!url) {
+      toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not available.`);
+      return;
     }
+    await fetchAndHandlePDF(url, fileName, 'download');
   }
 
-  const handleViewDocument = (payment: any, type: 'receipt' | 'invoice' = 'receipt') => {
-    try {
-      let viewUrl = '';
-      
-      if (type === 'invoice') {
-        viewUrl = payment.invoiceUrl || payment.officeInvoiceUrl;
-      } else {
-        viewUrl = payment.receiptUrl || payment.invoiceUrl;
-      }
-      
-      if (!viewUrl) {
-        toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} URL not available`);
-        return;
-      }
-      
-      // Ensure URL is absolute
-      if (!viewUrl.startsWith('http')) {
-        viewUrl = `https://api.learnxchain.io${viewUrl}`;
-      }
-      
-      // Open the document in a new tab
-      window.open(viewUrl, '_blank');
-    } catch (err: any) {
-      toast.error(`Failed to open ${type}. Please try again later.`);
+  const handleViewDocument = async (payment: any, type: 'receipt' | 'invoice' | 'office' = 'receipt') => {
+    let url = payment._customUrl || (type === 'office' ? payment.officeInvoiceUrl : payment.invoiceUrl || payment.officeInvoiceUrl);
+    let fileName = type === 'office'
+      ? (payment.invoiceNumber ? `${payment.invoiceNumber}_officecopy.pdf` : `office_invoice_${payment.id || payment.razorpayPaymentId}.pdf`)
+      : (payment.invoiceNumber ? `${type === 'invoice' ? payment.invoiceNumber : 'receipt_' + payment.invoiceNumber}.pdf` : `${type}_${payment.id || payment.razorpayPaymentId}.pdf`);
+    if (!url) {
+      toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not available.`);
+      return;
     }
+    await fetchAndHandlePDF(url, fileName, 'view');
   };
 
   const getStatusBadge = (status: string) => {
@@ -1084,56 +1039,52 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpd
                            </div>
                                                      <div className="col-md-2">
                              <div className="d-flex gap-1 flex-wrap">
-                               {p.status === 'PAID' && (p.invoiceUrl || p.officeInvoiceUrl) && (
+                               {/* Main Invoice/Receipt (use only one label) */}
+                               {p.invoiceUrl && (
                                  <>
-                                   <Button 
-                                     size="sm" 
-                                     variant="outline-success" 
-                                     onClick={() => handleViewDocument(p, 'invoice')} 
+                                   <Button
+                                     size="sm"
+                                     variant="outline-success"
+                                     onClick={() => handleViewDocument({ ...p, _customUrl: p.invoiceUrl }, 'invoice')}
                                      title="View Invoice"
                                      className="btn-sm"
                                    >
-                                     <i className="ti ti-eye"></i>
-                          </Button>
-                                   <Button 
-                                     size="sm" 
-                                     variant="outline-success" 
-                                     onClick={() => handleDownloadReceipt(p, 'invoice')} 
-                                     disabled={downloading === p.id} 
+                                     <i className="ti ti-eye"></i> Invoice
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     variant="outline-success"
+                                     onClick={() => handleDownloadReceipt({ ...p, _customUrl: p.invoiceUrl }, 'invoice')}
                                      title="Download Invoice"
                                      className="btn-sm"
                                    >
-                                     {downloading === p.id ? (
-                                       <LoadingSkeleton lines={1} height={12} />
-                                     ) : (
-                                       <i className="ti ti-file-text"></i>
-                                     )}
+                                     <i className="ti ti-download"></i> Invoice
                                    </Button>
                                  </>
                                )}
-                               <Button 
-                                 size="sm" 
-                                 variant="outline-info" 
-                                 onClick={() => handleViewDocument(p, 'receipt')} 
-                                 title="View Receipt"
-                                 className="btn-sm"
-                               >
-                                 <i className="ti ti-eye"></i>
-                               </Button>
-                               <Button 
-                                 size="sm" 
-                                 variant="outline-primary" 
-                                 onClick={() => handleDownloadReceipt(p, 'receipt')} 
-                                 disabled={downloading === p.id || !p.id} 
-                                 title="Download Receipt"
-                                 className="btn-sm"
-                               >
-                                 {downloading === p.id ? (
-                                   <LoadingSkeleton lines={1} height={12} />
-                                 ) : (
-                                   <i className="ti ti-download"></i>
-                                 )}
-                               </Button>
+                               {/* Office Copy (if it exists and is different) */}
+                               {p.officeInvoiceUrl && p.officeInvoiceUrl !== p.invoiceUrl && (
+                                 <>
+                                   <Button
+                                     size="sm"
+                                     variant="outline-warning"
+                                     onClick={() => handleViewDocument({ ...p, _customUrl: p.officeInvoiceUrl }, 'office')}
+                                     title="View Office Copy"
+                                     className="btn-sm"
+                                   >
+                                     <i className="ti ti-eye"></i> Office Copy
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     variant="outline-warning"
+                                     onClick={() => handleDownloadReceipt({ ...p, _customUrl: p.officeInvoiceUrl }, 'office')}
+                                     title="Download Office Copy"
+                                     className="btn-sm"
+                                   >
+                                     <i className="ti ti-download"></i> Office Copy
+                                   </Button>
+                                 </>
+                               )}
                              </div>
                            </div>
                         </div>
@@ -1333,7 +1284,7 @@ export function FeesModal({ show, onHide, studentId, refetchDashboard, onFeesUpd
 }
 
 
-export function TimetableModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function TimetableModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1392,7 +1343,7 @@ export function TimetableModal({ show, onHide, studentId }: { show: boolean, onH
   );
 }
 
-export function AssignmentsModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function AssignmentsModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1469,7 +1420,7 @@ export function AssignmentsModal({ show, onHide, studentId }: { show: boolean, o
   );
 }
 
-export function NoticesModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function NoticesModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [attachmentModal, setAttachmentModal] = useState<{ show: boolean, url: string | null }>({ show: false, url: null });
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -1759,7 +1710,7 @@ export function NoticeAttachmentModal({ show, onHide, url }: { show: boolean, on
   );
 }
 
-export function ExamResultsModal({ show, onHide, studentId }: { show: boolean, onHide: () => void, studentId: string }) {
+export function ExamResultsModal({ show, onHide, studentId, userId }: { show: boolean, onHide: () => void, studentId: string, userId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exams, setExams] = useState<IExam[]>([]);
@@ -1868,11 +1819,9 @@ export function AddTicketModal({ show, onHide, studentId, parentId }: { show: bo
     }
     
     // Get user ID from multiple sources
-    const userId = currentUser?.id || 
-                   parentId ||
+    const userId = 
                    localStorage.getItem('userId') || 
-                   localStorage.getItem('parentId') ||
-                   localStorage.getItem('guardianId') ||
+                
                    '';
     
     if (!userId) {
@@ -3111,3 +3060,57 @@ if (typeof document !== 'undefined') {
     document.head.appendChild(style);
   }
 } 
+
+// Helper to fetch and download/view PDF securely
+const fetchAndHandlePDF = async (fileUrl: string, fileName: string, action: 'download' | 'view') => {
+  try {
+    const response = await fetch(fileUrl, {
+      method: 'GET',
+      // credentials: 'include', // Uncomment if you need cookies for auth
+      // headers: { Authorization: `Bearer ${token}` }, // Add if you use JWT
+    });
+    if (!response.ok) throw new Error('Failed to fetch document');
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    if (action === 'download') {
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } else if (action === 'view') {
+      window.open(blobUrl, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000 * 60);
+    }
+  } catch (err) {
+    toast.error('Failed to open/download document');
+  }
+};
+
+// Replace handleDownloadReceipt and handleViewDocument for invoice/receipt with the new helper
+const handleDownloadReceipt = async (payment: any, type: 'receipt' | 'invoice' | 'office' = 'receipt') => {
+  let url = payment._customUrl || (type === 'office' ? payment.officeInvoiceUrl : payment.invoiceUrl || payment.officeInvoiceUrl);
+  let fileName = type === 'office'
+    ? (payment.invoiceNumber ? `${payment.invoiceNumber}_officecopy.pdf` : `office_invoice_${payment.id || payment.razorpayPaymentId}.pdf`)
+    : (payment.invoiceNumber ? `${type === 'invoice' ? payment.invoiceNumber : 'receipt_' + payment.invoiceNumber}.pdf` : `${type}_${payment.id || payment.razorpayPaymentId}.pdf`);
+  if (!url) {
+    toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not available.`);
+    return;
+  }
+  await fetchAndHandlePDF(url, fileName, 'download');
+};
+
+const handleViewDocument = async (payment: any, type: 'receipt' | 'invoice' | 'office' = 'receipt') => {
+  let url = payment._customUrl || (type === 'office' ? payment.officeInvoiceUrl : payment.invoiceUrl || payment.officeInvoiceUrl);
+  let fileName = type === 'office'
+    ? (payment.invoiceNumber ? `${payment.invoiceNumber}_officecopy.pdf` : `office_invoice_${payment.id || payment.razorpayPaymentId}.pdf`)
+    : (payment.invoiceNumber ? `${type === 'invoice' ? payment.invoiceNumber : 'receipt_' + payment.invoiceNumber}.pdf` : `${type}_${payment.id || payment.razorpayPaymentId}.pdf`);
+  if (!url) {
+    toast.error(`${type.charAt(0).toUpperCase() + type.slice(1)} not available.`);
+    return;
+  }
+  await fetchAndHandlePDF(url, fileName, 'view');
+};
