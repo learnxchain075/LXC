@@ -13,15 +13,7 @@ export interface UsageAnalyticsQuery {
 import type { Role } from "@prisma/client";
 
 export function listRoles() {
-  return [
-    "admin",
-    "teacher",
-    "student",
-    "parent",
-    "transport",
-    "account",
-    "employee",
-  ];
+  return ["admin", "teacher", "student", "parent", "transport", "account", "employee"];
 }
 
 export async function getSchoolsWithModules() {
@@ -76,7 +68,7 @@ export async function getUsageAnalytics(query: UsageAnalyticsQuery) {
   if (query.device) where.deviceType = query.device;
   if (query.schoolId) where.schoolId = query.schoolId;
   if (query.latlng) {
-    const parts = query.latlng.split(',').map((p) => parseFloat(p));
+    const parts = query.latlng.split(",").map((p) => parseFloat(p));
     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
       where.lat = parts[0];
       where.lng = parts[1];
@@ -99,12 +91,23 @@ export async function getUsageAnalytics(query: UsageAnalyticsQuery) {
   const usageByDay: Record<string, number> = {};
   const usageByModule: Record<string, number> = {};
   const usageByRole: Record<string, number> = {};
+  const durationByModule: Record<string, number> = {};
+  const durationByRole: Record<string, number> = {};
+  const usageByLocation: Record<string, number> = {};
 
   logs.forEach((log) => {
     const day = log.timestamp.toISOString().split("T")[0];
     usageByDay[day] = (usageByDay[day] || 0) + 1;
     usageByModule[log.module] = (usageByModule[log.module] || 0) + 1;
     usageByRole[log.role] = (usageByRole[log.role] || 0) + 1;
+    if (log.duration != null) {
+      durationByModule[log.module] = (durationByModule[log.module] || 0) + log.duration;
+      durationByRole[log.role] = (durationByRole[log.role] || 0) + log.duration;
+    }
+    if (log.lat != null && log.lng != null) {
+      const key = `${log.lat},${log.lng}`;
+      usageByLocation[key] = (usageByLocation[key] || 0) + 1;
+    }
   });
 
   const total = logs.length;
@@ -113,6 +116,9 @@ export async function getUsageAnalytics(query: UsageAnalyticsQuery) {
     usageByDay,
     usageByModule,
     usageByRole,
+    durationByModule,
+    durationByRole,
+    usageByLocation,
   };
   return result;
 }
