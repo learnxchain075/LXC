@@ -7,7 +7,7 @@ export const getTeacherPayrolls = async (
   req: Request,
   res: Response,
   next: NextFunction
-) :Promise<any> => {
+): Promise<any> => {
   try {
     const params = z.object({ teacherId: cuidSchema }).safeParse(req.params);
     if (!params.success) {
@@ -25,9 +25,22 @@ export const getTeacherPayrolls = async (
     const payrolls = await prisma.payroll.findMany({
       where: { userId: teacher.userId },
       orderBy: { periodStart: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            profilePic: true,
+            designation: true, // If `designation` exists in User model
+            // Add more fields here as required
+          },
+        },
+      },
     });
 
-    res.json(payrolls);
+    res.json({ payrolls });
   } catch (error) {
     console.error("Error fetching payrolls:", error);
     next(error);
