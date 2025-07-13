@@ -94,14 +94,17 @@ export const deleteClass = async (
 export const getClassesByTeacherId = async (
   teacherId: string
 ): Promise<AxiosResponse<Iclassform[]>> => {
-  return await BaseApi.getRequest(`/teachers/${teacherId}/classes`);
+  let resolvedTeacherId = teacherId;
+  if (!resolvedTeacherId) {
+    const storedId = localStorage.getItem("teacherId");
+    if (!storedId) {
+      throw new Error("Teacher ID is required but not provided.");
+    }
+    resolvedTeacherId = storedId;
+  }
+  return await BaseApi.getRequest(`/teachers/${resolvedTeacherId}/classes`);
 };
 
-/**
- * ✅ Assign Teacher to Class
- * Sends a POST request to assign a teacher to a class
- * @param data - Assignment data
- */
 export const postassignTeacherToaClass = async (
   data: any
 ): Promise<AxiosResponse<Iclassform[]>> => {

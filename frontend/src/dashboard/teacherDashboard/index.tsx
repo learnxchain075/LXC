@@ -386,6 +386,7 @@ import AcademicUploads from "../../pages/Common/AcademicUploads";
 import SelfEnhancement from "../../pages/Common/SelfEnhancement";
 import DoubtForum from "../../pages/Common/DoubtForum";
 import { useSelector } from "react-redux";
+import Teacherui from "../../pages/Admin/peoples/teacher/teacher-details/teacherui";
 
 const TeacherDashboard = () => {
   const routes = all_routes;
@@ -395,9 +396,16 @@ const TeacherDashboard = () => {
   const userObj = useSelector((state: any) => state.auth.userObj);
   const ismobile = useMobileDetection();
 
-  // Skeleton Placeholder Component
-  const SkeletonPlaceholder = ({ className = '' }) => (
-    <span className={`placeholder bg-secondary ${className}`} />
+  // Skeleton Placeholder Component with proper TypeScript interface
+  interface SkeletonPlaceholderProps {
+    className?: string;
+    style?: React.CSSProperties;
+  }
+
+  const SkeletonPlaceholder: React.FC<SkeletonPlaceholderProps> = ({ className = '', style = {} }) => (
+    <div className={`placeholder-glow ${className}`} style={style}>
+      <div className="placeholder col-12"></div>
+    </div>
   );
 
   function SampleNextArrow(props: any) {
@@ -526,11 +534,11 @@ const TeacherDashboard = () => {
   };
 
   useEffect(() => {
-    console.log("TeacherDashboard mounted, fetching teacher details...");
+    //console.log("TeacherDashboard mounted, fetching teacher details...");
     fetchTeacherDetails();
   }, []);
 
-  const [activeTab, setActiveTab] = useState(routes.teacherDetails);
+  const [activeTab, setActiveTab] = useState(routes.teacheruimodern);
 
   const renderContent = () => {
     if (loading) {
@@ -665,6 +673,8 @@ const TeacherDashboard = () => {
     switch (activeTab) {
       case routes.teacherDetails:
         return <TeacherDetails />;
+         case routes.teacheruimodern:
+        return <Teacherui />;
       case routes.teachersRoutine:
         return <TeachersRoutine />;
       case routes.teacherLeaves:
