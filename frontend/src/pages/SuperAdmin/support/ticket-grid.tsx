@@ -18,6 +18,25 @@ import { toast, ToastContainer } from "react-toastify";
 
 import useMobileDetection from "../../../core/common/mobileDetection";
 
+interface TicketForm {
+  id?: string;
+  title: string;
+  schoolId: string;
+  userId: string;
+  description: string;
+  category: string;
+  priority: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+  user?: {
+    name: string;
+    avatar?: string;
+  };
+  comments?: number;
+  assignedTo?: string;
+  assignedToId?: string;
+}
 
 const timeAgo = (dateString: string) => {
   if (!dateString) return "Recently updated";
@@ -95,7 +114,6 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
 
   const schoolID = getSchoolId();
   const userId = getUserId();
-  // console.log("object",userId);
 
   const [ticketData, setTicketData] = useState<TicketForm>({
     title: "",
@@ -126,9 +144,12 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
         const res = await getTicketsByuserid(userId);
         setSchoolTickets(res.data || []);
       }
-          } catch (error) {
-        toast.error("Failed to load tickets");
-      }
+    } catch (error) {
+      console.error("Failed to load tickets:", error);
+      toast.error("Failed to load tickets");
+      setAllTickets([]);
+      setSchoolTickets([]);
+    }
   };
 
   const fetchMetadata = async () => {
@@ -138,9 +159,27 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
       setCategories(c.map((v: string) => ({ value: v, label: v })));
       setPriorities(p.map((v: string) => ({ value: v, label: v })));
       setStatuses(s.map((v: string) => ({ value: v, label: v })));
-          } catch (err) {
-        // Failed to load ticket metadata
-      }
+    } catch (err) {
+      console.error("Failed to load ticket metadata:", err);
+      // Set default values if API fails
+      setCategories([
+        { value: "Technical Issue", label: "Technical Issue" },
+        { value: "Feature Request", label: "Feature Request" },
+        { value: "Bug Report", label: "Bug Report" },
+        { value: "General Inquiry", label: "General Inquiry" }
+      ]);
+      setPriorities([
+        { value: "Low", label: "Low" },
+        { value: "Medium", label: "Medium" },
+        { value: "High", label: "High" }
+      ]);
+      setStatuses([
+        { value: "Open", label: "Open" },
+        { value: "Pending", label: "Pending" },
+        { value: "Resolved", label: "Resolved" },
+        { value: "Closed", label: "Closed" }
+      ]);
+    }
   };
 
   useEffect(() => {
@@ -162,9 +201,10 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
         handleCancel();
         navigate(`${route.ticketDetail}/${res.data.id}`);
       }
-          } catch (error) {
-        toast.error("Failed to create ticket");
-      }
+    } catch (error) {
+      console.error("Failed to create ticket:", error);
+      toast.error("Failed to create ticket");
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -172,9 +212,10 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
       await deleteTicket(id);
       toast.success("Ticket successfully deleted");
       fetchTickets();
-          } catch (error) {
-        toast.error("Failed to delete ticket");
-      }
+    } catch (error) {
+      console.error("Failed to delete ticket:", error);
+      toast.error("Failed to delete ticket");
+    }
   };
 
   const handleCancel = () => {
@@ -204,9 +245,10 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
       fetchTickets();
       setSelectedTicket(null);
       closeModal("update_ticket");
-          } catch (error) {
-        toast.error("Failed to update ticket");
-      }
+    } catch (error) {
+      console.error("Failed to update ticket:", error);
+      toast.error("Failed to update ticket");
+    }
   };
 
   const closeModal = (id: string) => {
@@ -219,7 +261,8 @@ const TicketGrid = ({ teacherdata }: { teacherdata?: any }) => {
 
   const ticketsToShow = role === "superadmin" ? allTickets : schoolTickets;
   const hasTickets = ticketsToShow.length > 0;
-const ismobile=useMobileDetection();
+  const ismobile = useMobileDetection();
+  
   return (
     <>
      <div className={ismobile ? "page-wrapper" : role==="admin" ?"page-wrapper" :"page-wrapper"}>
@@ -577,7 +620,7 @@ const ismobile=useMobileDetection();
                 <div className="row">
                   <div className="col-md-12">
                     <div className="mb-3">
-                      <label className="form-label">Title</label>
+                      <label className="form-label">Title <span className="text-danger">*</span></label>
                       <input
                         type="text"
                         className="form-control"
@@ -590,7 +633,7 @@ const ismobile=useMobileDetection();
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="form-label">Ticket Description</label>
+                      <label className="form-label">Ticket Description <span className="text-danger">*</span></label>
                       <textarea
                         className="form-control"
                         placeholder="Add description"
@@ -605,7 +648,7 @@ const ismobile=useMobileDetection();
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="form-label">Category</label>
+                      <label className="form-label">Category <span className="text-danger">*</span></label>
                       <CommonSelect
                         className="select"
                         options={categories}
@@ -619,7 +662,7 @@ const ismobile=useMobileDetection();
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="form-label">Priority</label>
+                      <label className="form-label">Priority <span className="text-danger">*</span></label>
                       <CommonSelect
                         className="select"
                         options={priorities}

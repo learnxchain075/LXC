@@ -37,7 +37,7 @@ export const getMyLeaves = async (): Promise<AxiosResponse<ILeaveRequest[]>> => 
  */
 export const approveLeaveRequest = async (
   leaveId: string
-): Promise<AxiosResponse<ILeaveRequest>> => {
+): Promise<AxiosResponse<any>> => {
   return await BaseApi.patchRequest(`/user/leave/${leaveId}/approve`);
 };
 

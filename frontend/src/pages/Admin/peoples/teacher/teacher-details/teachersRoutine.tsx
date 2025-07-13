@@ -2280,10 +2280,10 @@ import { getTeacherById } from '../../../../../services/admin/teacherRegistartio
 
 import { useSelector } from 'react-redux';
 
-const TeachersRoutine = ({ teacherData }: { teacherData?: any }) => {
+const TeachersRoutine = () => {
   const routes = all_routes;
   const isMobile = useMobileDetection();
-  const [lessons, setLessons] = useState<any[]>(teacherData?.lessons || []);
+  const [lessons, setLessons] = useState<any[]>([]);
   const [weekStart, setWeekStart] = useState<Date>(() => {
     const today = new Date(); 
     const dayOfWeek = today.getDay();
@@ -2299,26 +2299,24 @@ const TeachersRoutine = ({ teacherData }: { teacherData?: any }) => {
   const fetchTeacherDetails = async () => {
     const teacherId = localStorage.getItem('teacherId');
     if (!teacherId) {
-      console.warn('No teacherId found in localStorage');
       return;
     }
     try {
+      
       const response = await getTeacherById(teacherId);
+      
       if (response.status === 200) {
-        setLessons(response.data.lessons || []);
-      } else {
-        console.error('Failed to fetch teacher details:', response.status);
+        const teacherDetails = response.data;
+        setLessons(teacherDetails.lessons || []);
       }
     } catch (error) {
-      console.error('Error fetching teacher details:', error);
+      // Error handling
     }
   };
 
   useEffect(() => {
-    if (!teacherData?.lessons && localStorage.getItem('teacherId')) {
-      fetchTeacherDetails();
-    }
-  }, [userObj?.role, teacherData]);
+    fetchTeacherDetails();
+  }, [userObj?.role]);
 
   const getWeekDates = (start: Date) => {
     const weekDates = [];
@@ -2358,7 +2356,7 @@ const TeachersRoutine = ({ teacherData }: { teacherData?: any }) => {
         const aTime = a.startTime ? new Date(a.startTime).getTime() : Number.MAX_VALUE;
         const bTime = b.startTime ? new Date(b.startTime).getTime() : Number.MAX_VALUE;
         if (isNaN(aTime) || isNaN(bTime)) {
-          console.warn('Invalid startTime detected:', { a: a.startTime, b: b.startTime });
+  
         }
         return aTime - bTime;
       });
@@ -2375,7 +2373,7 @@ const TeachersRoutine = ({ teacherData }: { teacherData?: any }) => {
         timeZone: 'Asia/Kolkata',
       });
     } catch (error) {
-      console.warn('Invalid time format:', isoTime);
+
       return 'N/A';
     }
   };

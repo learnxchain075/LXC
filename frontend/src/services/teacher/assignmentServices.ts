@@ -91,7 +91,7 @@ export const createAssignment = async (
   formData.append("description", data.description);
   formData.append("subjectId", data.subjectId);
   formData.append("classId", data.classId);
-  formData.append("dueDate", data.dueDate.toISOString());
+  formData.append("dueDate", data.dueDate instanceof Date ? data.dueDate.toISOString() : data.dueDate);
   formData.append("lessonId", data.lessonId);
   formData.append("sectionId", data.sectionId);
   if (data.attachment) {
@@ -128,7 +128,7 @@ export const updateAssignment = async (
   if (data.description) formData.append("description", data.description);
   if (data.subjectId) formData.append("subjectId", data.subjectId);
   if (data.classId) formData.append("classId", data.classId);
-  if (data.dueDate) formData.append("dueDate", data.dueDate.toISOString());
+  if (data.dueDate) formData.append("dueDate", data.dueDate instanceof Date ? data.dueDate.toISOString() : data.dueDate);
   if (data.lessonId) formData.append("lessonId", data.lessonId);
   if (data.attachment) formData.append("attachment", data.attachment);
 

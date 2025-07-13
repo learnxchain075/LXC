@@ -1,16 +1,47 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { all_routes } from "../../../../../router/all_routes";
-
 import ImageWithBasePath from "../../../../../core/common/imageWithBasePath";
 import TeacherModal from "../teacherModal";
 import TeacherSidebar from "./teacherSidebar";
 import TeacherBreadcrumb from "./teacherBreadcrumb";
 import useMobileDetection from "../../../../../core/common/mobileDetection";
+import { getTeacherById } from "../../../../../services/admin/teacherRegistartion";
+import { useSelector } from "react-redux";
 
-const TeacherLibrary = ({teacherdata}:{teacherdata?:any}) => {
+const TeacherLibrary = () => {
   const routes = all_routes;
-  const ismobile=useMobileDetection();
+  const ismobile = useMobileDetection();
+  const userobj = useSelector((state: any) => state.auth.userObj);
+  const [teacherData, setTeacherData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTeacherDetails = async () => {
+    try {
+      setLoading(true);
+      const teacherId = localStorage.getItem("teacherId");
+      
+      const response = await getTeacherById(teacherId ?? "");
+      
+      if (response.status === 200) {
+        const teacherDetails = response.data;
+        setTeacherData(teacherDetails);
+      }
+    } catch (error) {
+      // Error handling
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTeacherDetails();
+  }, [userobj.role]);
+
+  const SkeletonPlaceholder = ({ className = '' }) => (
+    <span className={`placeholder bg-secondary ${className}`} />
+  );
+
   return (
     <>
       {/* Page Wrapper */}
@@ -97,212 +128,241 @@ const TeacherLibrary = ({teacherdata}:{teacherdata?:any}) => {
                       </div>
                     </div>
                     <div className="card-body pb-1">
-                      <div className="row">
-                        {/* Book List */}
-                        <div className="col-xxl-4 col-md-6 d-flex">
-                          <div className="card mb-3 flex-fill">
-                            <div className="card-body pb-1">
-                              <span className="avatar avatar-xl mb-3">
-                                <ImageWithBasePath
-                                  src="assets/img/books/book-01.jpg"
-                                  className="img-fluid rounded"
-                                  alt="img"
-                                />
-                              </span>
-                              <h6 className="mb-3">The Small-Town Library</h6>
-                              <div className="row">
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Book taken on{" "}
-                                    </span>
-                                    <p className="text-dark">25 Jan 2024</p>
+                      {loading ? (
+                        <div className="row">
+                          {Array.from({ length: 6 }).map((_, index) => (
+                            <div key={index} className="col-xxl-4 col-md-6 d-flex">
+                              <div className="card mb-3 flex-fill">
+                                <div className="card-body pb-1">
+                                  <SkeletonPlaceholder className="avatar avatar-xl mb-3" style={{ width: '100px', height: '100px' }} />
+                                  <SkeletonPlaceholder className="w-75 mb-3" />
+                                  <div className="row">
+                                    <div className="col-sm-6">
+                                      <div className="mb-3">
+                                        <SkeletonPlaceholder className="w-50 mb-1" />
+                                        <SkeletonPlaceholder className="w-75" />
+                                      </div>
+                                    </div>
+                                    <div className="col-sm-6">
+                                      <div className="mb-3">
+                                        <SkeletonPlaceholder className="w-50 mb-1" />
+                                        <SkeletonPlaceholder className="w-75" />
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Last Date
-                                    </span>
-                                    <p className="text-dark">25 Jan 2024</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="row">
+                          {/* Book List */}
+                          <div className="col-xxl-4 col-md-6 d-flex">
+                            <div className="card mb-3 flex-fill">
+                              <div className="card-body pb-1">
+                                <span className="avatar avatar-xl mb-3">
+                                  <ImageWithBasePath
+                                    src="assets/img/books/book-01.jpg"
+                                    className="img-fluid rounded"
+                                    alt="img"
+                                  />
+                                </span>
+                                <h6 className="mb-3">The Small-Town Library</h6>
+                                <div className="row">
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Book taken on{" "}
+                                      </span>
+                                      <p className="text-dark">25 Jan 2024</p>
+                                    </div>
+                                  </div>
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Last Date
+                                      </span>
+                                      <p className="text-dark">25 Jan 2024</p>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                        {/* /Book List */}
-                        {/* Book List */}
-                        <div className="col-xxl-4 col-md-6 d-flex">
-                          <div className="card mb-3 flex-fill">
-                            <div className="card-body pb-1">
-                              <span className="avatar avatar-xl mb-3">
-                                <ImageWithBasePath
-                                  src="assets/img/books/book-02.jpg"
-                                  className="img-fluid rounded"
-                                  alt="img"
-                                />
-                              </span>
-                              <h6 className="mb-3">Apex Time</h6>
-                              <div className="row">
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Book taken on{" "}
-                                    </span>
-                                    <p className="text-dark">22 Jan 2024</p>
+                          {/* /Book List */}
+                          {/* Book List */}
+                          <div className="col-xxl-4 col-md-6 d-flex">
+                            <div className="card mb-3 flex-fill">
+                              <div className="card-body pb-1">
+                                <span className="avatar avatar-xl mb-3">
+                                  <ImageWithBasePath
+                                    src="assets/img/books/book-02.jpg"
+                                    className="img-fluid rounded"
+                                    alt="img"
+                                  />
+                                </span>
+                                <h6 className="mb-3">Apex Time</h6>
+                                <div className="row">
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Book taken on{" "}
+                                      </span>
+                                      <p className="text-dark">22 Jan 2024</p>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Last Date
-                                    </span>
-                                    <p className="text-dark">25 Jan 2024</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {/* /Book List */}
-                        {/* Book List */}
-                        <div className="col-xxl-4 col-md-6 d-flex">
-                          <div className="card mb-3 flex-fill">
-                            <div className="card-body pb-1">
-                              <span className="avatar avatar-xl mb-3">
-                                <ImageWithBasePath
-                                  src="assets/img/books/book-03.jpg"
-                                  className="img-fluid rounded"
-                                  alt="img"
-                                />
-                              </span>
-                              <h6 className="mb-3">The Cobalt Guitar</h6>
-                              <div className="row">
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Book taken on{" "}
-                                    </span>
-                                    <p className="text-dark">30 Jan 2024</p>
-                                  </div>
-                                </div>
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Last Date
-                                    </span>
-                                    <p className="text-dark">10 Feb 2024</p>
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Last Date
+                                      </span>
+                                      <p className="text-dark">25 Jan 2024</p>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                        {/* /Book List */}
-                        {/* Book List */}
-                        <div className="col-xxl-4 col-md-6 d-flex">
-                          <div className="card mb-3 flex-fill">
-                            <div className="card-body pb-1">
-                              <span className="avatar avatar-xl mb-3">
-                                <ImageWithBasePath
-                                  src="assets/img/books/book-04.jpg"
-                                  className="img-fluid rounded"
-                                  alt="img"
-                                />
-                              </span>
-                              <h6 className="mb-3">Shard and the Tomb</h6>
-                              <div className="row">
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Book taken on{" "}
-                                    </span>
-                                    <p className="text-dark">10 Feb 2024</p>
+                          {/* /Book List */}
+                          {/* Book List */}
+                          <div className="col-xxl-4 col-md-6 d-flex">
+                            <div className="card mb-3 flex-fill">
+                              <div className="card-body pb-1">
+                                <span className="avatar avatar-xl mb-3">
+                                  <ImageWithBasePath
+                                    src="assets/img/books/book-03.jpg"
+                                    className="img-fluid rounded"
+                                    alt="img"
+                                  />
+                                </span>
+                                <h6 className="mb-3">The Cobalt Guitar</h6>
+                                <div className="row">
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Book taken on{" "}
+                                      </span>
+                                      <p className="text-dark">30 Jan 2024</p>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Last Date
-                                    </span>
-                                    <p className="text-dark">20 Feb 2024</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {/* /Book List */}
-                        {/* Book List */}
-                        <div className="col-xxl-4 col-md-6 d-flex">
-                          <div className="card mb-3 flex-fill">
-                            <div className="card-body pb-1">
-                              <span className="avatar avatar-xl mb-3">
-                                <ImageWithBasePath
-                                  src="assets/img/books/book-05.jpg"
-                                  className="img-fluid rounded"
-                                  alt="img"
-                                />
-                              </span>
-                              <h6 className="mb-3">Shard and the Tomb 2</h6>
-                              <div className="row">
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Book taken on{" "}
-                                    </span>
-                                    <p className="text-dark">12 Feb 2024</p>
-                                  </div>
-                                </div>
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Last Date
-                                    </span>
-                                    <p className="text-dark">22 Feb 2024</p>
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Last Date
+                                      </span>
+                                      <p className="text-dark">10 Feb 2024</p>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                        {/* /Book List */}
-                        {/* Book List */}
-                        <div className="col-xxl-4 col-md-6 d-flex">
-                          <div className="card mb-3 flex-fill">
-                            <div className="card-body pb-1">
-                              <span className="avatar avatar-xl mb-3">
-                                <ImageWithBasePath
-                                  src="assets/img/books/book-06.jpg"
-                                  className="img-fluid rounded"
-                                  alt="img"
-                                />
-                              </span>
-                              <h6 className="mb-3">Plague of Fear</h6>
-                              <div className="row">
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Book taken on{" "}
-                                    </span>
-                                    <p className="text-dark">15 Feb 2024</p>
+                          {/* /Book List */}
+                          {/* Book List */}
+                          <div className="col-xxl-4 col-md-6 d-flex">
+                            <div className="card mb-3 flex-fill">
+                              <div className="card-body pb-1">
+                                <span className="avatar avatar-xl mb-3">
+                                  <ImageWithBasePath
+                                    src="assets/img/books/book-04.jpg"
+                                    className="img-fluid rounded"
+                                    alt="img"
+                                  />
+                                </span>
+                                <h6 className="mb-3">Shard and the Tomb</h6>
+                                <div className="row">
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Book taken on{" "}
+                                      </span>
+                                      <p className="text-dark">10 Feb 2024</p>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="col-sm-6">
-                                  <div className="mb-3">
-                                    <span className="fs-12 mb-1">
-                                      Last Date
-                                    </span>
-                                    <p className="text-dark">25 Feb 2024</p>
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Last Date
+                                      </span>
+                                      <p className="text-dark">20 Feb 2024</p>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
+                          {/* /Book List */}
+                          {/* Book List */}
+                          <div className="col-xxl-4 col-md-6 d-flex">
+                            <div className="card mb-3 flex-fill">
+                              <div className="card-body pb-1">
+                                <span className="avatar avatar-xl mb-3">
+                                  <ImageWithBasePath
+                                    src="assets/img/books/book-05.jpg"
+                                    className="img-fluid rounded"
+                                    alt="img"
+                                  />
+                                </span>
+                                <h6 className="mb-3">Shard and the Tomb 2</h6>
+                                <div className="row">
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Book taken on{" "}
+                                      </span>
+                                      <p className="text-dark">12 Feb 2024</p>
+                                    </div>
+                                  </div>
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Last Date
+                                      </span>
+                                      <p className="text-dark">22 Feb 2024</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* /Book List */}
+                          {/* Book List */}
+                          <div className="col-xxl-4 col-md-6 d-flex">
+                            <div className="card mb-3 flex-fill">
+                              <div className="card-body pb-1">
+                                <span className="avatar avatar-xl mb-3">
+                                  <ImageWithBasePath
+                                    src="assets/img/books/book-06.jpg"
+                                    className="img-fluid rounded"
+                                    alt="img"
+                                  />
+                                </span>
+                                <h6 className="mb-3">Plague of Fear</h6>
+                                <div className="row">
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Book taken on{" "}
+                                      </span>
+                                      <p className="text-dark">15 Feb 2024</p>
+                                    </div>
+                                  </div>
+                                  <div className="col-sm-6">
+                                    <div className="mb-3">
+                                      <span className="fs-12 mb-1">
+                                        Last Date
+                                      </span>
+                                      <p className="text-dark">25 Feb 2024</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* /Book List */}
                         </div>
-                        {/* /Book List */}
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>

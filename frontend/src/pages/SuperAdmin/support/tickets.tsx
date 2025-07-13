@@ -27,7 +27,7 @@ interface TicketForm {
   id?: string;
   ticketNumber?: number;
   title: string;
-  schoolId: string;
+  schoolId?: string;
   userId: string;
   description: string;
   category: string;
@@ -52,11 +52,16 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   const ismobile = useMobileDetection();
 
   const schoolID = localStorage.getItem("schoolId") || teacherdata?.schoolId || "";
+  const userId = localStorage.getItem("userId") || teacherdata?.userId || "";
 
   const [loading, setLoading] = useState(true);
+  const [addingTicket, setAddingTicket] = useState(false);
+  const [updatingTicket, setUpdatingTicket] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [priorities, setPriorities] = useState<{ value: string; label: string }[]>([]);
@@ -65,8 +70,8 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
 
   const [TicketData, setTicketData] = useState<TicketForm>({
     title: "",
-    schoolId: schoolID,
-    userId: localStorage.getItem("userId") || teacherdata?.userId || "",
+    schoolId: schoolID || undefined,
+    userId: userId,
     description: "",
     category: "",
     priority: "",
@@ -85,15 +90,38 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
       setCategories(c.map((v: string) => ({ value: v, label: v })));
       setPriorities(p.map((v: string) => ({ value: v, label: v })));
       setStatuses(s.map((v: string) => ({ value: v, label: v })));
+      
       if (schoolID) {
-        const empRes = await getEmployeesBySchool(schoolID);
-        setAssignees(
-          (empRes.data.staff || []).map((e: any) => ({ value: e.id, label: e.name }))
-        );
+        try {
+          const empRes = await getEmployeesBySchool(schoolID);
+          setAssignees(
+            (empRes.data.staff || []).map((e: any) => ({ value: e.id, label: e.name }))
+          );
+        } catch (empError) {
+          console.error("Failed to load employees:", empError);
+          setAssignees([]);
+        }
       }
-          } catch (error) {
-        // Failed to load ticket metadata
-      }
+    } catch (error) {
+      console.error("Failed to load ticket metadata:", error);
+      setCategories([
+        { value: "Technical Issue", label: "Technical Issue" },
+        { value: "Feature Request", label: "Feature Request" },
+        { value: "Bug Report", label: "Bug Report" },
+        { value: "General Inquiry", label: "General Inquiry" }
+      ]);
+      setPriorities([
+        { value: "Low", label: "Low" },
+        { value: "Medium", label: "Medium" },
+        { value: "High", label: "High" }
+      ]);
+      setStatuses([
+        { value: "Open", label: "Open" },
+        { value: "Pending", label: "Pending" },
+        { value: "Resolved", label: "Resolved" },
+        { value: "Closed", label: "Closed" }
+      ]);
+    }
   };
 
   const fetchTickets = async () => {
@@ -103,17 +131,27 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
         const res = await getAllTickets();
         setAllTickets(res.data || []);
       } else if (role === "admin") {
-        if (!schoolID) return;
+        if (!schoolID) {
+          toast.error("School ID is required to fetch tickets");
+          setSchoolTickets([]);
+          return;
+        }
         const res = await getTicketsBySchool(schoolID);
         setSchoolTickets(res.data || []);
       } else if (role === "teacher") {
-        const userid = teacherdata?.userId || localStorage.getItem("userId");
-        if (!userid) return;
-        const res = await getTicketsByuserid(userid);
+        if (!userId) {
+          toast.error("User ID is required to fetch tickets");
+          setSchoolTickets([]);
+          return;
+        }
+        const res = await getTicketsByuserid(userId);
         setSchoolTickets(res.data || []);
       }
     } catch (error) {
+      console.error("Failed to fetch tickets:", error);
       toast.error("Failed to fetch tickets");
+      setAllTickets([]);
+      setSchoolTickets([]);
     } finally {
       setLoading(false);
     }
@@ -122,7 +160,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
   useEffect(() => {
     fetchTickets();
     fetchMetadata();
-  }, [role, schoolID]);
+  }, [role, schoolID, userId]);
 
   const handleAddTicket = async () => {
     if (!TicketData.title || !TicketData.description || !TicketData.priority || !TicketData.category) {
@@ -130,12 +168,53 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
       return;
     }
 
+    if (!userId) {
+      toast.error("User ID is required to create a ticket");
+      return;
+    }
+
+    // Validate CUID format for userId
+    if (!userId.match(/^c[a-z0-9]{24}$/)) {
+      toast.error("Invalid User ID format. Please log in again.");
+      return;
+    }
+
+    // Validate CUID format for schoolId if provided
+    // if (schoolID && !schoolID.match(/^c[a-z0-9]{24}$/)) {
+    //   toast.error("Invalid School ID format.");
+    //   return;
+    // }
+
+    // Validate CUID format for assignedTo if provided
+    if (TicketData.assignedTo && TicketData.assignedTo.trim() && !TicketData.assignedTo.match(/^c[a-z0-9]{24}$/)) {
+      toast.error("Invalid Assigned To ID format.");
+      return;
+    }
+
+    setAddingTicket(true);
     try {
-      const res = await createTicket({
-        ...TicketData,
-        assignedToId: TicketData.assignedTo,
-      } as any);
-      if (res) {
+      const ticketPayload: any = {
+        title: TicketData.title.trim(),
+        description: TicketData.description.trim(),
+        category: TicketData.category,
+        priority: TicketData.priority,
+        status: TicketData.status,
+        userId: userId,
+      };
+
+      // Only add schoolId if it's valid, not null, and not empty
+      if (schoolID && schoolID.trim() && schoolID !== "null" && schoolID !== "undefined" && schoolID.match(/^c[a-z0-9]{24}$/)) {
+        ticketPayload.schoolId = schoolID;
+      }
+
+      // Only add assignedToId if it's valid, not null, and not empty
+      if (TicketData.assignedTo && TicketData.assignedTo.trim() && TicketData.assignedTo !== "null" && TicketData.assignedTo !== "undefined" && TicketData.assignedTo.match(/^c[a-z0-9]{24}$/)) {
+        ticketPayload.assignedToId = TicketData.assignedTo;
+      }
+
+      const res = await createTicket(ticketPayload);
+      
+      if (res && res.data) {
         toast.success("Ticket successfully added");
         closeModal("add_ticket");
         fetchTickets();
@@ -145,14 +224,34 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
           status: "pending",
           priority: "",
           category: "",
-          schoolId: schoolID,
-          userId: localStorage.getItem("userId") || teacherdata?.userId || "",
+          schoolId: schoolID || undefined,
+          userId: userId,
           assignedTo: "",
         });
-        navigate(`${route.ticketDetail}/${res.data.id}`);
+        
+       
+        // if (res.data.id) {
+        //   navigate(`${route.ticketDetail}/${res.data.id}`);
+        // }
+      } else {
+        toast.error("Failed to create ticket - no response data");
       }
-    } catch (error) {
-      toast.error("Failed to create ticket");
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to create ticket";
+      
+      // Handle specific validation errors
+      if (error?.response?.data?.details) {
+        const validationErrors = error.response.data.details.map((err: any) => err.message).join(", ");
+        toast.error(`Validation Error: ${validationErrors}`, { autoClose: 5000 });
+      } else if (errorMessage.includes("Validation failed")) {
+        toast.error(`Validation Error: ${errorMessage}`, { autoClose: 5000 });
+      } else if (errorMessage.includes("Prisma") || errorMessage.includes("database")) {
+        toast.error("Database error occurred. Please try again later.", { autoClose: 3000 });
+      } else {
+        toast.error(errorMessage, { autoClose: 3000 });
+      }
+    } finally {
+      setAddingTicket(false);
     }
   };
 
@@ -161,8 +260,10 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
       await deleteTicket(id);
       toast.success("Ticket successfully deleted");
       fetchTickets();
-    } catch (error) {
-      toast.error("Failed to delete ticket");
+    } catch (error: any) {
+      console.error("Failed to delete ticket:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete ticket";
+      toast.error(errorMessage);
     }
   };
 
@@ -173,17 +274,43 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
 
   const handleUpdateSubmit = async () => {
     if (!selectedTicket) return;
+    
+    setUpdatingTicket(true);
     try {
-      await updateTicket(selectedTicket.id!, {
-        ...selectedTicket,
-        assignedToId: selectedTicket.assignedTo,
-      } as any);
+      const updatePayload: any = {
+        title: selectedTicket.title?.trim(),
+        description: selectedTicket.description?.trim(),
+        category: selectedTicket.category,
+        priority: selectedTicket.priority,
+        status: selectedTicket.status,
+      };
+
+      // Only add assignedToId if it's valid, not null, and not empty
+      if (selectedTicket.assignedTo && selectedTicket.assignedTo.trim() && selectedTicket.assignedTo !== "null" && selectedTicket.assignedTo !== "undefined" && selectedTicket.assignedTo.match(/^c[a-z0-9]{24}$/)) {
+        updatePayload.assignedToId = selectedTicket.assignedTo;
+      }
+
+      await updateTicket(selectedTicket.id!, updatePayload);
       toast.success("Ticket successfully updated");
       fetchTickets();
       setSelectedTicket(null);
       closeModal("update_ticket");
-    } catch (error) {
-      toast.error("Failed to update ticket");
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to update ticket";
+      
+      // Handle specific validation errors
+      if (error?.response?.data?.details) {
+        const validationErrors = error.response.data.details.map((err: any) => err.message).join(", ");
+        toast.error(`Validation Error: ${validationErrors}`, { autoClose: 5000 });
+      } else if (errorMessage.includes("Validation failed")) {
+        toast.error(`Validation Error: ${errorMessage}`, { autoClose: 5000 });
+      } else if (errorMessage.includes("Prisma") || errorMessage.includes("database")) {
+        toast.error("Database error occurred. Please try again later.", { autoClose: 3000 });
+      } else {
+        toast.error(errorMessage, { autoClose: 3000 });
+      }
+    } finally {
+      setUpdatingTicket(false);
     }
   };
 
@@ -195,7 +322,24 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
         const matchesSearch = searchTerm === "" ||
           ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           ticket.description.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesStatus && matchesSearch;
+        
+        // Date filtering
+        let matchesDate = true;
+        if (startDate || endDate) {
+          const ticketDate = new Date(ticket.createdAt || "");
+          const start = startDate ? new Date(startDate) : null;
+          const end = endDate ? new Date(endDate) : null;
+          
+          if (start && end) {
+            matchesDate = ticketDate >= start && ticketDate <= end;
+          } else if (start) {
+            matchesDate = ticketDate >= start;
+          } else if (end) {
+            matchesDate = ticketDate <= end;
+          }
+        }
+        
+        return matchesStatus && matchesSearch && matchesDate;
       })
       .sort((a, b) => {
         if (sortOrder === "asc") {
@@ -204,7 +348,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
           return b.title.localeCompare(a.title);
         }
       });
-  }, [role, allTickets, schoolTickets, filterStatus, sortOrder, searchTerm]);
+  }, [role, allTickets, schoolTickets, filterStatus, sortOrder, searchTerm, startDate, endDate]);
 
   const categoryStats = useMemo(() => {
     const tickets = role === "superadmin" ? allTickets : schoolTickets;
@@ -240,9 +384,11 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
     }
   };
 
+  const canCreateTicket = role !== "superadmin" && schoolID && userId;
+
   return (
 
-    <div className="page-wrapper">
+    <div >
     <div className="container-fluid p-0">
       <div className={ismobile ? "page-wrapper" : role === "admin" ? "page-wrapper" : "pt-4"}>
        <ToastContainer position="top-center" autoClose={3000} />
@@ -270,7 +416,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                   </nav>
                 </div>
                 <div className="d-flex flex-wrap gap-2">
-                  <button className="btn btn-light btn-sm">
+                  <button className="btn btn-light btn-sm" onClick={fetchTickets}>
                     <i className="ti ti-refresh me-1"></i>
                   </button>
                   <button className="btn btn-light btn-sm">
@@ -286,7 +432,7 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                       <li><a className="dropdown-item" href="#">CSV</a></li>
                     </ul>
                   </div>
-                  {role !== "superadmin" && (
+                  {canCreateTicket && (
                     <button
                       type="button"
                       className="btn btn-primary btn-sm"
@@ -295,6 +441,14 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                     >
                       <i className="ti ti-plus me-1"></i> Add New Ticket
                     </button>
+                  )}
+                  {!canCreateTicket && role !== "superadmin" && (
+                    <div className="alert alert-warning mb-0 py-2 px-3">
+                      <small>
+                        <i className="ti ti-alert-triangle me-1"></i>
+                        {!schoolID ? "School ID required" : !userId ? "User ID required" : "Cannot create tickets"}
+                      </small>
+                    </div>
                   )}
                 </div>
               </div>
@@ -327,8 +481,20 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                 </div>
                 <div className="col-12 col-sm-6 col-md-4">
                   <div className="d-flex gap-2">
-                    <input type="date" className="form-control" defaultValue="2025-06-27" />
-                    <input type="date" className="form-control" defaultValue="2025-06-27" />
+                    <input 
+                      type="date" 
+                      className="form-control" 
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      placeholder="Start Date"
+                    />
+                    <input 
+                      type="date" 
+                      className="form-control" 
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      placeholder="End Date"
+                    />
                   </div>
                 </div>
                 <div className="col-12 col-sm-6 col-md-2">
@@ -361,7 +527,9 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                   <div className="card-body p-4 text-center">
                     <i className="ti ti-ticket fs-1 text-muted mb-2 d-block"></i>
                     <h5 className="text-muted mb-2">No tickets found</h5>
-                    <p className="text-muted mb-0">Please add a ticket to get started.</p>
+                    <p className="text-muted mb-0">
+                      {canCreateTicket ? "Please add a ticket to get started." : "No tickets available for your role."}
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -565,6 +733,17 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                   defaultValue={priorities.find(opt => opt.value === TicketData.priority)}
                 />
               </div>
+              {assignees.length > 0 && (
+                <div className="mb-3">
+                  <label className="form-label">Assign To (Optional)</label>
+                  <CommonSelect
+                    className="select"
+                    options={assignees}
+                    onChange={(option) => setTicketData({ ...TicketData, assignedTo: option?.value || '' })}
+                    defaultValue={assignees.find(opt => opt.value === TicketData.assignedTo)}
+                  />
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -572,9 +751,16 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                 type="button"
                 className="btn btn-primary"
                 onClick={handleAddTicket}
-                disabled={!TicketData.title || !TicketData.description || !TicketData.priority || !TicketData.category}
+                disabled={addingTicket || !TicketData.title || !TicketData.description || !TicketData.priority || !TicketData.category}
               >
-                Add Ticket
+                {addingTicket ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Adding...
+                  </>
+                ) : (
+                  "Add Ticket"
+                )}
               </button>
             </div>
           </div>
@@ -624,15 +810,17 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                     defaultValue={categories.find(opt => opt.value === selectedTicket.category)}
                   />
                 </div>
-                <div className="mb-3">
-                  <label className="form-label">Assigned To</label>
-                  <CommonSelect
-                    className="select"
-                    options={assignees}
-                    onChange={(option) => setSelectedTicket({ ...selectedTicket, assignedTo: option?.value || '' })}
-                    defaultValue={assignees.find(opt => opt.value === selectedTicket.assignedTo)}
-                  />
-                </div>
+                {assignees.length > 0 && (
+                  <div className="mb-3">
+                    <label className="form-label">Assigned To (Optional)</label>
+                    <CommonSelect
+                      className="select"
+                      options={assignees}
+                      onChange={(option) => setSelectedTicket({ ...selectedTicket, assignedTo: option?.value || '' })}
+                      defaultValue={assignees.find(opt => opt.value === selectedTicket.assignedTo)}
+                    />
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button
@@ -643,8 +831,20 @@ const Tickets = ({ teacherdata }: { teacherdata?: any }) => {
                 >
                   Cancel
                 </button>
-                <button type="button" className="btn btn-primary" onClick={handleUpdateSubmit}>
-                  Update Ticket
+                <button 
+                  type="button" 
+                  className="btn btn-primary" 
+                  onClick={handleUpdateSubmit}
+                  disabled={updatingTicket}
+                >
+                  {updatingTicket ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Ticket"
+                  )}
                 </button>
               </div>
             </div>

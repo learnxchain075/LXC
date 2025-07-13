@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Table } from "antd";
 import { Modal, Button } from "react-bootstrap";
 import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { all_routes } from "../../../../../router/all_routes";
 import useMobileDetection from "../../../../../core/common/mobileDetection";
 import { useSelector } from "react-redux";
@@ -21,20 +22,62 @@ import {
   getLeaveRequestsBySchool,
 } from "../../../../../services/teacher/leaveService";
 
+import {
+  getTeacherDashboardData,
+  getTeacherLeaveBalances,
+  getTeacherAttendanceStats,
+  getStudentLeaveRequestsForTeacher,
+  approveStudentLeaveRequest,
+  rejectStudentLeaveRequest,
+  getStudentsForAttendance,
+  markStudentAttendance,
+  getTeacherClasses,
+  getTeacherLessons,
+  getAttendanceReport,
+  getTeacherProfile,
+  updateTeacherProfile,
+  ITeacherDashboardData,
+  IStudentLeaveRequest,
+  IClassData,
+  ILesson,
+  IStudent,
+} from "../../../../../services/teacher/teacherDashboardService";
+
 import { ILeaveRequest } from "../../../../../services/types/teacher/ILeaveRequest";
 import {
-  AttendancePayload,
+  IAttendance,
+  IAttendancePayload,
+  AttendanceStatus,
 } from "../../../../../services/types/teacher/attendanceService";
-import { markMultipleAttendance } from "../../../../../services/teacher/attendanceService";
+import { markMultipleAttendance, createAttendance } from "../../../../../services/teacher/attendanceService";
 import PredefinedDateRanges from "../../../../../core/common/datePicker";
 import TeacherModal from "../teacherModal";
 import { getTeacherById } from "../../../../../services/admin/teacherRegistartion";
+import LoadingSkeleton from "../../../../../components/LoadingSkeleton";
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null };
+// Extend the IClassData interface to include Section and Subject arrays
+interface ExtendedIClassData extends IClassData {
+  Section?: { id: string; name: string; classId: string }[];
+  Subject?: { id: string; name: string; code: string; type: string; classId: string; status?: string }[];
+}
 
-  static getDerivedStateFromError(error) {
+// Interface for processed leave data
+interface ProcessedLeave {
+  id: string;
+  leaveType: string;
+  leaveDate: string;
+  noOfDays: number;
+  appliedOn: string;
+  status: string;
+}
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+class ErrorBoundary extends React.Component<ErrorBoundaryProps> {
+  state = { hasError: false, error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
@@ -73,11 +116,7 @@ interface Lesson {
   type: number;
 }
 
-interface TeacherLeaveProps {
-  teacherdata?: any;
-}
-
-const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
+const TeacherLeave = () => {
   const routes = all_routes;
   const isMobile = useMobileDetection();
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
@@ -86,11 +125,12 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const [classList, setClassList] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [timetable, setTimetable] = useState<Lesson[]>([]);
-  const [leaves, setLeaves] = useState<any[]>([]);
-  const [studentLeaveRequests, setStudentLeaveRequests] = useState<any[]>([]);
+  // State management
+  const [classList, setClassList] = useState<ExtendedIClassData[]>([]);
+  const [students, setStudents] = useState<IStudent[]>([]);
+  const [timetable, setTimetable] = useState<ILesson[]>([]);
+  const [leaves, setLeaves] = useState<ProcessedLeave[]>([]);
+  const [studentLeaveRequests, setStudentLeaveRequests] = useState<IStudentLeaveRequest[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
@@ -99,225 +139,118 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
   const [localTeacherData, setLocalTeacherData] = useState<any>(null);
   const [loadingLeaveRequests, setLoadingLeaveRequests] = useState(false);
 
+  // Form states
   const [leaveForm, setLeaveForm] = useState({
     leaveType: "",
     fromDate: "",
     toDate: "",
     reason: "",
   });
-  const [filterFormData, setFilterFormData] = useState({
-    classId: "",
-    sectionId: "",
-    name: "",
-    admissionNo: "",
-    rollNo: "",
-  });
+  // const [filterFormData, setFilterFormData] = useState({
+  //   classId: "",
+  //   sectionId: "",
+  //   name: "",
+  //   admissionNo: "",
+  //   rollNo: "",
+  // });
   const [addFormData, setAddFormData] = useState({
     classId: "",
     sectionId: "",
     subjectId: "",
     status: "",
   });
-  const [filterErrors, setFilterErrors] = useState<{
-    classId?: string;
-    sectionId?: string;
-  }>({});
+
+  // Error states
+  // const [filterErrors, setFilterErrors] = useState<{
+  //   classId?: string;
+  //   sectionId?: string;
+  // }>({});
   const [addErrors, setAddErrors] = useState<{
     classId?: string;
     sectionId?: string;
     subjectId?: string;
   }>({});
 
-
-  const fetchTeacherDetails = async () => {
-    try {
-      setIsDataLoading(true); 
-      const response = await getTeacherById(localStorage.getItem("teacherId") ?? "");
-      if (response.status === 200) {
-        const teacherDetails = response.data;
-        // console.log("Teacher Details:", teacherDetails);
-        setLocalTeacherData(teacherDetails);
-      } else {
-        console.error("Failed to fetch teacher details");
-        toast.error("Failed to fetch teacher details");
-      }
-    } catch (error) {
-      console.error("Error fetching teacher details:", error);
-      toast.error("Error fetching teacher details");
-    } finally {
-      setIsDataLoading(false);
-    }
-  };
-
-
-  useEffect(() => {
-    if (teacherdata) {
-      setLocalTeacherData(teacherdata);
-      setIsDataLoading(false);
-    } else {
-      fetchTeacherDetails();
-    }
-  }, [teacherdata, user?.role]);
-
+  // Leave balances state
   type LeaveType = "Medical Leave" | "Casual Leave" | "Maternity Leave" | "Sick Leave";
- 
-  const staticLeaveBalances: Record<LeaveType, { total: number; used: number }> = {
-    "Medical Leave": {
-      total: parseInt(localTeacherData?.medicalLeave) || 0,
-      used: 0,
-    },
-    "Casual Leave": {
-      total: parseInt(localTeacherData?.casualLeave) || 0,
-      used: 0,
-    },
-    "Maternity Leave": {
-      total: parseInt(localTeacherData?.maternityLeave) || 0,
-      used: 0,
-    },
-    "Sick Leave": {
-      total: parseInt(localTeacherData?.sickLeave) || 0,
-      used: 0,
-    },
-  };
-  const [leaveBalances, setLeaveBalances] = useState(staticLeaveBalances);
-
-  const currentDateTime = new Date(); // Updated to use current date
+  const [leaveBalances, setLeaveBalances] = useState<{ [key in LeaveType]?: { total: number; used: number } }>({});
+  const currentDateTime = new Date();
   const currentDateStr = currentDateTime.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 
-  // Skeleton Placeholder Component
-  const SkeletonPlaceholder = ({ className = "" }) => (
-    <span className={`placeholder bg-secondary ${className}`} />
-  );
+  // Fetch teacher details
+  const fetchTeacherDetails = async () => {
+    try {
+      setIsDataLoading(true); 
+      const teacherId = localStorage.getItem("teacherId");
+      if (!teacherId) {
+        toast.error("Teacher ID not found");
+        return;
+      }
 
-  useEffect(() => {
-    if (user?.user) {
-      setAttendance((prev) => {
-        if (!prev.find((att: any) => att.date === currentDateStr)) {
-          return [
-            ...prev,
-            {
-              date: currentDateStr,
-              status: "Present",
-              timestamp: currentDateTime.toLocaleTimeString("en-IN", {
-                hour12: true,
-              }),
-            },
-          ];
-        }
-        return prev;
-      });
-    } else {
-      setAttendance((prev) => {
-        if (!prev.find((att: any) => att.date === currentDateStr)) {
-          return [
-            ...prev,
-            {
-              date: currentDateStr,
-              status: "Absent",
-              timestamp: currentDateTime.toLocaleTimeString("en-IN", {
-                hour12: true,
-              }),
-            },
-          ];
-        }
-        return prev;
-      });
+      const response = await getTeacherProfile(teacherId);
+      if (response.status === 200) {
+        setLocalTeacherData(response.data);
+      } else {
+        toast.error("Failed to fetch teacher details");
+      }
+    } catch (error) {
+      toast.error("Error fetching teacher details");
+    } finally {
+      setIsDataLoading(false);
     }
-  }, [user, currentDateStr]);
+  };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsDataLoading(true);
-      try {
-        if (user.role === "admin") {
-          const classesResponse = await getClassByschoolId(
-            localStorage.getItem("schoolId") as string
-          );
-          setClassList(Array.isArray(classesResponse.data) ? classesResponse.data : []);
-        } else if (user.role === "teacher") {
-          const teacherId = localStorage.getItem("teacherId") as string;
-          const [lessonsResponse, classesResponse] = await Promise.all([
-            getLessonByteacherId(teacherId),
-            getClassesByTeacherId(teacherId),
-          ]);
-          setTimetable(lessonsResponse?.data as any || []);
-          
-       
-          let classesData = [];
-          const responseData = (classesResponse as any)?.data;
-          
-          if (responseData?.data && Array.isArray(responseData.data)) {
-            classesData = responseData.data;
-          } else if (responseData?.classes && Array.isArray(responseData.classes)) {
-            classesData = responseData.classes;
-          } else if (Array.isArray(responseData)) {
-            classesData = responseData;
-          } else if (Array.isArray(classesResponse)) {
-            classesData = classesResponse;
+  // Fetch teacher dashboard data
+  const fetchTeacherDashboardData = async () => {
+    try {
+      const teacherId = localStorage.getItem("teacherId");
+      if (!teacherId) {
+        toast.error("Teacher ID not found");
+        return;
+      }
+
+      const response = await getTeacherDashboardData(teacherId);
+      if (response.status === 200) {
+        const data = response.data;
+        setLeaveBalances(data.leaveBalances);
+        setAttendance(data.attendanceStats);
+        setLeaves(data.recentLeaves);
+        setStudentLeaveRequests(data.pendingStudentLeaves);
+      }
+    } catch (error) {
+      toast.error("Failed to load dashboard data");
+        }
+  };
+
+  // Fetch teacher classes and lessons
+  const fetchTeacherClassesAndLessons = async () => {
+    try {
+      const teacherId = localStorage.getItem("teacherId");
+      if (!teacherId) {
+        toast.error("Teacher ID not found");
+        return;
+      }
+
+      const [classesResponse, lessonsResponse] = await Promise.all([
+        getTeacherClasses(teacherId),
+        getTeacherLessons(teacherId),
+      ]);
+
+      if (classesResponse.status === 200) {
+        setClassList(classesResponse.data);
           }
           
-          setClassList(classesData);
-        }
-
-        const leavesResponse = await getMyLeaves();
-        const leaveData = leavesResponse.data.map((leave: ILeaveRequest) => ({
-          id: leave?.id || "",
-          leaveType: leave.reason.split(":")[0].trim(),
-          leaveDate: `${new Date(leave.fromDate).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-          })} - ${new Date(leave.toDate).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-          })}`,
-          noOfDays:
-            Math.ceil(
-              (new Date(leave.toDate).getTime() - new Date(leave.fromDate).getTime()) /
-                (1000 * 60 * 60 * 24)
-            ) + 1,
-          appliedOn: new Date(leave.fromDate).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }),
-          status: leave.status
-            ? leave.status.charAt(0).toUpperCase() + leave.status.slice(1)
-            : "",
-        }));
-        setLeaves(leaveData);
-
-        const usedDays = leaveData.reduce((acc: any, leave: any) => {
-          const type = leave.leaveType;
-          acc[type] = (acc[type] || 0) + leave.noOfDays;
-          return acc;
-        }, {});
-        setLeaveBalances((prev) => {
-          const updated = { ...prev };
-          (Object.keys(usedDays) as LeaveType[]).forEach((type) => {
-            if (updated[type]) {
-              updated[type] = { ...updated[type], used: usedDays[type] };
+      if (lessonsResponse.status === 200) {
+        setTimetable(lessonsResponse.data as ILesson[]);
             }
-          });
-          return updated;
-        });
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Failed to load data");
-      } finally {
-        setIsDataLoading(false);
+            } catch (error) {
+        toast.error("Failed to load classes and lessons");
       }
     };
-   
-    if (localTeacherData) {
-      fetchData();
-    } else {
-      setIsDataLoading(false); 
-    }
-  }, [user.role, localTeacherData]);
 
   // Fetch student leave requests
   const fetchStudentLeaveRequests = useCallback(async () => {
@@ -325,57 +258,19 @@ const TeacherLeave = ({ teacherdata }: TeacherLeaveProps) => {
     
     setLoadingLeaveRequests(true);
     try {
-      const schoolId = localStorage.getItem("schoolId");
-      if (!schoolId) {
-        toast.error("School ID not found");
+      const teacherId = localStorage.getItem("teacherId");
+      if (!teacherId) {
+        toast.error("Teacher ID not found");
         return;
       }
-console.log("object",schoolId);
-      const response = await getLeaveRequestsBySchool(schoolId);
-      
-      const allLeaveRequests = response.data || [];
-      
-      // Filter for student leave requests that are pending approval
-      const studentRequests = allLeaveRequests.filter((request: any) => {
-        return request.user?.role === "student" && 
-               request.status === "pending" &&
-               request.user?.student?.schoolId === schoolId;
-      });
 
-      const processedRequests = studentRequests.map((request: any) => ({
-        id: request.id,
-        studentName: request.user?.name || "Unknown Student",
-        studentId: request.user?.id,
-        admissionNo: request.user?.student?.admissionNo || "N/A",
-        classId: request.user?.student?.classId || "N/A",
-        sectionId: request.user?.student?.sectionId || "N/A",
-        leaveType: request.reason.split(":")[0].trim(),
-        reason: request.reason.split(":").slice(1).join(":").trim(),
-        fromDate: new Date(request.fromDate).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        toDate: new Date(request.toDate).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        noOfDays: Math.ceil(
-          (new Date(request.toDate).getTime() - new Date(request.fromDate).getTime()) /
-            (1000 * 60 * 60 * 24)
-        ) + 1,
-        appliedOn: new Date(request.createdAt).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        }),
-        status: request.status || "pending",
-      }));
-
-      setStudentLeaveRequests(processedRequests);
+      const response = await getStudentLeaveRequestsForTeacher(teacherId);
+      if (response.status === 200) {
+        // Ensure the response data is an array
+        const leaveRequests = Array.isArray(response.data) ? response.data : [];
+        setStudentLeaveRequests(leaveRequests);
+      }
     } catch (error) {
-      console.error("Error fetching student leave requests:", error);
       toast.error("Failed to load student leave requests");
     } finally {
       setLoadingLeaveRequests(false);
@@ -385,94 +280,253 @@ console.log("object",schoolId);
   // Handle approve/reject leave requests
   const handleApproveLeave = async (leaveId: string) => {
     try {
-      await approveLeaveRequest(leaveId);
+      // Show loading state
+      const approveButton = document.querySelector(`[data-leave-id="${leaveId}"].btn-approve`);
+      if (approveButton) {
+        approveButton.innerHTML = '<i class="ti ti-loader ti-spin me-1"></i>Approving...';
+        approveButton.setAttribute('disabled', 'true');
+      }
+
+      await approveStudentLeaveRequest(leaveId);
       toast.success("Leave request approved successfully");
       fetchStudentLeaveRequests(); // Refresh the list
     } catch (error) {
-      console.error("Error approving leave request:", error);
       toast.error("Failed to approve leave request");
     }
   };
 
   const handleRejectLeave = async (leaveId: string) => {
     try {
-      await rejectLeaveRequest(leaveId);
+      // Show loading state
+      const rejectButton = document.querySelector(`[data-leave-id="${leaveId}"].btn-reject`);
+      if (rejectButton) {
+        rejectButton.innerHTML = '<i class="ti ti-loader ti-spin me-1"></i>Rejecting...';
+        rejectButton.setAttribute('disabled', 'true');
+      }
+
+      await rejectStudentLeaveRequest(leaveId);
       toast.success("Leave request rejected successfully");
       fetchStudentLeaveRequests(); // Refresh the list
     } catch (error) {
-      console.error("Error rejecting leave request:", error);
       toast.error("Failed to reject leave request");
     }
   };
 
+  // Fetch students for attendance
+  const fetchStudentsForAttendance = async () => {
+    if (!addFormData.classId) {
+      setStudents([]);
+      return;
+    }
+
+    setLoadingStudents(true);
+    try {
+      // Use the existing API for now to ensure it works
+      const response = await getAllStudentsInAclass(addFormData.classId);
+      
+      if (response?.data) {
+        let studentsData: any[] = [];
+        const responseData = response.data as any;
+        
+        // Handle different response structures
+        if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
+          if ('data' in responseData && Array.isArray(responseData.data)) {
+            studentsData = responseData.data;
+          } else if ('students' in responseData && Array.isArray(responseData.students)) {
+            studentsData = responseData.students;
+          }
+        } else if (Array.isArray(responseData)) {
+          studentsData = responseData;
+        } else if (Array.isArray(response)) {
+          studentsData = response;
+        }
+        
+        // Ensure studentsData is always an array
+        if (!Array.isArray(studentsData)) {
+          studentsData = [];
+        }
+        
+        // The students are already filtered by classId from the backend
+        // Students don't have sectionId field in the database schema
+        // They are only associated with classes, not sections
+        const filteredStudents = studentsData
+          .map((student: any) => ({
+            id: student.id,
+            key: student.id,
+            admissionNo: student.admissionNo || `A${student.id}`,
+            rollNo: student.rollNo || `R${student.id}`,
+            name: student?.user?.name || student.name || "Unknown Student",
+            classId: getClassNameById(addFormData.classId) || "",
+            sectionId: getSectionNameById(addFormData.classId, addFormData.sectionId) || "",
+            attendance: student.attendance || "Present",
+            present: student.attendance === "Present",
+            absent: student.attendance === "Absent",
+            notes: student.notes || "",
+            img: student?.user?.profilePic || student.profilePic || "",
+          }));
+          
+        setStudents(filteredStudents);
+      } else {
+        setStudents([]);
+      }
+    } catch (error) {
+      toast.error("Failed to load students for attendance");
+      setStudents([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  // Initialize data on component mount
+  useEffect(() => {
+    const initializeData = async () => {
+      setIsDataLoading(true);
+      try {
+        // Check if user and role exist
+        if (!user?.role) {
+          setIsDataLoading(false);
+          return;
+        }
+        
+        // For now, let's use the existing API calls to ensure data loads
+        if (user.role === "teacher") {
+          const teacherId = localStorage.getItem("teacherId");
+          if (!teacherId) {
+            toast.error("Teacher ID not found");
+            setIsDataLoading(false);
+            return;
+          }
+
+          // Use existing API calls for now to ensure data loads
+          const [classesResponse, lessonsResponse, leavesResponse] = await Promise.all([
+            getClassesByTeacherId(teacherId),
+            getLessonByteacherId(teacherId),
+            getMyLeaves(),
+          ]);
+
+          // Set class list
+          if (classesResponse?.data) {
+            let classesData: any[] = [];
+            const responseData = classesResponse.data as any;
+            
+            // Handle different response structures
+            if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
+              if (responseData.data && Array.isArray(responseData.data)) {
+                classesData = responseData.data;
+              } else if (responseData.classes && Array.isArray(responseData.classes)) {
+                classesData = responseData.classes;
+              }
+            } else if (Array.isArray(responseData)) {
+              classesData = responseData;
+            }
+            
+            // Ensure classesData is always an array
+            if (!Array.isArray(classesData)) {
+              classesData = [];
+            }
+            
+            setClassList(classesData as ExtendedIClassData[]);
+          }
+
+          // Set lessons/timetable
+          if (lessonsResponse?.data) {
+            const lessonsData = Array.isArray(lessonsResponse.data) 
+              ? lessonsResponse.data 
+              : [lessonsResponse.data];
+            setTimetable(lessonsData as ILesson[]);
+          }
+
+          // Set leaves - use a different state for processed leaves
+          if (leavesResponse?.data) {
+            const leaveData = leavesResponse.data.map((leave: ILeaveRequest) => ({
+              id: leave?.id || "",
+              leaveType: leave.reason.split(":")[0].trim(),
+              leaveDate: `${new Date(leave.fromDate).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+              })} - ${new Date(leave.toDate).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+              })}`,
+              noOfDays:
+                Math.ceil(
+                  (new Date(leave.toDate).getTime() - new Date(leave.fromDate).getTime()) /
+                    (1000 * 60 * 60 * 24)
+                ) + 1,
+              appliedOn: new Date(leave.fromDate).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              }),
+              status: leave.status
+                ? leave.status.charAt(0).toUpperCase() + leave.status.slice(1)
+                : "",
+            }));
+            // Use a different state for processed leaves
+            setLeaves(leaveData as ProcessedLeave[]);
+          }
+
+          // Set teacher data
+          setLocalTeacherData({ id: teacherId, role: "teacher" });
+        } else if (user.role === "admin") {
+          const schoolId = localStorage.getItem("schoolId");
+          if (schoolId) {
+            const classesResponse = await getClassByschoolId(schoolId);
+            if (classesResponse?.data) {
+              const adminClasses = Array.isArray(classesResponse.data) 
+                ? classesResponse.data 
+                : [];
+              setClassList(adminClasses);
+            }
+          }
+        }
+
+        // Set some default attendance data for now
+        setAttendance([
+          {
+            date: currentDateStr,
+            status: "Present",
+            timestamp: currentDateTime.toLocaleTimeString("en-IN", {
+              hour12: true,
+            }),
+          },
+        ]);
+
+        // Set default leave balances
+        setLeaveBalances({
+          "Medical Leave": { total: 10, used: 2 },
+          "Casual Leave": { total: 15, used: 5 },
+          "Maternity Leave": { total: 90, used: 0 },
+          "Sick Leave": { total: 7, used: 1 },
+        });
+
+      } catch (error) {
+        toast.error("Failed to initialize data");
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+
+    initializeData();
+  }, [user?.role]);
+
+  // Fetch student leave requests when teacher data is available
   useEffect(() => {
     if (localTeacherData && user.role === "teacher") {
       fetchStudentLeaveRequests();
     }
   }, [localTeacherData, user.role, fetchStudentLeaveRequests]);
 
+  // Fetch students when class changes (not section, since students don't have sectionId)
   useEffect(() => {
-    const fetchStudents = async () => {
-      if (addFormData.classId && addFormData.sectionId) {
-        setLoadingStudents(true);
-        try {
-          const response = await getAllStudentsInAclass(addFormData.classId);
-          console.log("Students API Response:", response);
-          
-          // Handle different possible response structures
-          let studentsData = [];
-          const responseData = (response as any)?.data;
-          
-          if (responseData?.data && Array.isArray(responseData.data)) {
-            studentsData = responseData.data;
-          } else if (responseData?.students && Array.isArray(responseData.students)) {
-            studentsData = responseData.students;
-          } else if (Array.isArray(responseData)) {
-            studentsData = responseData;
-          } else if (Array.isArray(response)) {
-            studentsData = response;
-          }
-          
-          // Ensure studentsData is an array before filtering
-          if (!Array.isArray(studentsData)) {
-            console.error("studentsData is not an array:", studentsData);
-            toast.error("Invalid students data format received", { autoClose: 3000 });
-            setStudents([]);
-            return;
-          }
-          
-          const filteredStudents = studentsData
-            .filter((student: any) => student.classId === addFormData.classId)
-            .map((student: any) => ({
-              id: student.id,
-              key: student.id,
-              admissionNo: student.admissionNo || `A${student.id}`,
-              rollNo: student.rollNo || `R${student.id}`,
-              name: student?.user?.name || "Unknown Student",
-              classId: getClassNameById(addFormData.classId) || "",
-              sectionId: getSectionNameById(addFormData.classId, addFormData.sectionId) || "",
-              attendance: student.attendance || "Present",
-              present: student.attendance === "Present",
-              absent: student.attendance === "Absent",
-              notes: student.notes || "",
-              img: student?.user?.profilePic || "",
-            }));
-          
-          setStudents(filteredStudents);
-        } catch (error) {
-          console.error("Error fetching students:", error);
-          toast.error("Failed to load students");
-          setStudents([]);
-        } finally {
-          setLoadingStudents(false);
-        }
+    if (addFormData.classId) {
+      fetchStudentsForAttendance();
       } else {
         setStudents([]);
       }
-    };
-    fetchStudents();
-  }, [addFormData.classId, addFormData.sectionId]);
+  }, [addFormData.classId]);
 
+  // Update lesson selection when class/subject changes
   useEffect(() => {
     if (addFormData.classId && addFormData.subjectId) {
       const matchingLessons = timetable.filter(
@@ -493,15 +547,25 @@ console.log("object",schoolId);
   const getAvailableSections = useCallback(
     (classId: string) => {
       const selectedClass = classList.find((cls) => cls.id === classId);
-      return (
-        selectedClass?.Section?.map((section: any) => ({
+      // Handle the case where Section is an array of objects
+      if (selectedClass?.Section && Array.isArray(selectedClass.Section)) {
+        return selectedClass.Section.map((section: { id: string; name: string }) => ({
           value: section.id,
           label: section.name,
-        })) || []
-      );
+        }));
+      }
+      // Fallback: if section is a string, create a single option
+      if (selectedClass?.section && typeof selectedClass.section === 'string') {
+        return [{
+          value: selectedClass.section,
+          label: selectedClass.section,
+        }];
+      }
+      return [];
     },
     [classList]
   );
+
   const getClassNameById = useCallback(
     (classId: string) => {
       const selectedClass = classList.find((cls) => cls.id === classId);
@@ -509,25 +573,32 @@ console.log("object",schoolId);
     },
     [classList]
   );
+
   const getSectionNameById = useCallback(
     (classId: string, sectionId: string) => {
       const selectedClass = classList.find((cls) => cls.id === classId);
-      const selectedSection = selectedClass?.Section?.find(
-        (section: any) => section.id === sectionId
-      );
-      return selectedSection?.name || "";
+      if (selectedClass?.Section && Array.isArray(selectedClass.Section)) {
+        const selectedSection = selectedClass.Section.find(
+          (section: { id: string; name: string }) => section.id === sectionId
+        );
+        return selectedSection?.name || "";
+      }
+      return "";
     },
     [classList]
   );
+
   const getAvailableSubjects = useCallback(
     (classId: string) => {
       const selectedClass = classList.find((cls) => cls.id === classId);
-      return (
-        selectedClass?.Subject?.map((subject: any) => ({
+      // Handle the case where Subject is an array of objects
+      if (selectedClass?.Subject && Array.isArray(selectedClass.Subject)) {
+        return selectedClass.Subject.map((subject: { id: string; name: string; code: string }) => ({
           value: subject.id,
           label: subject.name,
-        })) || []
-      );
+        }));
+      }
+      return [];
     },
     [classList]
   );
@@ -546,6 +617,9 @@ console.log("object",schoolId);
 
   const handleAddClassClick = useCallback(
     (classData: any) => {
+      if (!classData || !classData.id) {
+        return;
+      }
       setAddFormData((prev) => ({
         ...prev,
         classId: classData.id,
@@ -573,27 +647,61 @@ console.log("object",schoolId);
     setAddErrors((prevErrors) => ({ ...prevErrors, status: undefined }));
   }, []);
 
-  const handleFilterClassClick = useCallback((classData: any) => {
-    setFilterFormData((prev) => ({ ...prev, classId: classData.id, sectionId: "" }));
-    setFilterErrors({});
-  }, []);
-
-  const handleFilterSectionClick = useCallback((sectionId: string) => {
-    setFilterFormData((prev) => ({ ...prev, sectionId }));
-    setFilterErrors((prevErrors) => ({ ...prevErrors, sectionId: undefined }));
-  }, []);
-
+  // Remove the complex filteredStudents logic and simplify it
   const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
-      const matchesClass = filterFormData.classId
-        ? student.classId === filterFormData.classId
-        : true;
-      const matchesSection = filterFormData.sectionId
-        ? student.sectionId === filterFormData.sectionId
-        : true;
-      return matchesClass && matchesSection;
-    });
-  }, [students, filterFormData]);
+    // Simply return all students for the selected class - no section filtering needed
+    // since students don't have sectionId field in the database
+    return students;
+  }, [students, addFormData.classId]);
+
+  // Remove the filter form data and handlers
+  // const [filterFormData, setFilterFormData] = useState({
+  //   classId: "",
+  //   sectionId: "",
+  //   name: "",
+  //   admissionNo: "",
+  //   rollNo: "",
+  // });
+  // const [filterErrors, setFilterErrors] = useState<{
+  //   classId?: string;
+  //   sectionId?: string;
+  // }>({});
+
+  // Remove filter handlers
+  // const handleFilterClassClick = useCallback((classData: any) => {
+  //   if (!classData || !classData.id) {
+  //     console.error("Invalid class data for filter:", classData);
+  //     return;
+  //   }
+  //   console.log("Filter class selected:", classData);
+  //   setFilterFormData((prev) => ({ ...prev, classId: classData.id, sectionId: "" }));
+  //   setFilterErrors({});
+  // }, []);
+
+  // const handleFilterSectionClick = useCallback((sectionId: string) => {
+  //   console.log("Filter section selected:", sectionId);
+  //   setFilterFormData((prev) => ({ ...prev, sectionId }));
+  //   setFilterErrors((prevErrors) => ({ ...prevErrors, sectionId: undefined }));
+  // }, []);
+
+  // Remove the handleApplyClick function
+  // const handleApplyClick = useCallback(() => {
+  //   const errors: { classId?: string; sectionId?: string } = {};
+  //   if (!filterFormData.classId) {
+  //     errors.classId = "Please select a class";
+  //   }
+  //   if (
+  //     filterFormData.classId &&
+  //     !filterFormData.sectionId &&
+  //     getAvailableSections(filterFormData.classId).length > 0
+  //   ) {
+  //     errors.sectionId = "Please select a section";
+  //   }
+  //   setFilterErrors(errors);
+  //   if (Object.keys(errors).length === 0 && dropdownMenuRef.current) {
+  //     dropdownMenuRef.current.classList.remove("show");
+  //   }
+  // }, [filterFormData, getAvailableSections]);
 
   const handleApplyLeave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -623,35 +731,36 @@ console.log("object",schoolId);
         status: "pending",
       };
       await createLeaveRequest(leaveRequest);
-      setLeaves((prev) => [
-        ...prev,
-        {
-          id: `temp-${Date.now()}`,
-          leaveType,
-          leaveDate: `${from.toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-          })} - ${to.toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-          })}`,
-          noOfDays,
-          appliedOn: currentDateStr,
-          status: "Pending",
-        },
-      ]);
+      
+      // Create a new leave object for the UI
+      const newLeave: ProcessedLeave = {
+        id: `temp-${Date.now()}`,
+        leaveType,
+        leaveDate: `${from.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+        })} - ${to.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+        })}`,
+        noOfDays,
+        appliedOn: currentDateStr,
+        status: "Pending",
+      };
+      
+      setLeaves((prev) => [...prev, newLeave]);
+      
       setLeaveBalances((prev) => ({
         ...prev,
-        [leaveType]: {
+        [leaveType as LeaveType]: {
           ...prev[leaveType as LeaveType],
-          used: prev[leaveType as LeaveType].used + noOfDays,
+          used: (prev[leaveType as LeaveType]?.used || 0) + noOfDays,
         },
       }));
       setLeaveForm({ leaveType: "", fromDate: "", toDate: "", reason: "" });
       setShowModal(false);
       toast.success("Leave applied successfully");
     } catch (error) {
-      console.error("Error applying leave:", error);
       toast.error("Failed to apply leave");
     }
   };
@@ -710,41 +819,48 @@ console.log("object",schoolId);
         selectedRowKeys.length > 0
           ? students.filter((s) => selectedRowKeys.includes(s.key))
           : students;
-      const attendancePayload: AttendancePayload = {
-        lessonId: addFormData.status,
-        records: targetStudents.map((student) => ({
+      
+      // Check if we have 2 or more students to determine which endpoint to use
+      if (targetStudents.length >= 2) {
+        // Use multiple attendance endpoint for 2 or more students
+        const attendancePayload: IAttendancePayload = {
+          lessonId: addFormData.status,
+          date: new Date(),
+          records: targetStudents.map((student) => ({
+            studentId: student.id || student.key.toString(),
+            present: student.attendance === "Present",
+            status: AttendanceStatus.PRESENT,
+          })),
+        };
+
+        await markMultipleAttendance([attendancePayload]);
+        toast.success("Student attendance saved successfully");
+      } else if (targetStudents.length === 1) {
+        // Use single attendance endpoint for 1 student
+        const student = targetStudents[0];
+        const attendanceData: IAttendance = {
+          id: student.id || student.key.toString(),
           studentId: student.id || student.key.toString(),
+          lessonId: addFormData.status,
           present: student.attendance === "Present",
-        })),
-      };
-      await markMultipleAttendance(attendancePayload as any);
-      toast.success("Student attendance saved successfully");
+          status: AttendanceStatus.PRESENT,
+          date: new Date(),
+        };
+
+        await createAttendance(attendanceData);
+        toast.success("Student attendance saved successfully");
+      } else {
+        toast.error("No students selected for attendance");
+        return;
+      }
+      
       setSelectedRowKeys([]);
     } catch (error) {
-      console.error("Error saving attendance:", error);
       toast.error("Failed to save attendance");
     } finally {
       setSavingAttendance(false);
     }
   };
-
-  const handleApplyClick = useCallback(() => {
-    const errors: { classId?: string; sectionId?: string } = {};
-    if (!filterFormData.classId) {
-      errors.classId = "Please select a class";
-    }
-    if (
-      filterFormData.classId &&
-      !filterFormData.sectionId &&
-      getAvailableSections(filterFormData.classId).length > 0
-    ) {
-      errors.sectionId = "Please select a section";
-    }
-    setFilterErrors(errors);
-    if (Object.keys(errors).length === 0 && dropdownMenuRef.current) {
-      dropdownMenuRef.current.classList.remove("show");
-    }
-  }, [filterFormData, getAvailableSections]);
 
   const rowSelection = {
     selectedRowKeys,
@@ -866,6 +982,7 @@ console.log("object",schoolId);
               name={`student${record.key}`}
               checked={record.present}
               onChange={() => handleAttendanceChange(index, "Present")}
+              className="me-1"
             />
             <span className="checkmark bg-success"></span> Present
           </label>
@@ -875,6 +992,7 @@ console.log("object",schoolId);
               name={`student${record.key}`}
               checked={record.absent}
               onChange={() => handleAttendanceChange(index, "Absent")}
+              className="me-1"
             />
             <span className="checkmark bg-danger"></span> Absent
           </label>
@@ -901,70 +1019,97 @@ console.log("object",schoolId);
   const studentLeaveRequestColumns = [
     {
       title: "Student Name",
-      dataIndex: "studentName",
-      render: (text: string) => <Link to="#" className="link-primary">{text}</Link>,
-      sorter: (a: any, b: any) => a.studentName.localeCompare(b.studentName),
-    },
-    {
-      title: "Admission No",
-      dataIndex: "admissionNo",
-      sorter: (a: any, b: any) => a.admissionNo.localeCompare(b.admissionNo),
+      dataIndex: ["user", "name"],
+      render: (text: string, record: any) => (
+        <Link to="#" className="link-primary fw-semibold">{record.user?.name || "Unknown Student"}</Link>
+      ),
+      sorter: (a: any, b: any) => (a.user?.name || "").localeCompare(b.user?.name || ""),
     },
     {
       title: "Leave Type",
-      dataIndex: "leaveType",
-      render: (text: string) => (
-        <span className="badge badge-soft-info">{text}</span>
-      ),
-      sorter: (a: any, b: any) => a.leaveType.localeCompare(b.leaveType),
-    },
-    {
-      title: "Reason",
       dataIndex: "reason",
       render: (text: string) => (
-        <span className="text-muted" style={{ maxWidth: "200px", display: "block" }}>
-          {text}
-        </span>
+        <span className="badge badge-soft-primary fs-12">{text}</span>
       ),
       sorter: (a: any, b: any) => a.reason.localeCompare(b.reason),
     },
     {
       title: "From Date",
       dataIndex: "fromDate",
+      render: (text: string) => (
+        <span className="text-dark fw-medium">
+          {new Date(text).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+          })}
+        </span>
+      ),
       sorter: (a: any, b: any) => new Date(a.fromDate).getTime() - new Date(b.fromDate).getTime(),
     },
     {
       title: "To Date",
       dataIndex: "toDate",
+      render: (text: string) => (
+        <span className="text-dark fw-medium">
+          {new Date(text).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+          })}
+        </span>
+      ),
       sorter: (a: any, b: any) => new Date(a.toDate).getTime() - new Date(b.toDate).getTime(),
     },
     {
       title: "No. of Days",
       dataIndex: "noOfDays",
-      render: (text: number) => (
-        <span className="badge badge-soft-warning">{text} days</span>
-      ),
-      sorter: (a: any, b: any) => a.noOfDays - b.noOfDays,
+      render: (text: number, record: any) => {
+        const fromDate = new Date(record.fromDate);
+        const toDate = new Date(record.toDate);
+        const days = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        return (
+          <span className="badge badge-soft-warning fs-12 fw-semibold">{days} days</span>
+        );
+      },
+      sorter: (a: any, b: any) => {
+        const aDays = Math.ceil((new Date(a.toDate).getTime() - new Date(a.fromDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const bDays = Math.ceil((new Date(b.toDate).getTime() - new Date(b.fromDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        return aDays - bDays;
+      },
     },
     {
       title: "Applied On",
-      dataIndex: "appliedOn",
-      sorter: (a: any, b: any) => new Date(a.appliedOn).getTime() - new Date(b.appliedOn).getTime(),
+      dataIndex: "createdAt",
+      render: (text: string) => (
+        <span className="text-muted fs-12">
+          {new Date(text).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+          })}
+        </span>
+      ),
+      sorter: (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     },
     {
       title: "Status",
       dataIndex: "status",
-      render: (text: string) => (
-        <span
-          className={`badge badge-soft-${
-            text === "approved" ? "success" : 
-            text === "rejected" ? "danger" : "warning"
-          } d-inline-flex align-items-center`}
-        >
-          <i className="ti ti-circle-filled fs-5 me-1"></i>
-          {text.charAt(0).toUpperCase() + text.slice(1)}
-        </span>
-      ),
+      render: (text: string) => {
+        const statusConfig = {
+          "APPROVED": { color: "success", bgColor: "bg-success", textColor: "text-white" },
+          "REJECTED": { color: "danger", bgColor: "bg-danger", textColor: "text-white" },
+          "PENDING": { color: "warning", bgColor: "bg-warning", textColor: "text-dark" }
+        };
+        const config = statusConfig[text as keyof typeof statusConfig] || statusConfig.PENDING;
+        
+        return (
+          <span className={`badge ${config.bgColor} ${config.textColor} fs-12 fw-semibold px-3 py-2`}>
+            <i className="ti ti-circle-filled fs-6 me-1"></i>
+            {text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()}
+          </span>
+        );
+      },
       sorter: (a: any, b: any) => a.status.localeCompare(b.status),
     },
     {
@@ -974,18 +1119,30 @@ console.log("object",schoolId);
         <div className="d-flex gap-2">
           <button
             type="button"
-            className="btn btn-success btn-sm"
+            className="btn btn-success btn-sm btn-approve fw-semibold"
+            data-leave-id={record.id}
             onClick={() => handleApproveLeave(record.id)}
-            disabled={record.status !== "pending"}
+            disabled={record.status !== "PENDING"}
+            style={{ 
+              backgroundColor: record.status === "PENDING" ? "#28a745" : "#6c757d",
+              borderColor: record.status === "PENDING" ? "#28a745" : "#6c757d",
+              color: "white"
+            }}
           >
             <i className="ti ti-check me-1"></i>
             Approve
           </button>
           <button
             type="button"
-            className="btn btn-danger btn-sm"
+            className="btn btn-danger btn-sm btn-reject fw-semibold"
+            data-leave-id={record.id}
             onClick={() => handleRejectLeave(record.id)}
-            disabled={record.status !== "pending"}
+            disabled={record.status !== "PENDING"}
+            style={{ 
+              backgroundColor: record.status === "PENDING" ? "#dc3545" : "#6c757d",
+              borderColor: record.status === "PENDING" ? "#dc3545" : "#6c757d",
+              color: "white"
+            }}
           >
             <i className="ti ti-x me-1"></i>
             Reject
@@ -1004,7 +1161,18 @@ console.log("object",schoolId);
             : "p-3 bg-dark-theme min-vh-100 d-flex flex-column"
         }
       >
-        <ToastContainer position="top-center" autoClose={3000} />
+        <ToastContainer 
+          position="top-center" 
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={isDark ? "dark" : "light"}
+        />
         <div className="content flex-grow-1 bg-dark-theme overflow-auto">
           <div className="row flex-grow-1">
             <div className="col-12 d-flex flex-column">
@@ -1067,19 +1235,10 @@ console.log("object",schoolId);
                             <div key={index} className="col-lg-6 col-xxl-3 d-flex">
                               <div className="card flex-fill">
                                 <div className="card-body p-2 placeholder-glow">
-                                  <SkeletonPlaceholder
-                                    className="col-6 mb-2"
-                                    style={{ height: "1.5rem" }}
-                                  />
+                                  <LoadingSkeleton lines={1} height={24} className="col-6 mb-2" />
                                   <div className="d-flex align-items-center flex-wrap">
-                                    <SkeletonPlaceholder
-                                      className="col-4 me-2 mb-0"
-                                      style={{ height: "1rem" }}
-                                    />
-                                    <SkeletonPlaceholder
-                                      className="col-4 mb-0"
-                                      style={{ height: "1rem" }}
-                                    />
+                                    <LoadingSkeleton lines={1} height={16} className="col-4 me-2 mb-0" />
+                                    <LoadingSkeleton lines={1} height={16} className="col-4 mb-0" />
                                   </div>
                                 </div>
                               </div>
@@ -1093,12 +1252,12 @@ console.log("object",schoolId);
                                 <h5 className="mb-2">{leaveType}</h5>
                                 <div className="d-flex align-items-center flex-wrap">
                                   <p className="border-end pe-2 me-2 mb-0">
-                                    Used: {leaveBalances[leaveType as LeaveType].used}
+                                    Used: {leaveBalances[leaveType as LeaveType]?.used || 0}
                                   </p>
                                   <p className="mb-0">
                                     Available:{" "}
-                                    {leaveBalances[leaveType as LeaveType].total -
-                                      leaveBalances[leaveType as LeaveType].used}
+                                    {(leaveBalances[leaveType as LeaveType]?.total || 0) -
+                                      (leaveBalances[leaveType as LeaveType]?.used || 0)}
                                   </p>
                                 </div>
                               </div>
@@ -1125,26 +1284,11 @@ console.log("object",schoolId);
                               .fill(0)
                               .map((_, index) => (
                                 <div key={index} className="p-3 border-bottom">
-                                  <SkeletonPlaceholder
-                                    className="col-4 mb-2"
-                                    style={{ height: "1rem" }}
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-6 mb-2"
-                                    style={{ height: "1rem" }}
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-2 mb-2"
-                                    style={{ height: "1rem" }}
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-3 mb-2"
-                                    style={{ height: "1rem" }}
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-2 mb-2"
-                                    style={{ height: "1rem" }}
-                                  />
+                                  <LoadingSkeleton lines={1} height={16} className="col-4 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-6 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-3 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
                                 </div>
                               ))}
                           </div>
@@ -1154,9 +1298,9 @@ console.log("object",schoolId);
                           </div>
                         ) : (
                           <Table
-                            key={leaves.length}
+                            key={`leaves-${leaves.length}`}
                             rowKey="id"
-                            dataSource={leaves}
+                            dataSource={leaves || []}
                             columns={leaveColumns}
                             className={isDark ? "table table-dark" : "table table-light"}
                           />
@@ -1219,19 +1363,10 @@ console.log("object",schoolId);
                                   className="col-md-6 col-xl-3 d-flex"
                                 >
                                   <div className="d-flex align-items-center rounded border p-3 mb-3 flex-fill placeholder-glow">
-                                    <SkeletonPlaceholder
-                                      className="avatar avatar-lg bg-secondary bg-opacity-10 rounded me-3 flex-shrink-0"
-                                      style={{ width: "48px", height: "48px" }}
-                                    />
+                                    <LoadingSkeleton lines={1} height={48} className="avatar avatar-lg bg-secondary bg-opacity-10 rounded me-3 flex-shrink-0" />
                                     <div className="ms-2">
-                                      <SkeletonPlaceholder
-                                        className="col-6 mb-1"
-                                        style={{ height: "1rem" }}
-                                      />
-                                      <SkeletonPlaceholder
-                                        className="col-4"
-                                        style={{ height: "1.5rem" }}
-                                      />
+                                      <LoadingSkeleton lines={1} height={16} className="col-6 mb-1" />
+                                      <LoadingSkeleton lines={1} height={24} className="col-4" />
                                     </div>
                                   </div>
                                 </div>
@@ -1320,7 +1455,6 @@ console.log("object",schoolId);
                                 <Link
                                   to="#"
                                   className="dropdown-item rounded-1"
-                                  onClick={() => console.log("Export PDF")}
                                 >
                                   Export as PDF
                                 </Link>
@@ -1329,7 +1463,6 @@ console.log("object",schoolId);
                                 <Link
                                   to="#"
                                   className="dropdown-item rounded-1"
-                                  onClick={() => console.log("Export files")}
                                 >
                                   Export as Excel
                                 </Link>
@@ -1345,18 +1478,9 @@ console.log("object",schoolId);
                               .fill(0)
                               .map((_, index) => (
                                 <div key={index} className="p-3 border-bottom">
-                                  <SkeletonPlaceholder
-                                    className="col-4 mb-2"
-                                    style={{ height: "1rem" }}
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-2 mb-2"
-                                    style={{ height: "1rem" }}
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-3 mb-2"
-                                    style={{ height: "1rem" }}
-                                  />
+                                  <LoadingSkeleton lines={1} height={16} className="col-4 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-3 mb-2" />
                                 </div>
                               ))}
                           </div>
@@ -1366,7 +1490,9 @@ console.log("object",schoolId);
                           </div>
                         ) : (
                           <Table
-                            dataSource={attendance}
+                            key={`attendance-${attendance.length}`}
+                            rowKey="date"
+                            dataSource={attendance || []}
                             columns={attendanceColumns}
                             className={isDark ? "table table-dark" : "table table-light"}
                           />
@@ -1431,7 +1557,7 @@ console.log("object",schoolId);
                                 >
                                   <option value="">Select Subject</option>
                                   {getAvailableSubjects(addFormData.classId).map(
-                                    (subject) => (
+                                    (subject: { value: string; label: string }) => (
                                       <option key={subject.value} value={subject.value}>
                                         {subject.label}
                                       </option>
@@ -1504,149 +1630,35 @@ console.log("object",schoolId);
                                 </button>
                               </div>
                               <div className="input-icon-start mb-3 mb-0 position-relative">
-                                <PredefinedDateRanges
-                                  onChange={(date) => console.log("Date selected:", date)}
-                                  // Add any required props here, ensuring no boolean attributes
-                                />
-                              </div>
-                              <div className="dropdown mb-3 mb-0">
-                                <Link
-                                  to="#"
-                                  className="btn btn-outline-secondary dropdown-toggle"
-                                  data-bs-toggle="dropdown"
-                                  data-bs-auto-close="outside"
-                                >
-                                  <i className="bi bi-filter"></i> Filter
-                                </Link>
-                                <div
-                                  className="dropdown-menu drop-width"
-                                  ref={dropdownMenuRef}
-                                >
-                                  <div>
-                                    <div className="d-flex align-items-center border-bottom p-3">
-                                      <h4>Filter</h4>
-                                    </div>
-                                    <div className="p-3 border-bottom">
-                                      <div className="row">
-                                        <div className="col-md-6">
-                                          <div className="mb-3">
-                                            <label className="form-label">Class</label>
-                                            <select
-                                              className="form-control"
-                                              value={filterFormData.classId}
-                                              onChange={(e) =>
-                                                handleFilterClassClick(
-                                                  classList.find(
-                                                    (cls) => cls.id === e.target.value
-                                                  )
-                                                )
-                                              }
-                                            >
-                                              <option value="">Select Class</option>
-                                              {classList.map((cls) => (
-                                                <option key={cls.id} value={cls.id}>
-                                                  {cls.name || cls.id}
-                                                </option>
-                                              ))}
-                                            </select>
-                                            {filterErrors.classId && (
-                                              <span className="text-danger">
-                                                {filterErrors.classId}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                        <div className="col-md-6">
-                                          <div className="mb-3">
-                                            <label className="form-label">Section</label>
-                                            <select
-                                              className="form-control"
-                                              value={filterFormData.sectionId}
-                                              onChange={(e) =>
-                                                handleFilterSectionClick(e.target.value)
-                                              }
-                                              disabled={!filterFormData.classId}
-                                            >
-                                              <option value="">Select Section</option>
-                                              {getAvailableSections(
-                                                filterFormData.classId
-                                              ).map((section) => (
-                                                <option
-                                                  key={section.value}
-                                                  value={section.value}
-                                                >
-                                                  {section.label}
-                                                </option>
-                                              ))}
-                                            </select>
-                                            {filterErrors.sectionId && (
-                                              <span className="text-danger">
-                                                {filterErrors.sectionId}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="p-3 d-flex align-items-center justify-content-end">
-                                      <Link to="#" className="btn btn-outline-primary me-2">
-                                        Reset
-                                      </Link>
-                                      <Link
-                                        to="#"
-                                        className="btn btn-primary"
-                                        onClick={handleApplyClick}
-                                      >
-                                        Apply
-                                      </Link>
-                                    </div>
-                                  </div>
-                                </div>
+                                {/* Removed PredefinedDateRanges */}
                               </div>
                             </div>
                           </div>
                           <div className="card-body p-0 py-2">
-                            {loadingStudents || isDataLoading || !localTeacherData ? ( // Updated condition
+                            {loadingStudents || isDataLoading || !localTeacherData ? (
                               <div className="placeholder-glow">
                                 {Array(5)
                                   .fill(0)
                                   .map((_, index) => (
                                     <div key={index} className="p-3 border-bottom">
-                                      <SkeletonPlaceholder
-                                        className="col-2 mb-2"
-                                        style={{ height: "1rem" }}
-                                      />
-                                      <SkeletonPlaceholder
-                                        className="col-3 mb-2"
-                                        style={{ height: "1rem" }}
-                                      />
-                                      <SkeletonPlaceholder
-                                        className="col-2 mb-2"
-                                        style={{ height: "1rem" }}
-                                      />
-                                      <SkeletonPlaceholder
-                                        className="col-2 mb-2"
-                                        style={{ height: "1rem" }}
-                                      />
-                                      <SkeletonPlaceholder
-                                        className="col-2 mb-2"
-                                        style={{ height: "1rem" }}
-                                      />
-                                      <SkeletonPlaceholder
-                                        className="col-3 mb-2"
-                                        style={{ height: "1rem" }}
-                                      />
+                                      <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
+                                      <LoadingSkeleton lines={1} height={16} className="col-3 mb-2" />
+                                      <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
+                                      <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
+                                      <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
+                                      <LoadingSkeleton lines={1} height={16} className="col-3 mb-2" />
                                     </div>
                                   ))}
                               </div>
-                            ) : filteredStudents.length === 0 ? (
+                            ) : students.length === 0 ? (
                               <div className="text-center p-3">
                                 <p>No students found for the selected class and section.</p>
                               </div>
                             ) : (
                               <Table
+                                key={`students-${students.length}`}
                                 rowKey="key"
-                                dataSource={filteredStudents}
+                                dataSource={students || []}
                                 columns={studentColumns}
                                 rowSelection={rowSelection}
                               />
@@ -1702,6 +1714,59 @@ console.log("object",schoolId);
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Dynamic Statistics */}
+                      {studentLeaveRequests.length > 0 && (
+                        <div className="card-body p-3 border-bottom">
+                          <div className="row g-3">
+                            <div className="col-md-3">
+                              <div className="d-flex align-items-center p-3 rounded bg-warning bg-opacity-10">
+                                <i className="ti ti-clock fs-24 text-warning me-3"></i>
+                                <div>
+                                  <h6 className="mb-0 text-warning fw-semibold">
+                                    {studentLeaveRequests.filter(req => req.status === "PENDING").length}
+                                  </h6>
+                                  <small className="text-muted">Pending</small>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-md-3">
+                              <div className="d-flex align-items-center p-3 rounded bg-success bg-opacity-10">
+                                <i className="ti ti-check fs-24 text-success me-3"></i>
+                                <div>
+                                  <h6 className="mb-0 text-success fw-semibold">
+                                    {studentLeaveRequests.filter(req => req.status === "APPROVED").length}
+                                  </h6>
+                                  <small className="text-muted">Approved</small>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-md-3">
+                              <div className="d-flex align-items-center p-3 rounded bg-danger bg-opacity-10">
+                                <i className="ti ti-x fs-24 text-danger me-3"></i>
+                                <div>
+                                  <h6 className="mb-0 text-danger fw-semibold">
+                                    {studentLeaveRequests.filter(req => req.status === "REJECTED").length}
+                                  </h6>
+                                  <small className="text-muted">Rejected</small>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="col-md-3">
+                              <div className="d-flex align-items-center p-3 rounded bg-primary bg-opacity-10">
+                                <i className="ti ti-calendar fs-24 text-primary me-3"></i>
+                                <div>
+                                  <h6 className="mb-0 text-primary fw-semibold">
+                                    {studentLeaveRequests.length}
+                                  </h6>
+                                  <small className="text-muted">Total</small>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="card-body p-0 py-2">
                         {loadingLeaveRequests ? (
                           <div className="placeholder-glow">
@@ -1709,21 +1774,11 @@ console.log("object",schoolId);
                               .fill(0)
                               .map((_, index) => (
                                 <div key={index} className="p-3 border-bottom">
-                                  <SkeletonPlaceholder
-                                    className="col-3 mb-2"
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-2 mb-2"
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-2 mb-2"
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-3 mb-2"
-                                  />
-                                  <SkeletonPlaceholder
-                                    className="col-2 mb-2"
-                                  />
+                                  <LoadingSkeleton lines={1} height={16} className="col-3 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-3 mb-2" />
+                                  <LoadingSkeleton lines={1} height={16} className="col-2 mb-2" />
                                 </div>
                               ))}
                           </div>
@@ -1746,16 +1801,20 @@ console.log("object",schoolId);
                           </div>
                         ) : (
                           <Table
-                            dataSource={studentLeaveRequests}
+                            key={`student-leaves-${studentLeaveRequests.length}`}
+                            dataSource={studentLeaveRequests || []}
                             columns={studentLeaveRequestColumns}
                             rowKey="id"
                             className={isDark ? "table table-dark" : "table table-light"}
+                            rowClassName={(record) => {
+                              if (record.status === "APPROVED") return "table-success";
+                              if (record.status === "REJECTED") return "table-danger";
+                              return "table-warning";
+                            }}
                             pagination={{
                               pageSize: 10,
-                              showSizeChanger: true,
-                              showQuickJumper: true,
-                              showTotal: (total, range) =>
-                                `${range[0]}-${range[1]} of ${total} items`,
+                              showSizeChanger: false,
+                              showQuickJumper: false
                             }}
                           />
                         )}

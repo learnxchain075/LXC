@@ -320,7 +320,7 @@ import useMobileDetection from '../../../../../core/common/mobileDetection';
 import { getTeacherById } from '../../../../../services/admin/teacherRegistartion';
 import { useSelector } from 'react-redux';
 
-const TeacherDetails = ({ teacherdata }: { teacherdata?: any }) => {
+const TeacherDetails = () => {
   const routes = all_routes;
   const ismobile = useMobileDetection();
   const userobj = useSelector((state: any) => state.auth.userObj);
@@ -330,37 +330,37 @@ const TeacherDetails = ({ teacherdata }: { teacherdata?: any }) => {
   const fetchTeacherDetails = async () => {
     try {
       setLoading(true);
-      const response = await getTeacherById(localStorage.getItem("teacherId") ?? "");
+     // console.log("TeacherDetails: Fetching teacher details...");
+      const teacherId = localStorage.getItem("teacherId");
+     // console.log("TeacherDetails: Teacher ID:", teacherId);
+      
+      const response = await getTeacherById(teacherId ?? "");
+     // console.log("TeacherDetails: API Response:", response);
+      
       if (response.status === 200) {
         const teacherDetails = response.data;
-      //  console.log("Teacher Details:", teacherDetails);
+       // console.log("TeacherDetails: Teacher Details:", teacherDetails);
         setLocalTeacherData(teacherDetails); 
       } else {
-        console.error("Failed to fetch teacher details");
+       // console.error("TeacherDetails: Failed to fetch teacher details");
       }
     } catch (error) {
-      console.error("Error fetching teacher details:", error);
+     // console.error("TeacherDetails: Error fetching teacher details:", error);
     } finally {
       setLoading(false); 
     }
   };
 
   useEffect(() => {
-    if (teacherdata) {
-      setLocalTeacherData(teacherdata); 
-      setLoading(false); 
-    } else {
-      fetchTeacherDetails(); 
-    }
-  }, [teacherdata, userobj.role]);
-
+   // console.log("TeacherDetails: Component mounted, fetching teacher details...");
+    fetchTeacherDetails();
+  }, [userobj.role]);
 
   const SkeletonPlaceholder = ({ className = '' }) => (
     <span className={`placeholder bg-secondary ${className}`} />
   );
 
-
-  const displayData = localTeacherData || teacherdata;
+  const displayData = localTeacherData;
 
   return (
     <>
@@ -507,7 +507,7 @@ const TeacherDetails = ({ teacherdata }: { teacherdata?: any }) => {
                         <div className="row">
                           <div className="col-sm-6 col-lg-4">
                             <div className="mb-3">
-                              <p className="text-dark fw-medium mb-1">Father’s Name</p>
+                              <p className="text-dark fw-medium mb-1">Father's Name</p>
                               <p>{displayData?.fatherName || "N/A"}</p>
                             </div>
                           </div>

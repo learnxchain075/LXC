@@ -3,9 +3,9 @@ export interface Iassignment {
     description: string;
     subjectId: string;
     classId: string;
-    dueDate: Date;
+    dueDate: Date | string;
     lessonId: string;
     attachment?: File;
     id?:string;
-    sectionId: string;
+    sectionId?: string;
 }

@@ -471,7 +471,14 @@ const TeacherSidebar = () => {
   const getClassAndSection = () => {
     if (teacherdata.lessons && teacherdata.lessons.length > 0) {
       const uniqueClasses = new Set(
-        teacherdata.lessons.map((lesson: any) => `${lesson.class.name} ${lesson.class.section}`)
+        teacherdata.lessons
+          .map((lesson: any) => {
+            if (lesson.class && lesson.class.name && lesson.class.section) {
+              return `${lesson.class.name} ${lesson.class.section}`;
+            }
+            return null;
+          })
+          .filter((val: string | null) => val && val !== 'undefined undefined')
       );
       return Array.from(uniqueClasses).join(", ") || "N/A";
     }

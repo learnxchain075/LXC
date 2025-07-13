@@ -504,21 +504,29 @@ const TeacherDashboard = () => {
   const fetchTeacherDetails = async () => {
     try {
       setLoading(true); // Start loading
-      const response = await getTeacherById(localStorage.getItem("teacherId") ?? "");
+      console.log("Fetching teacher details...");
+      const teacherId = localStorage.getItem("teacherId");
+      console.log("Teacher ID:", teacherId);
+      
+      const response = await getTeacherById(teacherId ?? "");
+      console.log("Teacher API Response:", response);
+      
       if (response.status === 200) {
         const teacherDetails = response.data;
+        console.log("Teacher Details:", teacherDetails);
         setTeacherdata(teacherDetails);
       } else {
-        // Failed to fetch teacher details
+        console.error("Failed to fetch teacher details");
       }
     } catch (error) {
-      // Error fetching teacher details
+      console.error("Error fetching teacher details:", error);
     } finally {
       setLoading(false); // End loading
     }
   };
 
   useEffect(() => {
+    console.log("TeacherDashboard mounted, fetching teacher details...");
     fetchTeacherDetails();
   }, []);
 
@@ -656,25 +664,25 @@ const TeacherDashboard = () => {
 
     switch (activeTab) {
       case routes.teacherDetails:
-        return <TeacherDetails teacherdata={teacherdata} />;
+        return <TeacherDetails />;
       case routes.teachersRoutine:
-        return <TeachersRoutine teacherData={teacherdata} />;
+        return <TeachersRoutine />;
       case routes.teacherLeaves:
-        return <TeacherLeave teacherdata={teacherdata} />;
+        return <TeacherLeave />;
       case routes.teacherSalary:
-        return <TeacherSalary teacherdata={teacherdata} />;
+        return <TeacherSalary />;
       case routes.MyClassesWithStudents:
         return <MyClassesWithStudents />;
       case routes.AcademicUploads:
         return <AcademicUploads />;
       case routes.examSchedule:
-        return <ExamSchedule teacherdata={teacherdata} />;
+        return <ExamSchedule />;
       case routes.SelfEnhancement:
         return <SelfEnhancement />;
       case routes.DoubtForum:
         return <DoubtForum />;
       case routes.tickets:
-        return <Tickets teacherdata={teacherdata} />;
+        return <Tickets />;
       default:
         return <div className="card"><div className="card-body">Select a tab to view content</div></div>;
     }
