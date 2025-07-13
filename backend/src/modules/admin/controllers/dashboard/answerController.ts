@@ -38,10 +38,11 @@ export const getAnswersByDoubtId = async (req: Request, res: Response, next:Next
     try {
       const answers = await prisma.answer.findMany({
         where: { doubtId },
+        include: { user: { select: { name: true } } },
       });
       res.status(200).json(answers);
     } catch (error) {
-          next(handlePrismaError(error));
+      next(handlePrismaError(error));
     }
   };
   
