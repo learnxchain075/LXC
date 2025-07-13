@@ -79,6 +79,7 @@ import userRoutes from "../modules/superadmin/routes/core/userRoutes";
 import contactMessageRoutes from "../modules/superadmin/routes/core/contactMessageRoutes";
 import homeWorkRoutes from "../modules/teacher/routes/dashboard/homeWorkRoutes";
 import teacherLeaveRequestRoutes from "../modules/teacher/routes/dashboard/leaveRequestRoutes";
+import teacherPayrollRoutes from "../modules/teacher/routes/dashboard/payrollRoutes";
 import addStaffRoutes from "../modules/admin/routes/dashboard/hrm/addStaffRoutes";
 import employeeRoutes from "../modules/admin/routes/dashboard/hrm/employeeRoutes";
 import leaveRequestRoutes from "../modules/superadmin/routes/core/leaveRequestRoutes";
@@ -197,6 +198,7 @@ apiRouter.use(payrollRoutes);
 
 apiRouter.use(homeWorkRoutes);
 apiRouter.use(teacherLeaveRequestRoutes);
+apiRouter.use(teacherPayrollRoutes);
 apiRouter.use(addStaffRoutes);
 apiRouter.use(employeeRoutes);
 apiRouter.use(leaveRequestRoutes);

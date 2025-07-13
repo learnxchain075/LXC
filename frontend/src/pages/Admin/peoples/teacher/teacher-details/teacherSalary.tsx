@@ -234,6 +234,8 @@ import useMobileDetection from "../../../../../core/common/mobileDetection";
 import { getTeacherById } from "../../../../../services/admin/teacherRegistartion";
 import { useSelector } from "react-redux";
 import { Table } from "antd";
+import { getPayrollsByTeacherId } from "../../../../../services/teacher/payrollService";
+import { IPayroll } from "../../../../../services/types/teacher/IPayroll";
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -262,6 +264,7 @@ const TeacherSalary = () => {
   const userobj = useSelector((state: any) => state.auth.userObj);
   const [loading, setLoading] = useState(false);
   const [localTeacherData, setLocalTeacherData] = useState<any>(null); // Added local state
+  const [payrolls, setPayrolls] = useState<IPayroll[]>([]);
 
   // Added fetchTeacherDetails
   const fetchTeacherDetails = async () => {
@@ -282,8 +285,24 @@ const TeacherSalary = () => {
     }
   };
 
+  const fetchPayrolls = async () => {
+    try {
+      setLoading(true);
+      const teacherId = localStorage.getItem("teacherId") || "";
+      const res = await getPayrollsByTeacherId(teacherId);
+      if (res.status === 200) {
+        setPayrolls(res.data);
+      }
+    } catch (error) {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTeacherDetails();
+    fetchPayrolls();
   }, [userobj.role]);
 
   const columns = [
@@ -331,6 +350,14 @@ const TeacherSalary = () => {
       ),
     },
   ];
+
+  const payrollData = payrolls.map((p) => ({
+    id: p.id,
+    Salary_For: `${new Date(p.periodStart).toLocaleDateString()} - ${new Date(p.periodEnd).toLocaleDateString()}`,
+    date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : "-",
+    Payment_Method: p.status,
+    Net_Salary: p.netSalary,
+  }));
 
   const SkeletonPlaceholder = ({ className = "" }) => (
     <span className={`placeholder bg-secondary ${className}`} />
@@ -449,7 +476,7 @@ const TeacherSalary = () => {
                       <div className="card-body p-0 py-3">
                         {/* Payroll List */}
                         <Table
-                          dataSource={[]}
+                          dataSource={payrollData}
                           columns={columns}
                           loading={loading}
                           rowKey="id"
