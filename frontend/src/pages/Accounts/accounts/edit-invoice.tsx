@@ -241,7 +241,7 @@ const EditInvoice = () => {
                                             defaultValue={5}
                                           />
                                         </td>
-                                        <td>$450</td>
+                                        <td>₹450</td>
                                         <td>
                                           <Link
                                             to="#"
@@ -274,7 +274,7 @@ const EditInvoice = () => {
                                             placeholder="4%"
                                           />
                                         </td>
-                                        <td>$300</td>
+                                        <td>₹300</td>
                                         <td>
                                           <Link
                                             to="#"
@@ -329,19 +329,19 @@ const EditInvoice = () => {
                             <ul>
                               <li>
                                 <span>Subtotal</span>
-                                <h6>$500</h6>
+                                <h6>₹500</h6>
                               </li>
                               <li>
                                 <span>Discount</span>
-                                <h6>$50</h6>
+                                <h6>₹50</h6>
                               </li>
                               <li>
                                 <span>Tax</span>
-                                <h6>$10</h6>
+                                <h6>₹10</h6>
                               </li>
                               <li>
                                 <h5>Total</h5>
-                                <h5>$460</h5>
+                                <h5>₹460</h5>
                               </li>
                             </ul>
                             <div className="mb-3">

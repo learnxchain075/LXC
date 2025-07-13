@@ -234,7 +234,7 @@ const AddInvoice = () => {
                                             placeholder="%"
                                           />
                                         </td>
-                                        <td>$0</td>
+                                        <td>₹0</td>
                                         <td>
                                           <Link
                                             to="#"
@@ -267,7 +267,7 @@ const AddInvoice = () => {
                                             placeholder="%"
                                           />
                                         </td>
-                                        <td>$0</td>
+                                        <td>₹0</td>
                                         <td>
                                           <Link
                                             to="#"
@@ -312,19 +312,19 @@ const AddInvoice = () => {
                             <ul>
                               <li>
                                 <span>Subtotal</span>
-                                <h6>$00.00</h6>
+                                <h6>₹00.00</h6>
                               </li>
                               <li>
                                 <span>Discount</span>
-                                <h6>$00.00</h6>
+                                <h6>₹00.00</h6>
                               </li>
                               <li>
                                 <span>Tax</span>
-                                <h6>$00.00</h6>
+                                <h6>₹00.00</h6>
                               </li>
                               <li>
                                 <h5>Total</h5>
-                                <h5>$00.00</h5>
+                                <h5>₹00.00</h5>
                               </li>
                             </ul>
                             <div className="mb-3">

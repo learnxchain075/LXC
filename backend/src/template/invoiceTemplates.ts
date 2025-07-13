@@ -76,27 +76,29 @@ export const generatePlanInvoiceHtml = (data: PlanInvoiceData) => {
   <title>Invoice - ${data.invoiceNumber}</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; position: relative; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 8px; border: 1px solid #ddd; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; }
+    th { background-color: #f5f5f5; }
     .header { text-align: center; margin-bottom: 20px; }
+    .logo { height: 60px; margin-bottom: 10px; }
     .watermark { position:absolute; top:40%; left:25%; font-size:50px; color:rgba(0,0,0,0.05); transform:rotate(-30deg); }
   </style>
 </head>
 <body>
   <div class="watermark">PAID</div>
   <div class="header">
-    ${data.logoUrl ? `<img src="${data.logoUrl}" style="height:60px" />` : ""}
+    ${data.logoUrl ? `<img src="${data.logoUrl}" class="logo" />` : ""}
     <h2>${data.schoolName}</h2>
     ${data.address ? `<div>${data.address}</div>` : ""}
     <h3>Subscription Invoice</h3>
   </div>
   <table>
-    <tr><td>${t("invoice")}</td><td>${data.invoiceNumber}</td></tr>
-    <tr><td>${t("date")}</td><td>${data.date}</td></tr>
-    <tr><td>${t("plan")}</td><td>${data.planName}</td></tr>
-    <tr><td>${t("base")}</td><td>₹${data.baseAmount.toFixed(2)}</td></tr>
-    <tr><td>${t("gst")}</td><td>₹${data.gstAmount.toFixed(2)}</td></tr>
-    <tr><td><strong>${t("total")}</strong></td><td><strong>₹${data.totalAmount.toFixed(2)}</strong></td></tr>
+    <tr><th>${t("invoice")}</th><td>${data.invoiceNumber}</td></tr>
+    <tr><th>${t("date")}</th><td>${data.date}</td></tr>
+    <tr><th>${t("plan")}</th><td>${data.planName}</td></tr>
+    <tr><th>${t("base")}</th><td>₹${data.baseAmount.toFixed(2)}</td></tr>
+    <tr><th>${t("gst")}</th><td>₹${data.gstAmount.toFixed(2)}</td></tr>
+    <tr><th>${t("total")}</th><td><strong>₹${data.totalAmount.toFixed(2)}</strong></td></tr>
   </table>
   ${data.qrImage ? `<img src="${data.qrImage}" style="height:80px;margin-top:20px" />` : ""}
   <p style="text-align:center;margin-top:20px;">${t("thanks")}</p>
