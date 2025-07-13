@@ -30,6 +30,15 @@ const TicketDetails = () => {
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [priorities, setPriorities] = useState<{ value: string; label: string }[]>([]);
   const [statuses, setStatuses] = useState<{ value: string; label: string }[]>([]);
+  const [newTicket, setNewTicket] = useState({
+    title: "",
+    description: "",
+    category: "",
+    priority: "",
+    status: "Open",
+    schoolId: schoolID,
+    userId: userId,
+  });
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -45,6 +54,7 @@ const TicketDetails = () => {
       }
       setTickets(res?.data || []);
     } catch (err: any) {
+      console.error("Error fetching tickets:", err);
       setError(err?.response?.data?.message || err?.message || "Failed to fetch tickets");
       setTickets([]);
     } finally {
@@ -59,9 +69,27 @@ const TicketDetails = () => {
       setCategories(c.map((v: string) => ({ value: v, label: v })));
       setPriorities(p.map((v: string) => ({ value: v, label: v })));
       setStatuses(s.map((v: string) => ({ value: v, label: v })));
-          } catch (err) {
-        // Failed to load ticket metadata
-      }
+    } catch (err) {
+      console.error("Failed to load ticket metadata:", err);
+      // Set default values if API fails
+      setCategories([
+        { value: "Technical Issue", label: "Technical Issue" },
+        { value: "Feature Request", label: "Feature Request" },
+        { value: "Bug Report", label: "Bug Report" },
+        { value: "General Inquiry", label: "General Inquiry" }
+      ]);
+      setPriorities([
+        { value: "Low", label: "Low" },
+        { value: "Medium", label: "Medium" },
+        { value: "High", label: "High" }
+      ]);
+      setStatuses([
+        { value: "Open", label: "Open" },
+        { value: "Pending", label: "Pending" },
+        { value: "Resolved", label: "Resolved" },
+        { value: "Closed", label: "Closed" }
+      ]);
+    }
   };
 
   useEffect(() => {
@@ -69,19 +97,40 @@ const TicketDetails = () => {
     fetchMetadata();
   }, [role]);
 
-  const handleTicketCreation = async (ticketData: any) => {
+  const handleTicketCreation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newTicket.title || !newTicket.description || !newTicket.category || !newTicket.priority) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
     try {
-      const response = await createTicket(ticketData);
-      if (response.data.success) {
+      const response = await createTicket(newTicket);
+      if (response.data) {
         toast.success("Ticket created successfully!");
-        // ... handle success ...
+        fetchTickets();
+        setNewTicket({
+          title: "",
+          description: "",
+          category: "",
+          priority: "",
+          status: "Open",
+          schoolId: schoolID,
+          userId: userId,
+        });
+        // Close modal
+        const modal = document.getElementById('add_ticket');
+        if (modal) {
+          const closeButton = modal.querySelector('[data-bs-dismiss="modal"]') as HTMLElement;
+          if (closeButton) closeButton.click();
+        }
       } else {
-        toast.error(response.data.message || "Failed to create ticket");
-        // Ticket creation error
+        toast.error(response.data?.message || "Failed to create ticket");
       }
     } catch (err: any) {
+      console.error("Error creating ticket:", err);
       toast.error((err?.response?.data?.message || err?.message || "Failed to create ticket") + " (see console for details)");
-      // Ticket creation exception
     }
   };
 
@@ -147,9 +196,19 @@ const TicketDetails = () => {
                       <LoadingSkeleton />
                     </div>
                   ) : error ? (
-                    <div className="alert alert-danger m-3">{error}</div>
+                    <div className="alert alert-danger m-3">
+                      <h5>Error</h5>
+                      <p>{error}</p>
+                      <button className="btn btn-primary" onClick={fetchTickets}>
+                        Retry
+                      </button>
+                    </div>
                   ) : tickets.length === 0 ? (
-                    <div className="text-center p-4 text-muted">No tickets found.</div>
+                    <div className="text-center p-4 text-muted">
+                      <i className="ti ti-ticket fs-1 mb-3 d-block"></i>
+                      <h5>No tickets found</h5>
+                      <p>Create your first ticket to get started.</p>
+                    </div>
                   ) : (
                   <div className="ticket-information ticket-details">
                       {tickets.map((ticket) => (
@@ -157,14 +216,26 @@ const TicketDetails = () => {
                           <span className="badge bg-pending rounded-pill mb-1">#{ticket.id}</span>
                           <div className="d-flex align-items-center mb-2">
                             <h5 className="fw-semibold me-2">{ticket.title}</h5>
-                            <span className="badge bg-outline-danger d-flex align-items-center ms-1">{ticket.status}</span>
+                            <span className={`badge ${ticket.status === 'Open' ? 'bg-success' : ticket.status === 'Pending' ? 'bg-warning' : 'bg-secondary'} d-flex align-items-center ms-1`}>
+                              {ticket.status}
+                            </span>
                           </div>
                           <p className="mb-3">{ticket.description}</p>
                           <div className="d-flex align-items-center flex-wrap">
                             <p className="d-flex align-items-center mb-1 me-2">
                               <i className="ti ti-calendar-bolt me-1" />
-                              {ticket.updatedAt ? `Updated ${ticket.updatedAt}` : ""}
+                              {ticket.updatedAt ? `Updated ${new Date(ticket.updatedAt).toLocaleDateString()}` : ticket.createdAt ? `Created ${new Date(ticket.createdAt).toLocaleDateString()}` : ""}
                             </p>
+                            {ticket.priority && (
+                              <span className={`badge ${ticket.priority === 'High' ? 'bg-danger' : ticket.priority === 'Medium' ? 'bg-warning' : 'bg-info'} me-2`}>
+                                {ticket.priority}
+                              </span>
+                            )}
+                            {ticket.category && (
+                              <span className="badge bg-info">
+                                {ticket.category}
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -280,24 +351,28 @@ const TicketDetails = () => {
                 <i className="ti ti-x" />
               </button>
             </div>
-            <form >
+            <form onSubmit={handleTicketCreation}>
               <div className="modal-body">
                 <div className="row">
                   <div className="col-md-12">
                     <div className="mb-3">
-                      <label className="col-form-label">Title</label>
+                      <label className="col-form-label">Title <span className="text-danger">*</span></label>
                       <input
                         type="text"
                         className="form-control"
                         placeholder="Enter Title"
+                        value={newTicket.title}
+                        onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
+                        required
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="col-form-label">Event Category</label>
+                      <label className="col-form-label">Event Category <span className="text-danger">*</span></label>
                       <CommonSelect
                         className="select"
                         options={categories}
-                        defaultValue={undefined}
+                        onChange={(option) => setNewTicket({ ...newTicket, category: option?.value || '' })}
+                        defaultValue={categories.find(opt => opt.value === newTicket.category)}
                       />
                     </div>
                     <div className="mb-3">
@@ -318,20 +393,23 @@ const TicketDetails = () => {
                     </div>
                     <div className="mb-3">
                       <label className="col-form-label">
-                        Ticket Description
+                        Ticket Description <span className="text-danger">*</span>
                       </label>
                       <textarea
                         className="form-control"
                         placeholder="Add Question"
-                        defaultValue={""}
+                        value={newTicket.description}
+                        onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                        required
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="col-form-label">Priority</label>
+                      <label className="col-form-label">Priority <span className="text-danger">*</span></label>
                       <CommonSelect
                         className="select"
                         options={priorities}
-                        defaultValue={undefined}
+                        onChange={(option) => setNewTicket({ ...newTicket, priority: option?.value || '' })}
+                        defaultValue={priorities.find(opt => opt.value === newTicket.priority)}
                       />
                     </div>
                     <div className="mb-0">
@@ -339,7 +417,8 @@ const TicketDetails = () => {
                       <CommonSelect
                         className="select"
                         options={statuses}
-                        defaultValue={undefined}
+                        onChange={(option) => setNewTicket({ ...newTicket, status: option?.value || 'Open' })}
+                        defaultValue={statuses.find(opt => opt.value === newTicket.status)}
                       />
                     </div>
                   </div>
@@ -353,13 +432,13 @@ const TicketDetails = () => {
                 >
                   Cancel
                 </Link>
-                <Link
-                  to="#"
-                  data-bs-dismiss="modal"
+                <button
+                  type="submit"
                   className="btn btn-primary"
+                  disabled={!newTicket.title || !newTicket.description || !newTicket.category || !newTicket.priority}
                 >
                   Add Ticket
-                </Link>
+                </button>
               </div>
             </form>
           </div>

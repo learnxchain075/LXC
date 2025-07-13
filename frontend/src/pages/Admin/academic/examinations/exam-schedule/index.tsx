@@ -244,7 +244,6 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
           const formattedExams = response.data.map((exam: any) => {
             const fallbackClassId = selectedClassId || obj?.classId || obj?.id || '';
             const mappedClassId = exam.classId || fallbackClassId;
-            console.log('Mapping exam:', { examId: exam.id, examClassId: exam.classId, fallbackClassId, mappedClassId });
             return {
               id: exam.id,
               title: exam.title,
@@ -361,7 +360,6 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
 
   const modalFilteredExams = allExams.filter((exam) => {
     const matchesClass = modalClassId ? exam.classId === modalClassId : true;
-    console.log('Exam filtering:', { examId: exam.id, examClassId: exam.classId, modalClassId, matchesClass });
     return matchesClass;
   });
 
@@ -406,7 +404,6 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
       const formattedExams = response.data.map((exam: any) => {
         const fallbackClassId = classId || selectedClassId || obj?.classId || obj?.id || '';
         const mappedClassId = exam.classId || fallbackClassId;
-        console.log('Mapping exam:', { examId: exam.id, examClassId: exam.classId, fallbackClassId, mappedClassId });
         return {
           id: exam.id,
           title: exam.title,
@@ -546,14 +543,12 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
     setIsLoadingStudents(true);
     try {
       const response = await getAllStudentsInAclass(classId);
-      console.log('Fetching students for class:', classId, 'Response:', response);
       let studentsArray: any[] = [];
       if (response?.data && typeof response.data === 'object' && !Array.isArray(response.data) && 'students' in response.data && Array.isArray((response.data as any).students)) {
         studentsArray = (response.data as any).students;
       } else if (Array.isArray(response?.data)) {
         studentsArray = response.data;
       }
-      console.log('Students array:', studentsArray);
       let formattedStudents = studentsArray
         ?.filter((student: any) => student.classId === classId)
         ?.map((student: any) => ({
@@ -570,11 +565,9 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
           notes: student.notes || "",
           img: student?.user?.profilePic || "",
         })) || [];
-      console.log('Formatted students:', formattedStudents);
       setStudents(formattedStudents);
       setStudentsMessage(formattedStudents.length === 0 ? "No students found for this class." : "");
     } catch (error) {
-      console.error("Error fetching students:", error);
       setStudents([]);
       setStudentsMessage("Failed to fetch students. Please try again later.");
     } finally {
@@ -616,20 +609,37 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
   const handleAddExam = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
+    
+    // Get start and end times
+    const startTime = new Date(formData.get("startTime") as string);
+    const endTime = new Date(formData.get("endTime") as string);
+    
+    // Calculate duration automatically in minutes
+    const durationInMs = endTime.getTime() - startTime.getTime();
+    const durationInMinutes = Math.round(durationInMs / (1000 * 60));
+    
+    // Get classId from form or use selectedClassId as fallback
+    const classId = formData.get("class") as string || formData.get("classId") as string || selectedClassId;
+    
     const examData: CreateExamInput = {
       passMark: Number(formData.get("minMarks")),
       totalMarks: Number(formData.get("maxMarks")),
-      duration: Number(formData.get("duration")),
+      duration: durationInMinutes, // Auto-calculated
       roomNumber: Number(formData.get("roomNo")),
       title: formData.get("examName") as string,
-      startTime: new Date(formData.get("startTime") as string),
-      endTime: new Date(formData.get("endTime") as string),
+      startTime: startTime,
+      endTime: endTime,
       subjectId: formData.get("subject") as string,
-      classId: formData.get("class") as string,
+      classId: classId,
     };
 
     if (!examData.classId || !examData.subjectId || !examData.title) {
       toast.error("Class, subject, and exam name are required");
+      return;
+    }
+
+    if (durationInMinutes <= 0) {
+      toast.error("End time must be after start time");
       return;
     }
 
@@ -1121,6 +1131,32 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
     }
   };
 
+  // Add useEffect to auto-set class when modal opens
+  useEffect(() => {
+    const modal = document.getElementById('add_exam_schedule');
+    if (modal) {
+      const handleModalShow = () => {
+        // Auto-set the class field when modal opens
+        const classSelect = modal.querySelector('select[name="class"]') as HTMLSelectElement;
+        if (classSelect && selectedClassId) {
+          classSelect.value = selectedClassId;
+          // Update the newContents state
+          setNewContents(prev => prev.map((content, index) => ({
+            ...content,
+            classId: selectedClassId
+          })));
+          // Fetch subjects for the selected class
+          fetchSubjectsForClass(selectedClassId);
+        }
+      };
+      
+      modal.addEventListener('shown.bs.modal', handleModalShow);
+      return () => {
+        modal.removeEventListener('shown.bs.modal', handleModalShow);
+      };
+    }
+  }, [selectedClassId]);
+
   if (isLoadingExams) {
     return (
       <div className="container py-5">
@@ -1131,8 +1167,8 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
 
   return (
     <ErrorBoundary>
-      <div>
-        <ToastContainer />
+      <div className="container-fluid">
+        <ToastContainer position="top-center" autoClose={3000} />
         <div className={isMobile || obj.role === "admin" ? "page-wrapper" : "p-3"}>
           <div className="content">
             <div className="d-md-flex d-block align-items-center justify-content-between mb-3 tw-py-2">
@@ -1425,12 +1461,20 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
           <>
             <div className="modal fade" id="add_exam_schedule">
               <div className="modal-dialog modal-dialog-centered modal-xl">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h4 className="modal-title">Add Exam Schedule</h4>
+                <div className="modal-content border-0 shadow-lg">
+                  <div className="modal-header bg-gradient-primary text-white border-0">
+                    <div className="d-flex align-items-center">
+                      <div className="avatar avatar-lg bg-white bg-opacity-25 rounded-circle me-3 d-flex align-items-center justify-content-center">
+                        <i className="ti ti-calendar-event fs-4 text-white"></i>
+                      </div>
+                      <div>
+                        <h4 className="modal-title text-white mb-0">Add Exam Schedule</h4>
+                        <small className="text-white-50">Create new exam schedule for students</small>
+                      </div>
+                    </div>
                     <button
                       type="button"
-                      className="btn-close custom-btn-close"
+                      className="btn-close btn-close-white"
                       data-bs-dismiss="modal"
                       aria-label="Close"
                     >
@@ -1438,11 +1482,11 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                     </button>
                   </div>
                   <form onSubmit={handleAddExam}>
-                    <div className="modal-body">
+                    <div className="modal-body p-4">
                       {isLoadingTeacher ? (
                         <div className="row">
-                          {[...Array(11)].map((_, index) => (
-                            <div key={index} className="col-md-4">
+                          {[...Array(8)].map((_, index) => (
+                            <div key={index} className="col-md-6">
                               <div className="mb-3 placeholder-glow">
                                 <SkeletonPlaceholder className="col-6 mb-1" style={{ height: "1rem" }} />
                                 <SkeletonPlaceholder className="col-12" style={{ height: "2.5rem" }} />
@@ -1452,15 +1496,35 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                         </div>
                       ) : (
                         newContents.map((_, index) => (
-                          <div className="exam-schedule-add" key={index}>
-                            <div className="row">
-                              <div className="col-md-4">
+                          <div className="exam-schedule-add border rounded-3 p-4 mb-4 bg-light" key={index}>
+                            <div className="d-flex align-items-center justify-content-between mb-3">
+                              <h6 className="mb-0 text-primary">
+                                <i className="ti ti-calendar-plus me-2"></i>
+                                Exam Schedule #{index + 1}
+                              </h6>
+                              {newContents.length > 1 && (
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-danger btn-sm"
+                                  onClick={() => removeContent(index)}
+                                >
+                                  <i className="ti ti-trash me-1"></i> Remove
+                                </button>
+                              )}
+                            </div>
+                            <div className="row g-3">
+                              <div className="col-md-6">
                                 <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Class</label>
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-school me-1 text-primary"></i>
+                                    Class *
+                                  </label>
                                   <select
-                                    className="form-control tw-text-sm"
+                                    className="form-select border-2"
                                     name="class"
+                                    value={selectedClassId}
                                     required
+                                    disabled
                                     onChange={e => {
                                       const newClassId = e.target.value;
                                       (newContents[index] as any).classId = newClassId;
@@ -1475,13 +1539,173 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                                       </option>
                                     ))}
                                   </select>
+                                  <small className="text-muted">Automatically set from class selection above</small>
+                                  {/* Hidden input to ensure classId is submitted */}
+                                  <input type="hidden" name="classId" value={selectedClassId} />
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="mb-3">
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-edit me-1 text-info"></i>
+                                    Exam Name *
+                                  </label>
+                                  <input
+                                    type="text"
+                                    className="form-control border-2"
+                                    name="examName"
+                                    placeholder="Enter exam name"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="mb-3">
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-calendar me-1 text-success"></i>
+                                    Start Time *
+                                  </label>
+                                  <input
+                                    type="datetime-local"
+                                    className="form-control border-2"
+                                    name="startTime"
+                                    required
+                                    onChange={(e) => {
+                                      // Auto-calculate duration when start time changes
+                                      const startTime = new Date(e.target.value);
+                                      const endTimeInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="endTime"]') as HTMLInputElement;
+                                      if (endTimeInput && endTimeInput.value) {
+                                        const endTime = new Date(endTimeInput.value);
+                                        const durationInMs = endTime.getTime() - startTime.getTime();
+                                        const durationInMinutes = Math.round(durationInMs / (1000 * 60));
+                                        const durationInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="duration"]') as HTMLInputElement;
+                                        if (durationInput && durationInMinutes > 0) {
+                                          durationInput.value = durationInMinutes.toString();
+                                        }
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="mb-3">
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-calendar me-1 text-warning"></i>
+                                    End Time *
+                                  </label>
+                                  <input
+                                    type="datetime-local"
+                                    className="form-control border-2"
+                                    name="endTime"
+                                    required
+                                    onChange={(e) => {
+                                      // Auto-calculate duration when end time changes
+                                      const endTime = new Date(e.target.value);
+                                      const startTimeInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="startTime"]') as HTMLInputElement;
+                                      if (startTimeInput && startTimeInput.value) {
+                                        const startTime = new Date(startTimeInput.value);
+                                        const durationInMs = endTime.getTime() - startTime.getTime();
+                                        const durationInMinutes = Math.round(durationInMs / (1000 * 60));
+                                        const durationInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="duration"]') as HTMLInputElement;
+                                        if (durationInput && durationInMinutes > 0) {
+                                          durationInput.value = durationInMinutes.toString();
+                                        }
+                                      }
+                                    }}
+                                  />
                                 </div>
                               </div>
                               <div className="col-md-4">
                                 <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Section</label>
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-clock me-1 text-info"></i>
+                                    Duration (min) *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    className="form-control border-2"
+                                    name="duration"
+                                    placeholder="Auto-calculated"
+                                    required
+                                    readOnly
+                                    style={{ backgroundColor: '#f8f9fa' }}
+                                  />
+                                  <small className="text-muted">Automatically calculated from start and end time</small>
+                                </div>
+                              </div>
+                              <div className="col-md-4">
+                                <div className="mb-3">
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-building me-1 text-secondary"></i>
+                                    Room Number *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    className="form-control border-2"
+                                    name="roomNo"
+                                    placeholder="Enter room number"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                              <div className="col-md-4">
+                                <div className="mb-3">
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-book me-1 text-primary"></i>
+                                    Subject *
+                                  </label>
+                                  <select 
+                                    className="form-select border-2" 
+                                    name="subject" 
+                                    required 
+                                    disabled={!((newContents[index] as any)?.classId)}
+                                  >
+                                    <option value="">Select Subject</option>
+                                    {Array.isArray(classSubjects) && classSubjects.map((opt) => (
+                                      <option key={opt.id || opt.value} value={opt.id || opt.value}>
+                                        {opt.name || opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="mb-3">
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-target me-1 text-success"></i>
+                                    Max Marks *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    className="form-control border-2"
+                                    name="maxMarks"
+                                    placeholder="Enter max marks"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="mb-3">
+                                  <label className="form-label fw-semibold">
+                                    <i className="ti ti-check me-1 text-warning"></i>
+                                    Min Marks (Pass) *
+                                  </label>
+                                  <input
+                                    type="number"
+                                    className="form-control border-2"
+                                    name="minMarks"
+                                    placeholder="Enter minimum marks to pass"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                              {/* Commented out unwanted fields */}
+                              {/* 
+                              <div className="col-md-4">
+                                <div className="mb-3">
+                                  <label className="form-label fw-semibold">Section</label>
                                   <select
-                                    className="form-control tw-text-sm"
+                                    className="form-select border-2"
                                     name="section"
                                     disabled={!((newContents[index] as any)?.classId) || isLoadingSections}
                                   >
@@ -1496,143 +1720,40 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                               </div>
                               <div className="col-md-4">
                                 <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Exam Name</label>
-                                  <input
-                                    type="text"
-                                    className="form-control tw-text-sm"
-                                    name="examName"
-                                    placeholder="Enter exam name"
-                                    required
-                                  />
-                                </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Start time</label>
-                                  <input
-                                    type="datetime-local"
-                                    className="form-control tw-text-sm"
-                                    name="startTime"
-                                    required
-                                  />
-                                </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label tw-text-sm">End time</label>
-                                  <input
-                                    type="datetime-local"
-                                    className="form-control tw-text-sm"
-                                    name="endTime"
-                                    required
-                                  />
-                                </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Duration (min)</label>
-                                  <input
-                                    type="number"
-                                    className="form-control tw-text-sm"
-                                    name="duration"
-                                    placeholder="Enter duration"
-                                    required
-                                  />
-                                </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Exam Date</label>
+                                  <label className="form-label fw-semibold">Exam Date</label>
                                   <input
                                     type="date"
-                                    className="form-control tw-text-sm"
+                                    className="form-control border-2"
                                     name="examDate"
                                     required
                                   />
                                 </div>
                               </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Subject</label>
-                                  <select className="form-control tw-text-sm" name="subject" required disabled={!((newContents[index] as any)?.classId)}>
-                                    <option value="">Select Subject</option>
-                                    {Array.isArray(classSubjects) && classSubjects.map((opt) => (
-                                      <option key={opt.id || opt.value} value={opt.id || opt.value}>
-                                        {opt.name || opt.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Room No</label>
-                                  <input
-                                    type="number"
-                                    className="form-control tw-text-sm"
-                                    name="roomNo"
-                                    placeholder="Enter Room Number"
-                                    required
-                                  />
-                                </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label tw-text-sm">Max Marks</label>
-                                  <input
-                                    type="number"
-                                    className="form-control tw-text-sm"
-                                    name="maxMarks"
-                                    placeholder="Enter max marks"
-                                    required
-                                  />
-                                </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3 d-flex align-items-end">
-                                  <div className="flex-fill">
-                                    <label className="form-label tw-text-sm">Min Marks</label>
-                                    <input
-                                      type="number"
-                                      className="form-control tw-text-sm"
-                                      name="minMarks"
-                                      placeholder="Enter marks"
-                                      required
-                                    />
-                                  </div>
-                                  {newContents.length > 1 && (
-                                    <div className="ms-2">
-                                      <Link
-                                        to="#"
-                                        className="delete-schedule-table"
-                                        onClick={() => removeContent(index)}
-                                      >
-                                        <i className="ti ti-trash" />
-                                      </Link>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
+                              */}
                             </div>
                           </div>
                         ))
                       )}
-                      <div>
-                        <Link
-                          to="#"
+                      <div className="text-center">
+                        <button
+                          type="button"
                           onClick={addNewContent}
-                          className="btn btn-primary add-new-schedule tw-text-sm"
+                          className="btn btn-outline-primary btn-lg"
                         >
-                          <i className="ti ti-square-rounded-plus-filled me-2" />
-                          Add New
-                        </Link>
+                          <i className="ti ti-plus me-2"></i>
+                          Add Another Exam Schedule
+                        </button>
                       </div>
                     </div>
-                    <div className="modal-footer">
-                      <Link to="#" className="btn btn-light me-2 tw-text-sm" data-bs-dismiss="modal">
+                    <div className="modal-footer bg-light border-0">
+                      <button type="button" className="btn btn-secondary btn-lg me-2" data-bs-dismiss="modal">
+                        <i className="ti ti-x me-1"></i>
                         Cancel
-                      </Link>
-                      <button type="submit" className="btn btn-primary tw-text-sm">Add Exam Schedule</button>
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-lg">
+                        <i className="ti ti-plus me-1"></i>
+                        Create Exam Schedule
+                      </button>
                     </div>
                   </form>
                 </div>

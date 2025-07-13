@@ -256,7 +256,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const TeacherSalary = ({ teacherdata }: { teacherdata?: any }) => {
+const TeacherSalary = () => {
   const routes = all_routes;
   const ismobile = useMobileDetection();
   const userobj = useSelector((state: any) => state.auth.userObj);
@@ -267,30 +267,24 @@ const TeacherSalary = ({ teacherdata }: { teacherdata?: any }) => {
   const fetchTeacherDetails = async () => {
     try {
       setLoading(true);
-      const response = await getTeacherById(localStorage.getItem("teacherId") ?? "");
+      const teacherId = localStorage.getItem("teacherId");
+      
+      const response = await getTeacherById(teacherId ?? "");
+      
       if (response.status === 200) {
         const teacherDetails = response.data;
-        // console.log("Teacher Details:", teacherDetails);
         setLocalTeacherData(teacherDetails);
-      } else {
-        console.error("Failed to fetch teacher details");
       }
     } catch (error) {
-      console.error("Error fetching teacher details:", error);
+      // Error handling
     } finally {
       setLoading(false);
     }
   };
 
-
   useEffect(() => {
-    if (teacherdata) {
-      setLocalTeacherData(teacherdata);
-      setLoading(false);
-    } else {
-      fetchTeacherDetails();
-    }
-  }, [teacherdata, userobj.role]);
+    fetchTeacherDetails();
+  }, [userobj.role]);
 
   const columns = [
     {
@@ -337,7 +331,6 @@ const TeacherSalary = ({ teacherdata }: { teacherdata?: any }) => {
       ),
     },
   ];
-
 
   const SkeletonPlaceholder = ({ className = "" }) => (
     <span className={`placeholder bg-secondary ${className}`} />

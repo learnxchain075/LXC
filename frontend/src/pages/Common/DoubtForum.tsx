@@ -68,17 +68,44 @@ const DoubtForum = () => {
     try {
       const teacherId = user?.teacherId || localStorage.getItem("teacherId") || "";
       const schoolId = localStorage.getItem("schoolId") || "";
+      
       if (user.role !== "student" && user.role !== "guardian") {
         const response = user.role === "admin"
           ? await getClassByschoolId(schoolId)
           : await getClassesByTeacherId(teacherId);
-        setClassList(response?.data?.classes || []);
+        
+        // Handle different response structures
+        let classesData: any[] = [];
+        const responseData = (response as any)?.data;
+        
+        if (responseData?.data && Array.isArray(responseData.data)) {
+          classesData = responseData.data;
+        } else if (responseData?.classes && Array.isArray(responseData.classes)) {
+          classesData = responseData.classes;
+        } else if (Array.isArray(responseData)) {
+          classesData = responseData;
+        } else if (Array.isArray(response)) {
+          classesData = response;
+        } else {
+          classesData = [];
+        }
+        
+        // Process classes to ensure proper structure
+        const processedClasses = classesData.map((cls: any) => ({
+          id: cls.id,
+          name: cls.name || cls.className,
+          Section: Array.isArray(cls.Section) ? cls.Section : [],
+          Subject: Array.isArray(cls.Subject) ? cls.Subject : [],
+        }));
+        
+        setClassList(processedClasses);
       } else {
         setClassList([]);
       }
     } catch (error) {
       console.error("Error fetching classes:", error);
       toast.error("Failed to load classes.", { autoClose: 3000 });
+      setClassList([]);
     }
   }, [user.role]);
 
@@ -89,11 +116,12 @@ const DoubtForum = () => {
       const response = user.role === "admin"
         ? await getDoubtsBySchoolId(schoolId)
         : await getDoubtsByUserId(userId);
-       // console.log("object", response.data);
+      
       setDoubts(response.data || []);
     } catch (error) {
       console.error("Error fetching doubts:", error);
       toast.error("Failed to load doubts.", { autoClose: 3000 });
+      setDoubts([]);
     }
   }, [user]);
 
@@ -133,7 +161,7 @@ const DoubtForum = () => {
       fetchDoubts();
       setNewDoubt({ title: "", content: "", classId: "", subjectId: "" });
     } catch (error) {
-     // console.error("Error creating doubt:", error);
+      console.error("Error creating doubt:", error);
       toast.error("Failed to create doubt.", { autoClose: 3000 });
     } finally {
       setIsPosting(false); 
@@ -445,43 +473,24 @@ const DoubtForum = () => {
                   </div>
 
                   {/* Tabs */}
-                  {/* <ul className="nav nav-tabs mb-2 mt-2 bg-light rounded overflow-hidden">
-                    <li className="nav-item w-50">
+                  <ul className="nav nav-tabs mb-2 mt-2 rounded overflow-hidden">
+                    <li className="nav-item d-inline-block">
                       <button
-                        className={`nav-link w-100 fs-3.5 fw-semibold ${activeTab === 'all' ? 'bg-primary text-white' : 'bg-light-subtle text-primary'}`}
+                        className={`nav-link fs-3.5 fw-semibold px-4 ${activeTab === 'all' ? 'bg-primary text-white' : 'bg-light-subtle text-primary'}`}
                         onClick={() => setActiveTab('all')}
                       >
                         All Questions ({filteredDoubts.length})
                       </button>
                     </li>
-                    <li className="nav-item w-50">
+                    <li className="nav-item d-inline-block ms-2">
                       <button
-                        className={`nav-link w-100 fs-3.5 fw-semibold ${activeTab === 'mine' ? 'bg-primary text-white' : 'bg-light-subtle text-primary'}`}
+                        className={`nav-link fs-3.5 fw-semibold px-4 ${activeTab === 'mine' ? 'bg-primary text-white' : 'bg-light-subtle text-primary'}`}
                         onClick={() => setActiveTab('mine')}
                       >
                         My Questions ({filteredDoubts.filter(d => d.userId === currentUserId).length})
                       </button>
                     </li>
-                  </ul> */}
-                  <ul className="nav nav-tabs mb-2 mt-2 rounded overflow-hidden">
-  <li className="nav-item d-inline-block">
-    <button
-      className={`nav-link fs-3.5 fw-semibold px-4 ${activeTab === 'all' ? 'bg-primary text-white' : 'bg-light-subtle text-primary'}`}
-      onClick={() => setActiveTab('all')}
-    >
-      All Questions ({filteredDoubts.length})
-    </button>
-  </li>
-  <li className="nav-item d-inline-block ms-2">
-    <button
-      className={`nav-link fs-3.5 fw-semibold px-4 ${activeTab === 'mine' ? 'bg-primary text-white' : 'bg-light-subtle text-primary'}`}
-      onClick={() => setActiveTab('mine')}
-    >
-      My Questions ({filteredDoubts.filter(d => d.userId === currentUserId).length})
-    </button>
-  </li>
-</ul>
-
+                  </ul>
 
                   {/* Tab Content */}
                   {activeTab === 'all' ? (
@@ -536,129 +545,6 @@ const DoubtForum = () => {
           </div>
         </div>
       </div>
-
-      {/* Create Doubt Modal - Commented Out */}
-      {/*
-      <div className="modal fade" id="create_doubt">
-        <div className="modal-dialog modal-dialog-centered modal-lg">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h4 className="modal-title">Create Doubt</h4>
-              <button type="button" className="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
-                <i className="ti ti-x" />
-              </button>
-            </div>
-            <form onSubmit={handleCreateDoubt}>
-              <div className="modal-body">
-                <div className="row">
-                  <div className="col-md-12">
-                    <div className="mb-3">
-                      <label className="form-label">Title</label>
-                      <input type="text" className="form-control" name="title" required />
-                    </div>
-                  </div>
-                  <div className="col-md-12">
-                    <div className="mb-3">
-                      <label className="form-label">Content</label>
-                      <textarea className="form-control" name="content" rows={4} required />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label">Class</label>
-                      <select
-                        className="form-select"
-                        name="classId"
-                        required
-                        value={selectedClass}
-                        onChange={(e) => setSelectedClass(e.target.value)}
-                      >
-                        <option value="">Select Class</option>
-                        {classList.map((cls) => (
-                          <option key={cls.id} value={cls.id}>
-                            {cls.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="mb-3">
-                      <label className="form-label">Subject</label>
-                      <select className="form-select" name="subjectId" required disabled={!selectedClass}>
-                        <option value="">Select Subject</option>
-                        {getSubjectsForClass(selectedClass).map((sub) => (
-                          <option key={sub.id} value={sub.id}>
-                            {sub.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <Link to="#" className="btn btn-light me-2" data-bs-dismiss="modal">
-                  Cancel
-                </Link>
-                <button type="submit" className="btn btn-primary">Create Doubt</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      */}
-
-      {/* View Doubt and Answers Modal - Commented Out */}
-      {/*
-      <div className="modal fade" id="view_doubt">
-        <div className="modal-dialog modal-dialog-centered modal-lg">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h4 className="modal-title">{selectedDoubt?.title}</h4>
-              <button type="button" className="btn-close custom-btn-close" data-bs-dismiss="modal" aria-label="Close">
-                <i className="ti ti-x" />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="mb-3">
-                <p><strong>Content:</strong> {selectedDoubt?.content}</p>
-                <p><strong>Class:</strong> {classList.find((cls) => cls.id === selectedDoubt?.classId)?.name || selectedDoubt?.classId}</p>
-                <p><strong>Subject:</strong> {
-                  classList
-                    .flatMap((cls) => cls.Subject)
-                    .find((sub) => sub.id === selectedDoubt?.subjectId)?.name || selectedDoubt?.subjectId
-                }</p>
-                <p><strong>Posted:</strong> {selectedDoubt?.createdAt && new Date(selectedDoubt.createdAt).toLocaleString()}</p>
-              </div>
-              <hr />
-              <h5>Answers</h5>
-              <div className="mb-3" style={{ maxHeight: "300px", overflowY: "auto" }}>
-                {answers.length > 0 ? (
-                  answers.map((answer) => (
-                    <div key={answer.id} className="border-bottom py-2">
-                      <p className="mb-1">{answer.content}</p>
-                      <small className="text-muted">
-                        By User {answer.userId} on {answer.createdAt && new Date(answer.createdAt).toLocaleString()}
-                      </small>
-                    </div>
-                  ))
-                ) : (
-                  <p>No answers yet.</p>
-                )}
-              </div>
-              <form onSubmit={handleCreateAnswer}>
-                <div className="mb-3">
-                  <label className="form-label">Post an Answer</label>
-                  <textarea className="form-control" name="content" rows={3} required />
-                </div>
-                <button type="submit" className="btn btn-primary">Post Answer</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-      */}
     </div>
   );
 };

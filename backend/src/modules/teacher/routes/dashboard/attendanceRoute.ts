@@ -17,6 +17,7 @@ router.get("/teacher/attendance", getAttendances);
 router.get("/teacher/attendance/:id", getAttendanceById);
 router.put("/teacher/attendance/:id", updateAttendance);
 router.delete("/teacher/attendance/:id", deleteAttendance);
+router.post("/teacher/mark-multiple", markMultipleAttendance);
 
 // GET: Attendance report as JSON summary
 router.get("/school/attendance/report", getAttendanceReportData);

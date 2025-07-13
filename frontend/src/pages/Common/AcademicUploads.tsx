@@ -15,10 +15,10 @@ import { createPYQ, getPYQById } from "../../services/admin/pyqQuestionApi";
 import { createHomework, getHomeworkByClassId, updateHomework, deleteHomework } from "../../services/teacher/homework";
 import { getClassesByTeacherId, getClassByschoolId, getAllStudentsInAclass } from "../../services/teacher/classServices";
 import { getSubjectByClassId, getSubjectBySchoold } from "../../services/teacher/subjectServices";
+import { getLessonByteacherId } from "../../services/teacher/lessonServices";
 import { AxiosResponse } from "axios";
 import { Iassignment } from "../../services/types/teacher/assignmentService";
 import { createAssignment, deleteAssignment, getAssignments, updateAssignment, getAssignmentById } from "../../services/teacher/assignmentServices";
-import { getLessonByteacherId } from "../../services/teacher/lessonServices";
 import { getAllPYQs } from "../../services/admin/pyqQuestionApi";
 
 const MAX_SIZE_MB = 5;
@@ -52,6 +52,26 @@ interface Subject {
     name: string;
 }
 
+interface Lesson {
+    id: string;
+    name: string;
+    day: string;
+    startTime: string;
+    endTime: string;
+    subjectId: string;
+    classId: string;
+    teacherId: string;
+    subject: {
+        id: string;
+        name: string;
+        code: string;
+    };
+    class: {
+        id: string;
+        name: string;
+    };
+}
+
 interface Pyq {
     id: string;
     subject: string;
@@ -61,11 +81,11 @@ interface Pyq {
 }
 
 interface Homework {
-    id: string;
+    id?: string;
     title: string;
     description: string;
-    dueDate: string;
-    createdAt: string;
+    dueDate: string | Date;
+    createdAt?: string;
     attachment?: File | null;
     status: string;
     classId: string;
@@ -98,6 +118,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
     const [assignmentData, setAssignmentData] = useState<Iassignment[]>([]);
     const [homeworkData, setHomeworkData] = useState<Homework[]>([]);
     const [subjects, setSubjects] = useState<Subject[]>([]);
+    const [lessons, setLessons] = useState<Lesson[]>([]);
     const [timetable, setTimetable] = useState<any[]>([]);
     const [newPyqContents, setNewPyqContents] = useState<PyqContent[]>([
         {
@@ -113,7 +134,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
         description: "",
         subjectId: "",
         classId: "",
-        dueDate: null,
+        dueDate: new Date(),
         lessonId: "",
         attachment: undefined,
         sectionId: "",
@@ -121,7 +142,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
     const [newHomework, setNewHomework] = useState<Homework>({
         title: "",
         description: "",
-        dueDate: null,
+        dueDate: new Date(),
         attachment: null,
         status: "PENDING",
         classId: "",
@@ -140,17 +161,53 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
         { value: "IN_PROGRESS", label: "In Progress" },
     ];
 
+    // Fetch lessons for the teacher
+    const fetchLessons = useCallback(async () => {
+        try {
+            const teacherId = user?.teacherId || localStorage.getItem("teacherId") || user?.id || "";
+            if (!teacherId) {
+                toast.error("Teacher ID not found", { autoClose: 3000 });
+                return;
+            }
+
+            const response = await getLessonByteacherId(teacherId);
+            if (response?.data) {
+                setLessons(response.data);
+            }
+        } catch (error) {
+            toast.error("Failed to load lessons", { autoClose: 3000 });
+        }
+    }, [user]);
+
+    // Filter lessons based on class ID and subject ID
+    const filteredLessons = useMemo(() => {
+        if (!newAssignment.classId || !newAssignment.subjectId) {
+            return [];
+        }
+        
+        return lessons.filter(lesson => 
+            lesson.classId === newAssignment.classId && 
+            lesson.subjectId === newAssignment.subjectId
+        );
+    }, [lessons, newAssignment.classId, newAssignment.subjectId]);
+
     const fetchClasses = useCallback(async () => {
         try {
             setLoading(true);
-            const teacherId = localStorage.getItem("teacherId") || "";
+            
+            // Get teacher ID from multiple sources
+            const teacherId = user?.teacherId || localStorage.getItem("teacherId") || user?.id || "";
+            
+            if (!teacherId) {
+                toast.error("Teacher ID not found. Please login again.", { autoClose: 3000 });
+                setClassList([]);
+                return;
+            }
+            
             const response = user.role === "admin"
                 ? await getClassByschoolId(localStorage.getItem("schoolId") ?? "")
                 : await getClassesByTeacherId(teacherId);
             const res = await getLessonByteacherId(teacherId);
-            
-            console.log("Classes API Response:", response);
-            console.log("Lessons API Response:", res);
             
             setTimetable(res?.data as any || []);
             
@@ -166,42 +223,45 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                 classesData = responseData;
             } else if (Array.isArray(response)) {
                 classesData = response;
+            } else {
+                classesData = [];
             }
             
             // Ensure classesData is an array before mapping
             if (!Array.isArray(classesData)) {
-                console.error("classesData is not an array:", classesData);
                 toast.error("Invalid classes data format received", { autoClose: 3000 });
                 setClassList([]);
                 return;
             }
             
-            const processedClasses = classesData.map((cls: any) => ({
-                ...cls,
-                Subject: cls.Subject?.map((sub: any) => ({ ...sub, status: sub.status || "Active" })) || [],
-                Section: cls.Section || [],
-                section: cls.Section?.map((sec: any) => sec.name).join(", ") || cls.section || "N/A",
-            }));
+            const processedClasses = classesData.map((cls: any, index: number) => {
+                const processedClass = {
+                    ...cls,
+                    Subject: cls.Subject?.map((sub: any) => ({ ...sub, status: sub.status || "Active" })) || [],
+                    Section: cls.Section || [],
+                    section: cls.Section?.map((sec: any) => sec.name).join(", ") || cls.section || "N/A",
+                };
+                return processedClass;
+            });
             
             setClassList(processedClasses);
-            console.log("Processed Classes:", processedClasses);
             
-            if (processedClasses.length > 0) {
+            if (processedClasses.length === 0) {
+                toast.info("No classes assigned to you yet.", { autoClose: 3000 });
+            } else {
                 toast.success(`Successfully loaded ${processedClasses.length} classes`, { autoClose: 2000 });
             }
-        } catch (error) {
-            console.error("Error fetching classes:", error);
-            toast.error("Failed to load classes", { autoClose: 3000 });
+        } catch (error: any) {
+            toast.error("Failed to load classes. Please try again.", { autoClose: 3000 });
             setClassList([]);
         } finally {
             setLoading(false);
         }
-    }, [user.role]);
+    }, [user.role, user]);
 
     const fetchStudents = useCallback(async (classId: string) => {
         try {
             const response = await getAllStudentsInAclass(classId);
-            console.log("Students API Response:", response);
             
             // Handle different possible response structures
             let studentsData = [];
@@ -214,12 +274,11 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             } else if (Array.isArray(responseData)) {
                 studentsData = responseData;
             } else if (Array.isArray(response)) {
-                studentsData = response;
+                studentsData = responseData;
             }
             
             // Ensure studentsData is an array before filtering
             if (!Array.isArray(studentsData)) {
-                console.error("studentsData is not an array:", studentsData);
                 toast.error("Invalid students data format received", { autoClose: 3000 });
                 return [];
             }
@@ -241,34 +300,16 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                     img: student?.user?.profilePic || "",
                 }));
             
-            console.log("Filtered Students:", filteredStudents);
-            
             if (filteredStudents.length > 0) {
                 toast.success(`Successfully loaded ${filteredStudents.length} students`, { autoClose: 2000 });
             }
             
             return filteredStudents;
         } catch (error) {
-            console.error("Error fetching students:", error);
             toast.error("Failed to load students", { autoClose: 3000 });
             return [];
         }
     }, [classList]);
-
-    useEffect(() => {
-        if (newAssignment.classId && newAssignment.subjectId) {
-            const matchingLessons = timetable.filter(
-                (lesson) => lesson.classId === newAssignment.classId && lesson.subjectId === newAssignment.subjectId
-            );
-            if (matchingLessons.length === 1) {
-                setNewAssignment((prev) => ({ ...prev, lessonId: matchingLessons[0].id }));
-            } else {
-                setNewAssignment((prev) => ({ ...prev, lessonId: "" }));
-            }
-        } else {
-            setNewAssignment((prev) => ({ ...prev, lessonId: "" }));
-        }
-    }, [newAssignment.classId, newAssignment.subjectId, timetable]);
 
     const fetchSubjects = useCallback(async (classId: string) => {
         try {
@@ -284,7 +325,6 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
     const fetchPyqData = useCallback(async (classId: string) => {
         try {
             const response = await getAllPYQs();
-            console.log("PYQ API Response:", response);
             
             // Handle different possible response structures
             let pyqData = [];
@@ -300,7 +340,6 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             
             // Ensure pyqData is an array before filtering
             if (!Array.isArray(pyqData)) {
-                console.error("pyqData is not an array:", pyqData);
                 toast.error("Invalid PYQ data format received", { autoClose: 3000 });
                 setPyqData([]);
                 return;
@@ -308,13 +347,11 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             
             const filteredPyq = pyqData.filter((pyq: any) => pyq.classId === classId);
             setPyqData(filteredPyq);
-            console.log("Filtered PYQ Data:", filteredPyq);
             
             if (filteredPyq.length > 0) {
                 toast.success(`Successfully loaded ${filteredPyq.length} PYQ files`, { autoClose: 2000 });
             }
         } catch (error) {
-            console.error("Error fetching PYQ data:", error);
             toast.error("Failed to load PYQ data", { autoClose: 3000 });
             setPyqData([]);
         }
@@ -323,7 +360,6 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
     const fetchAssignmentData = useCallback(async (classId: string) => {
         try {
             const response: AxiosResponse<any> = await getAssignments();
-            console.log("Assignment API Response:", response);
             
             // Handle different possible response structures
             let assignmentData = [];
@@ -339,7 +375,6 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             
             // Ensure assignmentData is an array before filtering
             if (!Array.isArray(assignmentData)) {
-                console.error("assignmentData is not an array:", assignmentData);
                 toast.error("Invalid assignment data format received", { autoClose: 3000 });
                 setAssignmentData([]);
                 return;
@@ -347,13 +382,11 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             
             const filteredAssignments = assignmentData.filter((assignment: any) => assignment.classId === classId);
             setAssignmentData(filteredAssignments);
-            console.log("Filtered Assignment Data:", filteredAssignments);
             
             if (filteredAssignments.length > 0) {
                 toast.success(`Successfully loaded ${filteredAssignments.length} assignments`, { autoClose: 2000 });
             }
         } catch (error) {
-            console.error("Error fetching assignment data:", error);
             toast.error("Failed to load assignments", { autoClose: 3000 });
             setAssignmentData([]);
         }
@@ -370,22 +403,33 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
 
     useEffect(() => {
         fetchClasses();
-    }, [fetchClasses]);
+        fetchLessons();
+    }, [fetchClasses, fetchLessons]);
 
     const handleClassSelect = useCallback(async (classId: string) => {
         const selected = classList.find(cls => cls.id === classId);
+        
         if (selected) {
+
+            
             if (!selected.students) {
                 const students = await fetchStudents(classId);
-                setClassList(prev =>
-                    prev.map(cls =>
+                
+                setClassList(prev => {
+                    const updated = prev.map(cls =>
                         cls.id === classId ? { ...cls, students, Section: cls.Section || [] } : cls
-                    )
-                );
+                    );
+                    return updated;
+                });
+                
                 setSelectedClass({ ...selected, students, Section: selected.Section || [] });
             } else {
                 setSelectedClass({ ...selected, Section: selected.Section || [] });
             }
+            
+            // Update assignment form with selected class
+            setNewAssignment(prev => ({ ...prev, classId: classId }));
+            
             await Promise.allSettled([
                 fetchSubjects(classId),
                 fetchPyqData(classId),
@@ -437,16 +481,6 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
         );
     };
 
-    const filteredLessons = useMemo(
-        () =>
-            newAssignment.classId && newAssignment.subjectId
-                ? timetable.filter(
-                    (lesson) => lesson.classId === newAssignment.classId && lesson.subjectId === newAssignment.subjectId
-                )
-                : [],
-        [timetable, newAssignment.classId, newAssignment.subjectId]
-    );
-
     const addPyqContent = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         setNewPyqContents(prev => [
@@ -468,27 +502,50 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
 
     const handlePyqUpload = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        
+        
+        // Validate that both question and solution files are present for each content
         const validFiles = newPyqContents.filter(
             content => content.question && content.solution && content.subjectId && content.topic && content.uploaderId && selectedClass?.id
         );
+        
+        
         if (validFiles.length === 0) {
             toast.error("Please select both question and solution files, subject, topic, and class", { autoClose: 3000 });
             return;
         }
+        
         try {
             setLoading(true);
-            for (const content of validFiles) {
+                
+    for (let i = 0; i < validFiles.length; i++) {
+      const content = validFiles[i];
+                
                 const formData = new FormData();
                 
-                // Add files
+                // Add question file (required)
                 if (content.question) {
                     formData.append("question", content.question);
-                }
-                if (content.solution) {
-                    formData.append("solution", content.solution);
+          
+                } else {
+          
+                    toast.error("Question file is required", { autoClose: 3000 });
+                    continue;
                 }
                 
-                // Add other fields
+                // Add solution file (required)
+                if (content.solution) {
+                    formData.append("solution", content.solution);
+                } else {
+                    toast.error("Solution file is required", { autoClose: 3000 });
+                    continue;
+                }
+                
+                // Add string fields for backend validation (these will be in req.body)
+                formData.append("question", content.question ? content.question.name : "");
+                formData.append("solution", content.solution ? content.solution.name : "");
+                
+                // Add other required fields
                 formData.append("subjectId", content.subjectId);
                 formData.append("classId", selectedClass!.id);
                 formData.append("uploaderId", content.uploaderId);
@@ -503,10 +560,19 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                     solutionFile: content.solution?.name
                 });
                 
-                await createPYQ(formData);
+                
+                const response = await createPYQ(formData);
+        
+                
+                toast.success(`File ${i + 1} uploaded successfully!`, { autoClose: 2000 });
             }
-            closeModal("add_pyq_upload");
-            toast.success("PYQ uploaded successfully! 🎉", { autoClose: 3000 });
+            
+            setTimeout(() => {
+                closeModal("add_pyq_upload");
+            }, 100);
+            toast.success("All PYQ files uploaded successfully! 🎉", { autoClose: 3000 });
+            
+            // Reset form
             setNewPyqContents([{
                 question: null,
                 solution: null,
@@ -514,9 +580,14 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                 topic: "",
                 uploaderId: localStorage.getItem("userId") ?? "",
             }]);
-            fetchPyqData(selectedClass!.id);
-        } catch (error) {
-            console.error("PYQ upload error:", error);
+            
+            // Refresh PYQ data
+            if (selectedClass?.id) {
+        
+                await fetchPyqData(selectedClass.id);
+            }
+            
+        } catch (error: any) {
             toast.error("Upload failed. Please check your files and try again.", { autoClose: 4000 });
         } finally {
             setLoading(false);
@@ -524,7 +595,13 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
     };
 
     const handleAssignmentChange = (field: keyof Iassignment, value: string | Date | File | null) => {
-        setNewAssignment(prev => ({ ...prev, [field]: value }));
+        if (field === "lessonId" && (value === null || value === undefined)) {
+            setNewAssignment(prev => ({ ...prev, lessonId: "" }));
+        } else if (field === "dueDate" && value === null) {
+            setNewAssignment(prev => ({ ...prev, dueDate: new Date() }));
+        } else {
+            setNewAssignment(prev => ({ ...prev, [field]: value as any }));
+        }
     };
 
     const handleEditAssignmentChange = (field: keyof Iassignment, value: string | Date | null) => {
@@ -533,30 +610,58 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
 
     const handleAssignmentUpload = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!newAssignment.title || !newAssignment.subjectId || !newAssignment.classId || !newAssignment.dueDate || !newAssignment.sectionId) {
-            toast.error("Please fill all required fields, including section", { autoClose: 3000 });
+        if (!newAssignment.title) {
+            toast.error("Please enter assignment title", { autoClose: 3000 });
+            return;
+        }
+        if (!newAssignment.subjectId) {
+            toast.error("Please select a subject", { autoClose: 3000 });
+            return;
+        }
+        if (!newAssignment.sectionId) {
+            toast.error("Please select a section", { autoClose: 3000 });
+            return;
+        }
+        if (!newAssignment.lessonId) {
+            toast.error("Please select a lesson", { autoClose: 3000 });
+            return;
+        }
+        if (!newAssignment.dueDate) {
+            toast.error("Please select a due date", { autoClose: 3000 });
+            return;
+        }
+        if (!selectedClass?.id) {
+            toast.error("Please select a class first", { autoClose: 3000 });
             return;
         }
         try {
             setLoading(true);
-            await createAssignment({
+            // Omit empty strings for optional fields
+            const assignmentPayload: any = {
                 ...newAssignment,
-                dueDate: newAssignment.dueDate instanceof Date ? newAssignment.dueDate : new Date(newAssignment.dueDate as any),
+                classId: selectedClass.id,
+                dueDate: newAssignment.dueDate instanceof Date ? newAssignment.dueDate.toISOString() : new Date(newAssignment.dueDate as any).toISOString(),
+            };
+            Object.keys(assignmentPayload).forEach(key => {
+                if (assignmentPayload[key] === "") delete assignmentPayload[key];
             });
-            closeModal("add_assignment");
+            await createAssignment(assignmentPayload);
+            setTimeout(() => {
+                closeModal("add_assignment");
+            }, 100);
             toast.success("Assignment uploaded successfully", { autoClose: 3000 });
             setNewAssignment({
                 title: "",
                 description: "",
                 subjectId: "",
                 classId: "",
-                dueDate: null,
+                dueDate: new Date(),
                 lessonId: "",
                 attachment: undefined,
                 sectionId: "",
             });
             fetchAssignmentData(selectedClass!.id);
-        } catch (error) {
+        } catch (error: any) {
             toast.error("Upload failed", { autoClose: 3000 });
         } finally {
             setLoading(false);
@@ -577,7 +682,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                 subjectId: editAssignment.subjectId,
                 classId: editAssignment.classId,
                 sectionId: editAssignment.sectionId,
-                dueDate: editAssignment.dueDate instanceof Date ? editAssignment.dueDate.toISOString() : editAssignment.dueDate,
+                dueDate: editAssignment.dueDate instanceof Date ? editAssignment.dueDate.toISOString() : (editAssignment.dueDate as string),
                 lessonId: editAssignment.lessonId,
             });
             closeModal("edit_assignment");
@@ -592,13 +697,31 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
     };
 
     const handleHomeworkChange = (field: keyof Homework, value: string | Date | File | null) => {
-        setNewHomework(prev => ({ ...prev, [field]: value }));
+        setNewHomework(prev => ({ ...prev, [field]: value as any }));
     };
 
     const handleHomeworkUpload = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!newHomework.title || !newHomework.classId || !newHomework.subjectId || !newHomework.dueDate || !selectedClass?.id) {
-            toast.error("Please fill all required fields", { autoClose: 3000 });
+
+        
+        if (!newHomework.title) {
+            toast.error("Please enter homework title", { autoClose: 3000 });
+            return;
+        }
+        if (!newHomework.subjectId) {
+            toast.error("Please select a subject", { autoClose: 3000 });
+            return;
+        }
+        if (!newHomework.sectionId) {
+            toast.error("Please select a section", { autoClose: 3000 });
+            return;
+        }
+        if (!newHomework.dueDate) {
+            toast.error("Please select a due date", { autoClose: 3000 });
+            return;
+        }
+        if (!selectedClass?.id) {
+            toast.error("Please select a class first", { autoClose: 3000 });
             return;
         }
         try {
@@ -606,18 +729,21 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             const homework = {
                 ...newHomework,
                 classId: selectedClass.id,
-                dueDate:
-                    newHomework.dueDate && newHomework.dueDate instanceof Date
-                        ? newHomework.dueDate.toISOString()
-                        : "",
+                dueDate: newHomework.dueDate instanceof Date 
+                    ? newHomework.dueDate.toISOString() 
+                    : typeof newHomework.dueDate === 'string' 
+                        ? new Date(newHomework.dueDate).toISOString()
+                        : new Date().toISOString(),
             };
             await createHomework(homework as any);
-            closeModal("add_home_work");
+            setTimeout(() => {
+                closeModal("add_home_work");
+            }, 100);
             toast.success("Homework added successfully", { autoClose: 3000 });
             setNewHomework({
                 title: "",
                 description: "",
-                dueDate: null,
+                dueDate: new Date(),
                 attachment: null,
                 status: "PENDING",
                 classId: "",
@@ -658,10 +784,10 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
     const openEditAssignmentModal = async (assignmentId: string) => {
         try {
             const response: AxiosResponse<Iassignment> = await getAssignmentById(assignmentId);
-            setEditAssignment({
-                ...response.data,
-                dueDate: response.data.dueDate ? new Date(response.data.dueDate) : null,
-            });
+                            setEditAssignment({
+                    ...response.data,
+                    dueDate: response.data.dueDate ? new Date(response.data.dueDate) : new Date(),
+                });
         } catch (error) {
             toast.error("Failed to load assignment", { autoClose: 3000 });
         }
@@ -814,14 +940,24 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             sorter: (a: any, b: any) => (a.section?.name || "").localeCompare(b.section?.name || ""),
         },
         {
+            title: "Lesson",
+            dataIndex: "lesson",
+            render: (lesson: any) => (
+                <span className="badge bg-success-subtle text-success">
+                    {lesson?.name || "N/A"}
+                </span>
+            ),
+            sorter: (a: any, b: any) => (a.lesson?.name || "").localeCompare(b.lesson?.name || ""),
+        },
+        {
             title: "Due Date",
             dataIndex: "dueDate",
             render: (text: string) => (
-                <span className={`fw-semibold ${new Date(text) < new Date() ? 'text-danger' : 'text-success'}`}>
-                    {dayjs(text).format("DD-MM-YYYY")}
+                <span className={`fw-semibold ${new Date(text || '') < new Date() ? 'text-danger' : 'text-success'}`}>
+                    {dayjs(text || '').format("DD-MM-YYYY")}
                 </span>
             ),
-            sorter: (a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+            sorter: (a: any, b: any) => new Date(a.dueDate || '').getTime() - new Date(b.dueDate || '').getTime(),
         },
         {
             title: "Status",
@@ -884,7 +1020,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                 to="#"
                                 data-bs-toggle="modal"
                                 data-bs-target="#delete-modal"
-                                onClick={() => setDeleteId({ id: record.id, type: "assignment" })}
+                                onClick={() => setDeleteId({ id: record.id || "", type: "assignment" })}
                             >
                                 <i className="ti ti-trash-x me-2" />
                                 Delete
@@ -907,13 +1043,13 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             title: "Homework Date",
             dataIndex: "createdAt",
             render: (text: string) => dayjs(text).format("DD-MM-YYYY"),
-            sorter: (a: Homework, b: Homework) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            sorter: (a: Homework, b: Homework) => new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime(),
         },
         {
             title: "Submission Date",
             dataIndex: "dueDate",
             render: (text: string) => dayjs(text).format("DD-MM-YYYY"),
-            sorter: (a: Homework, b: Homework) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+            sorter: (a: Homework, b: Homework) => new Date(a.dueDate || '').getTime() - new Date(b.dueDate || '').getTime(),
         },
         {
             title: "Action",
@@ -946,7 +1082,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                 to="#"
                                 data-bs-toggle="modal"
                                 data-bs-target="#delete-modal"
-                                onClick={() => setDeleteId({ id: record.id, type: "homework" })}
+                                onClick={() => setDeleteId({ id: record.id || "", type: "homework" })}
                             >
                                 <i className="ti ti-trash-x me-2" />
                                 Delete
@@ -1058,6 +1194,10 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                         background-color: rgba(255, 193, 7, 0.1) !important;
                         color: #ffc107 !important;
                     }
+                    .badge.bg-success-subtle {
+                        background-color: rgba(40, 167, 69, 0.1) !important;
+                        color: #28a745 !important;
+                    }
                     .table-responsive {
                         border-radius: 8px;
                         overflow: hidden;
@@ -1069,6 +1209,26 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                     }
                     .ant-table-tbody > tr:hover > td {
                         background-color: rgba(102, 126, 234, 0.05) !important;
+                    }
+                    .selected-class-name {
+                        color: #667eea !important;
+                        font-weight: 700 !important;
+                        font-size: 1.1rem !important;
+                        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                    }
+                    .selected-class-badge {
+                        color: #28a745 !important;
+                        font-weight: 600 !important;
+                        background-color: rgba(40, 167, 69, 0.1) !important;
+                        padding: 2px 8px !important;
+                        border-radius: 12px !important;
+                    }
+                    .table-primary {
+                        background-color: rgba(102, 126, 234, 0.1) !important;
+                        border-color: #667eea !important;
+                    }
+                    .table-primary:hover {
+                        background-color: rgba(102, 126, 234, 0.15) !important;
                     }
                 `}
             </style>
@@ -1093,24 +1253,24 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                         </button>
                                     </div>
                                     <div className="mb-2 me-2">
-                                        <Link
-                                            to="#"
+                                        <button
+                                            type="button"
                                             className="btn btn-primary btn-sm"
                                             data-bs-toggle="modal"
                                             data-bs-target="#add_assignment"
                                         >
                                             <i className="ti ti-square-rounded-plus-filled me-2" /> Add Assignment
-                                        </Link>
+                                        </button>
                                     </div>
                                     <div className="mb-2">
-                                        <Link
-                                            to="#"
+                                        <button
+                                            type="button"
                                             className="btn btn-primary btn-sm"
                                             data-bs-toggle="modal"
                                             data-bs-target="#add_home_work"
                                         >
                                             <i className="ti ti-square-rounded-plus-filled me-2" /> Add Homework
-                                        </Link>
+                                        </button>
                                     </div>
                                 </>
                             )}
@@ -1197,7 +1357,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                             {currentClasses.map((cls) => (
                                                 <tr 
                                                     key={cls.id} 
-                                                    className={`cursor-pointer transition-all ${selectedClass?.id === cls.id ? 'table-primary' : ''}`}
+                                                    className={`cursor-pointer transition-all ${selectedClass?.id === cls.id ? 'table-primary border-primary border-2' : ''}`}
                                                     onClick={() => handleClassSelect(cls.id)}
                                                 >
                                                     <td>
@@ -1206,11 +1366,11 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                                                 <i className={`ti ti-school ${selectedClass?.id === cls.id ? 'text-white' : 'text-muted'}`}></i>
                                                             </div>
                                                             <div>
-                                                                <h6 className={`mb-0 ${selectedClass?.id === cls.id ? 'text-primary fw-bold' : ''}`}>
+                                                                <h6 className={`mb-0 ${selectedClass?.id === cls.id ? 'selected-class-name' : ''}`}>
                                                                     {cls.name}
                                                                 </h6>
                                                                 {selectedClass?.id === cls.id && (
-                                                                    <small className="text-primary">
+                                                                    <small className="selected-class-badge">
                                                                         <i className="ti ti-check me-1"></i>
                                                                         Selected
                                                                     </small>
@@ -1325,7 +1485,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                         </div>
                                     </div>
                                     <div className="d-flex align-items-center">
-                                        <span className="badge bg-white bg-opacity-25 text-white me-2">
+                                        <span className="badge bg-white bg-opacity-25 text-dark me-2">
                                             <i className="ti ti-check me-1"></i>
                                             Active Class
                                         </span>
@@ -1459,7 +1619,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                             <strong>Upload Guidelines:</strong>
                                             <ul className="mb-0 mt-1">
                                                 <li>Only PDF files are allowed (max {MAX_SIZE_MB}MB)</li>
-                                                <li>Question file is required, solution file is optional</li>
+                                                <li>Both question and solution files are required</li>
                                                 <li>Select appropriate subject and topic for better organization</li>
                                             </ul>
                                         </div>
@@ -1524,7 +1684,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                                 <div className="upload-field">
                                                     <label className="form-label fw-semibold">
                                                         <i className="ti ti-file-check me-1 text-success"></i>
-                                                        Solution PDF (Optional)
+                                                        Solution PDF *
                                                     </label>
                                                     <div className="file-upload-area border-2 border-dashed border-success rounded-3 p-3 text-center bg-light-success">
                                             <input
@@ -1533,6 +1693,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                                             className="form-control d-none"
                                                             id={`solution-${index}`}
                                                             onChange={e => handlePyqFileChange(e, index, "solution")}
+                                                            required
                                                         />
                                                         <label htmlFor={`solution-${index}`} className="cursor-pointer mb-0">
                                                             {content.solution ? (
@@ -1620,6 +1781,338 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                         </>
                                     )}
                                     </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Assignment Modal */}
+            <div className="modal fade" id="add_assignment">
+                <div className="modal-dialog modal-dialog-centered modal-lg">
+                    <div className="modal-content border-0 shadow-lg">
+                        <div className="modal-header bg-gradient-primary text-white border-0">
+                            <div className="d-flex align-items-center">
+                                <div className="avatar avatar-lg bg-white bg-opacity-25 rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                    <i className="ti ti-book fs-4 text-white"></i>
+                                </div>
+                                <div>
+                                    <h4 className="modal-title text-white mb-0">Add Assignment</h4>
+                                    <small className="text-white-50">Create new assignment for students</small>
+                                </div>
+                            </div>
+                            <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close">
+                                <i className="ti ti-x" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAssignmentUpload}>
+                            <div className="modal-body p-4">
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-school me-1 text-primary"></i>
+                                                Class *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="form-control border-2"
+                                                value={selectedClass?.name || ""}
+                                                disabled
+                                                placeholder="Select a class first"
+                                            />
+                                            <small className="text-muted">Class is automatically set based on your selection</small>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-users me-1 text-warning"></i>
+                                                Section *
+                                            </label>
+                                            <select
+                                                className="form-select border-2"
+                                                value={newAssignment.sectionId || ""}
+                                                onChange={(e) => handleAssignmentChange("sectionId", e.target.value || "")}
+                                                required
+                                            >
+                                                <option value="">Select Section</option>
+                                                {selectedClass?.Section?.map(sec => (
+                                                    <option key={sec.id} value={sec.id}>{sec.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-book me-1 text-info"></i>
+                                                Subject *
+                                            </label>
+                                            <select
+                                                className="form-select border-2"
+                                                value={newAssignment.subjectId}
+                                                onChange={(e) => handleAssignmentChange("subjectId", e.target.value)}
+                                                required
+                                            >
+                                                <option value="">Select Subject</option>
+                                                {subjects.map(sub => (
+                                                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-book-open me-1 text-warning"></i>
+                                                Lesson *
+                                            </label>
+                                            <select
+                                                className="form-select border-2"
+                                                value={newAssignment.lessonId}
+                                                onChange={(e) => handleAssignmentChange("lessonId", e.target.value)}
+                                                required
+                                                disabled={!newAssignment.classId || !newAssignment.subjectId}
+                                            >
+                                                <option value="">Select Lesson</option>
+                                                {filteredLessons.map((lesson) => (
+                                                    <option key={lesson.id} value={lesson.id}>
+                                                        {lesson.name} - {lesson.day} ({new Date(lesson.startTime).toLocaleTimeString("en-IN", {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })} - {new Date(lesson.endTime).toLocaleTimeString("en-IN", {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                        })})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {!newAssignment.classId && (
+                                                <small className="text-muted">Please select a class first</small>
+                                            )}
+                                            {newAssignment.classId && !newAssignment.subjectId && (
+                                                <small className="text-muted">Please select a subject first</small>
+                                            )}
+                                            {newAssignment.classId && newAssignment.subjectId && filteredLessons.length === 0 && (
+                                                <small className="text-warning">No lessons found for this class and subject combination</small>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-edit me-1 text-primary"></i>
+                                                Title *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="form-control border-2"
+                                                placeholder="Assignment title"
+                                                value={newAssignment.title}
+                                                onChange={(e) => handleAssignmentChange("title", e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-calendar me-1 text-success"></i>
+                                                Due Date *
+                                            </label>
+                                            <DatePicker
+                                                className="form-control border-2"
+                                                value={dayjs(newAssignment.dueDate instanceof Date ? newAssignment.dueDate : (newAssignment.dueDate || new Date()))}
+                                                onChange={(date) => handleAssignmentChange("dueDate", date?.toDate() || new Date())}
+                                                format="DD-MM-YYYY"
+                                                placeholder="Select due date"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-file-text me-1 text-info"></i>
+                                                Description
+                                            </label>
+                                            <textarea
+                                                className="form-control border-2"
+                                                rows={4}
+                                                placeholder="Assignment description..."
+                                                value={newAssignment.description}
+                                                onChange={(e) => handleAssignmentChange("description", e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-paperclip me-1 text-info"></i>
+                                                Attachment (optional)
+                                            </label>
+                                            <input
+                                                type="file"
+                                                className="form-control border-2"
+                                                accept="application/pdf,image/*"
+                                                onChange={e => {
+                                                    const file = e.target.files?.[0];
+                                                    handleAssignmentChange("attachment", file || null);
+                                                    e.target.value = "";
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer bg-light border-0">
+                                <button type="button" className="btn btn-secondary btn-lg me-2" data-bs-dismiss="modal">
+                                    <i className="ti ti-x me-1"></i>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+                                    {loading ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="ti ti-plus me-1"></i>
+                                            Create Assignment
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {/* Homework Modal */}
+            <div className="modal fade" id="add_home_work">
+                <div className="modal-dialog modal-dialog-centered modal-lg">
+                    <div className="modal-content border-0 shadow-lg">
+                        <div className="modal-header bg-gradient-primary text-white border-0">
+                            <div className="d-flex align-items-center">
+                                <div className="avatar avatar-lg bg-white bg-opacity-25 rounded-circle me-3 d-flex align-items-center justify-content-center">
+                                    <i className="ti ti-home fs-4 text-white"></i>
+                                </div>
+                                <div>
+                                    <h4 className="modal-title text-white mb-0">Add Homework</h4>
+                                    <small className="text-white-50">Assign homework to students</small>
+                                </div>
+                            </div>
+                            <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close">
+                                <i className="ti ti-x" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleHomeworkUpload}>
+                            <div className="modal-body p-4">
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-edit me-1 text-primary"></i>
+                                                Title *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="form-control border-2"
+                                                placeholder="Homework title"
+                                                value={newHomework.title}
+                                                onChange={(e) => handleHomeworkChange("title", e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-book me-1 text-info"></i>
+                                                Subject *
+                                            </label>
+                                            <select
+                                                className="form-select border-2"
+                                                value={newHomework.subjectId}
+                                                onChange={(e) => handleHomeworkChange("subjectId", e.target.value)}
+                                                required
+                                            >
+                                                <option value="">Select Subject</option>
+                                                {subjects.map(sub => (
+                                                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-users me-1 text-warning"></i>
+                                                Section *
+                                            </label>
+                                            <select
+                                                className="form-select border-2"
+                                                value={newHomework.sectionId}
+                                                onChange={(e) => handleHomeworkChange("sectionId", e.target.value)}
+                                                required
+                                            >
+                                                <option value="">Select Section</option>
+                                                {selectedClass?.Section?.map(sec => (
+                                                    <option key={sec.id} value={sec.id}>{sec.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-calendar me-1 text-success"></i>
+                                                Due Date *
+                                            </label>
+                                            <DatePicker
+                                                className="form-control border-2"
+                                                value={newHomework.dueDate ? dayjs(newHomework.dueDate) : null}
+                                                onChange={(date) => handleHomeworkChange("dueDate", date?.toDate() || new Date())}
+                                                placeholder="Select due date"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="col-12">
+                                        <div className="mb-3">
+                                            <label className="form-label fw-semibold">
+                                                <i className="ti ti-file-text me-1 text-info"></i>
+                                                Description
+                                            </label>
+                                            <textarea
+                                                className="form-control border-2"
+                                                rows={4}
+                                                placeholder="Homework description..."
+                                                value={newHomework.description}
+                                                onChange={(e) => handleHomeworkChange("description", e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer bg-light border-0">
+                                <button type="button" className="btn btn-secondary btn-lg me-2" data-bs-dismiss="modal">
+                                    <i className="ti ti-x me-1"></i>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+                                    {loading ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="ti ti-plus me-1"></i>
+                                            Create Homework
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </form>
                     </div>
