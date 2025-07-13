@@ -107,3 +107,25 @@ export const deletePYQ = async (req: Request, res: Response, next: NextFunction)
     next(handlePrismaError(error));
   }
 };
+
+// Get PYQs by class ID
+export const getPYQsByClassId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  const params = z.object({ classId: cuidSchema }).safeParse(req.params);
+  if (!params.success) {
+    return res.status(400).json({ errors: params.error.errors });
+  }
+  const { classId } = params.data;
+  try {
+    const pyqs = await prisma.pYQ.findMany({
+      where: { classId },
+      orderBy: { createdAt: "desc" },
+    });
+    res.status(200).json(pyqs);
+  } catch (error) {
+    next(handlePrismaError(error));
+  }
+};

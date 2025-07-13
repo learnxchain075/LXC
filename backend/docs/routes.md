@@ -253,6 +253,7 @@
 | GET | /school/pyqs/:id |  |
 | PUT | /school/pyqs/:id |  |
 | DELETE | /school/pyqs/:id |  |
+| GET | /school/pyqs/class/:classId |  |
 
 ### [src/routes/dashboard/admin/transactionRoutes.ts](src/routes/dashboard/admin/transactionRoutes.ts)
 
