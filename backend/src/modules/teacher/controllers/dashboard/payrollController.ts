@@ -7,7 +7,7 @@ export const getTeacherPayrolls = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+) :Promise<any> => {
   try {
     const params = z.object({ teacherId: cuidSchema }).safeParse(req.params);
     if (!params.success) {
