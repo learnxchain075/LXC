@@ -258,7 +258,7 @@ const Expense: React.FC = () => {
     {
       title: 'Amount',
       dataIndex: 'amount',
-      render: (amount: number) => `${amount.toFixed(2)}`,
+      render: (amount: number) => `₹${amount.toFixed(2)}`,
       sorter: (a: ISchoolExpense, b: ISchoolExpense) => a.amount - b.amount,
     },
     {
