@@ -77,6 +77,7 @@ import { Role } from "@prisma/client";
 import userRoutes from "../modules/superadmin/routes/core/userRoutes";
 import contactMessageRoutes from "../modules/superadmin/routes/core/contactMessageRoutes";
 import homeWorkRoutes from "../modules/teacher/routes/dashboard/homeWorkRoutes";
+import teacherLeaveRequestRoutes from "../modules/teacher/routes/dashboard/leaveRequestRoutes";
 import addStaffRoutes from "../modules/admin/routes/dashboard/hrm/addStaffRoutes";
 import employeeRoutes from "../modules/admin/routes/dashboard/hrm/employeeRoutes";
 import leaveRequestRoutes from "../modules/superadmin/routes/core/leaveRequestRoutes";
@@ -193,6 +194,7 @@ apiRouter.use(dutiesRoutes);
 apiRouter.use(payrollRoutes);
 
 apiRouter.use(homeWorkRoutes);
+apiRouter.use(teacherLeaveRequestRoutes);
 apiRouter.use(addStaffRoutes);
 apiRouter.use(employeeRoutes);
 apiRouter.use(leaveRequestRoutes);
