@@ -18,10 +18,12 @@ describe('Answer routes', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('returns answers list', async () => {
-    (prisma.answer.findMany as jest.Mock).mockResolvedValue([{ id: 'a1' }]);
+    (prisma.answer.findMany as jest.Mock).mockResolvedValue([
+      { id: 'a1', user: { name: 'User1' } },
+    ]);
     const res = await request(app).get('/school/doubts/d1/answers');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([{ id: 'a1' }]);
+    expect(res.body).toEqual([{ id: 'a1', user: { name: 'User1' } }]);
   });
 
   it('handles db error', async () => {
