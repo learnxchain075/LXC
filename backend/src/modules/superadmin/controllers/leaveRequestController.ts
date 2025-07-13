@@ -15,15 +15,31 @@ export const createLeaveRequest = async (req: Request, res: Response, next: Next
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.errors });
     }
 
-    const { reason, fromDate, toDate } = parsed.data;
+    const { reason, fromDate, toDate, userId } = parsed.data;
 
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized: User information is missing" });
     }
 
+    let targetUserId = req.user.id;
+
+    // allow parents to submit leave on behalf of their child
+    if (userId && req.user.role === "parent") {
+      const parent = await prisma.parent.findUnique({
+        where: { userId: req.user.id },
+        include: { students: true },
+      });
+
+      const isChild = parent?.students.some((s) => s.userId === userId);
+      if (!isChild) {
+        return res.status(403).json({ error: "Not authorized for this student" });
+      }
+      targetUserId = userId;
+    }
+
     const leave = await prisma.leaveRequest.create({
       data: {
-        userId: req.user.id,
+        userId: targetUserId,
         reason,
         fromDate: new Date(fromDate),
         toDate: new Date(toDate),
