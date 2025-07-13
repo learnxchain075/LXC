@@ -12,6 +12,7 @@ import { DatePicker } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { closeModal } from "../Common/modalclose";
 import { createPYQ, getPYQById } from "../../services/admin/pyqQuestionApi";
+import { getPyqsByClassId } from "../../services/teacher/pyqService";
 import { createHomework, getHomeworkByClassId, updateHomework, deleteHomework } from "../../services/teacher/homework";
 import { getClassesByTeacherId, getClassByschoolId, getAllStudentsInAclass } from "../../services/teacher/classServices";
 import { getSubjectByClassId, getSubjectBySchoold } from "../../services/teacher/subjectServices";
@@ -19,7 +20,6 @@ import { getLessonByteacherId } from "../../services/teacher/lessonServices";
 import { AxiosResponse } from "axios";
 import { Iassignment } from "../../services/types/teacher/assignmentService";
 import { createAssignment, deleteAssignment, getAssignments, updateAssignment, getAssignmentById } from "../../services/teacher/assignmentServices";
-import { getAllPYQs } from "../../services/admin/pyqQuestionApi";
 
 const MAX_SIZE_MB = 5;
 
@@ -324,32 +324,11 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
 
     const fetchPyqData = useCallback(async (classId: string) => {
         try {
-            const response = await getAllPYQs();
-            
-            // Handle different possible response structures
-            let pyqData = [];
-            const responseData = (response as any)?.data;
-            
-            if (responseData?.data && Array.isArray(responseData.data)) {
-                pyqData = responseData.data;
-            } else if (Array.isArray(responseData)) {
-                pyqData = responseData;
-            } else if (Array.isArray(response)) {
-                pyqData = response;
-            }
-            
-            // Ensure pyqData is an array before filtering
-            if (!Array.isArray(pyqData)) {
-                toast.error("Invalid PYQ data format received", { autoClose: 3000 });
-                setPyqData([]);
-                return;
-            }
-            
-            const filteredPyq = pyqData.filter((pyq: any) => pyq.classId === classId);
-            setPyqData(filteredPyq);
-            
-            if (filteredPyq.length > 0) {
-                toast.success(`Successfully loaded ${filteredPyq.length} PYQ files`, { autoClose: 2000 });
+            const response = await getPyqsByClassId(classId);
+            const data = Array.isArray(response.data) ? response.data : response.data?.data || [];
+            setPyqData(data);
+            if (data.length > 0) {
+                toast.success(`Successfully loaded ${data.length} PYQ files`, { autoClose: 2000 });
             }
         } catch (error) {
             toast.error("Failed to load PYQ data", { autoClose: 3000 });
