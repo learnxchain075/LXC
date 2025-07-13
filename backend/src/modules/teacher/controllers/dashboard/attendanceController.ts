@@ -1,5 +1,6 @@
 import { Response, Request } from "express";
 import { prisma } from "../../../../db/prisma";
+import { AttendanceStatus } from "@prisma/client";
 import {
   attendanceSchema,
   markMultipleAttendanceSchema,
@@ -25,6 +26,7 @@ export const createAttendance = async (req: Request, res: Response): Promise<any
         studentId,
         lessonId,
         present,
+        status: present ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
         date: new Date(),
       },
     });
@@ -72,7 +74,12 @@ export const updateAttendance = async (req: Request, res: Response): Promise<any
 
     const attendance = await prisma.attendance.update({
       where: { id },
-      data: { studentId, lessonId, present },
+      data: {
+        studentId,
+        lessonId,
+        present,
+        status: present ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT,
+      },
     });
 
     res.json(attendance);
@@ -110,6 +117,9 @@ export const markMultipleAttendance = async (req: Request, res: Response):Promis
             studentId: record.studentId,
             lessonId,
             present: record.present,
+            status: record.present
+              ? AttendanceStatus.PRESENT
+              : AttendanceStatus.ABSENT,
             date: new Date(),
           },
         })
