@@ -9,25 +9,29 @@ export interface UsageParams {
   schoolId?: string;
 }
 export const fetchAdminUsageAnalytics = async (
-  params: UsageParams = {}
+  params: UsageParams = {},
 ): Promise<AxiosResponse<any>> => {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v) search.append(k, v);
   });
   const query = search.toString();
-  return BaseApi.getRequest(`/usage-analytics/admin${query ? `?${query}` : ""}`);
+  return BaseApi.getRequest(
+    `/usage-analytics/admin${query ? `?${query}` : ""}`,
+  );
 };
 
 export const fetchSuperAdminUsageAnalytics = async (
-  params: UsageParams = {}
+  params: UsageParams = {},
 ): Promise<AxiosResponse<any>> => {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v) search.append(k, v);
   });
   const query = search.toString();
-  return BaseApi.getRequest(`/usage-analytics/superadmin${query ? `?${query}` : ""}`);
+  return BaseApi.getRequest(
+    `/usage-analytics/superadmin${query ? `?${query}` : ""}`,
+  );
 };
 
 export const logUsage = async (data: {
@@ -36,4 +40,20 @@ export const logUsage = async (data: {
   schoolId?: string;
 }): Promise<AxiosResponse<any>> => {
   return BaseApi.postRequest(`/usage-analytics/log`, data);
+};
+
+export const fetchRoles = async (): Promise<AxiosResponse<string[]>> => {
+  return BaseApi.getRequest(`/roles`);
+};
+
+export interface SchoolWithModules {
+  id: string;
+  schoolName: string;
+  modules: string[];
+}
+
+export const fetchSchoolsWithModules = async (): Promise<
+  AxiosResponse<SchoolWithModules[]>
+> => {
+  return BaseApi.getRequest(`/schools-with-modules`);
 };
