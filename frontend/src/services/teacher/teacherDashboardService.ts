@@ -65,6 +65,7 @@ export interface IStudent {
   absent: boolean;
   notes: string;
   img: string;
+  attendances?: any[]; // <-- Added for type safety
 }
 
 // Teacher Dashboard Data

@@ -50,18 +50,20 @@ import {
   AttendanceStatus,
 } from "../../../../../services/types/teacher/attendanceService";
 import { markMultipleAttendance, createAttendance } from "../../../../../services/teacher/attendanceService";
+import api from "../../../../../services/api";
 import PredefinedDateRanges from "../../../../../core/common/datePicker";
 import TeacherModal from "../teacherModal";
 import { getTeacherById } from "../../../../../services/admin/teacherRegistartion";
 import LoadingSkeleton from "../../../../../components/LoadingSkeleton";
+import { getAttendanceByLessonAndDate } from "../../../../../services/teacher/attendenceServices";
 
-// Extend the IClassData interface to include Section and Subject arrays
+
 interface ExtendedIClassData extends IClassData {
   Section?: { id: string; name: string; classId: string }[];
   Subject?: { id: string; name: string; code: string; type: string; classId: string; status?: string }[];
 }
 
-// Interface for processed leave data
+
 interface ProcessedLeave {
   id: string;
   leaveType: string;
@@ -125,7 +127,7 @@ const TeacherLeave = () => {
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  // State management
+
   const [classList, setClassList] = useState<ExtendedIClassData[]>([]);
   const [students, setStudents] = useState<IStudent[]>([]);
   const [timetable, setTimetable] = useState<ILesson[]>([]);
@@ -138,13 +140,20 @@ const TeacherLeave = () => {
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [localTeacherData, setLocalTeacherData] = useState<any>(null);
   const [loadingLeaveRequests, setLoadingLeaveRequests] = useState(false);
+ 
+  const [existingAttendance, setExistingAttendance] = useState<{ [studentId: string]: any }>({});
 
-  // Form states
+  
   const [leaveForm, setLeaveForm] = useState({
     leaveType: "",
     fromDate: "",
     toDate: "",
     reason: "",
+  });
+  
+  const [attendanceDate, setAttendanceDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0]; 
   });
   // const [filterFormData, setFilterFormData] = useState({
   //   classId: "",
@@ -171,7 +180,7 @@ const TeacherLeave = () => {
     subjectId?: string;
   }>({});
 
-  // Leave balances state
+  
   type LeaveType = "Medical Leave" | "Casual Leave" | "Maternity Leave" | "Sick Leave";
   const [leaveBalances, setLeaveBalances] = useState<{ [key in LeaveType]?: { total: number; used: number } }>({});
   const currentDateTime = new Date();
@@ -181,7 +190,13 @@ const TeacherLeave = () => {
     year: "numeric",
   });
 
-  // Fetch teacher details
+ 
+  const [showBulkModal, setShowBulkModal] = useState<null | 'present' | 'absent'>(null);
+
+  const [showStudentModal, setShowStudentModal] = useState<{ student: any, records: any[] } | null>(null);
+  const [loadingStudentOverview, setLoadingStudentOverview] = useState(false);
+
+
   const fetchTeacherDetails = async () => {
     try {
       setIsDataLoading(true); 
@@ -204,7 +219,7 @@ const TeacherLeave = () => {
     }
   };
 
-  // Fetch teacher dashboard data
+  
   const fetchTeacherDashboardData = async () => {
     try {
       const teacherId = localStorage.getItem("teacherId");
@@ -226,7 +241,7 @@ const TeacherLeave = () => {
         }
   };
 
-  // Fetch teacher classes and lessons
+
   const fetchTeacherClassesAndLessons = async () => {
     try {
       const teacherId = localStorage.getItem("teacherId");
@@ -266,7 +281,7 @@ const TeacherLeave = () => {
 
       const response = await getStudentLeaveRequestsForTeacher(teacherId);
       if (response.status === 200) {
-        // Ensure the response data is an array
+       
         const leaveRequests = Array.isArray(response.data) ? response.data : [];
         setStudentLeaveRequests(leaveRequests);
       }
@@ -277,10 +292,10 @@ const TeacherLeave = () => {
     }
   }, [user.role]);
 
-  // Handle approve/reject leave requests
+
   const handleApproveLeave = async (leaveId: string) => {
     try {
-      // Show loading state
+      
       const approveButton = document.querySelector(`[data-leave-id="${leaveId}"].btn-approve`);
       if (approveButton) {
         approveButton.innerHTML = '<i class="ti ti-loader ti-spin me-1"></i>Approving...';
@@ -289,7 +304,7 @@ const TeacherLeave = () => {
 
       await approveStudentLeaveRequest(leaveId);
       toast.success("Leave request approved successfully");
-      fetchStudentLeaveRequests(); // Refresh the list
+      fetchStudentLeaveRequests();
     } catch (error) {
       toast.error("Failed to approve leave request");
     }
@@ -297,7 +312,7 @@ const TeacherLeave = () => {
 
   const handleRejectLeave = async (leaveId: string) => {
     try {
-      // Show loading state
+     
       const rejectButton = document.querySelector(`[data-leave-id="${leaveId}"].btn-reject`);
       if (rejectButton) {
         rejectButton.innerHTML = '<i class="ti ti-loader ti-spin me-1"></i>Rejecting...';
@@ -306,13 +321,13 @@ const TeacherLeave = () => {
 
       await rejectStudentLeaveRequest(leaveId);
       toast.success("Leave request rejected successfully");
-      fetchStudentLeaveRequests(); // Refresh the list
+      fetchStudentLeaveRequests(); 
     } catch (error) {
       toast.error("Failed to reject leave request");
     }
   };
 
-  // Fetch students for attendance
+  
   const fetchStudentsForAttendance = async () => {
     if (!addFormData.classId) {
       setStudents([]);
@@ -321,14 +336,14 @@ const TeacherLeave = () => {
 
     setLoadingStudents(true);
     try {
-      // Use the existing API for now to ensure it works
+    
       const response = await getAllStudentsInAclass(addFormData.classId);
       
       if (response?.data) {
         let studentsData: any[] = [];
         const responseData = response.data as any;
         
-        // Handle different response structures
+       
         if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
           if ('data' in responseData && Array.isArray(responseData.data)) {
             studentsData = responseData.data;
@@ -341,29 +356,40 @@ const TeacherLeave = () => {
           studentsData = response;
         }
         
-        // Ensure studentsData is always an array
+    
         if (!Array.isArray(studentsData)) {
           studentsData = [];
         }
         
-        // The students are already filtered by classId from the backend
-        // Students don't have sectionId field in the database schema
-        // They are only associated with classes, not sections
+       
         const filteredStudents = studentsData
-          .map((student: any) => ({
-            id: student.id,
-            key: student.id,
-            admissionNo: student.admissionNo || `A${student.id}`,
-            rollNo: student.rollNo || `R${student.id}`,
-            name: student?.user?.name || student.name || "Unknown Student",
-            classId: getClassNameById(addFormData.classId) || "",
-            sectionId: getSectionNameById(addFormData.classId, addFormData.sectionId) || "",
-            attendance: student.attendance || "Present",
-            present: student.attendance === "Present",
-            absent: student.attendance === "Absent",
-            notes: student.notes || "",
-            img: student?.user?.profilePic || student.profilePic || "",
-          }));
+          .map((student: any) => {
+           
+            let attendanceRecord;
+            if (Array.isArray(student.attendances)) {
+              const normalizeDate = (d: string | Date) => new Date(d).toISOString().split("T")[0];
+              attendanceRecord = student.attendances.find(
+                (att: any) =>
+                  att.lessonId === addFormData.status &&
+                  normalizeDate(att.date) === normalizeDate(attendanceDate)
+              );
+            }
+            return {
+              id: student.id,
+              key: student.id,
+              admissionNo: student.admissionNo || `A${student.id}`,
+              rollNo: student.rollNo || `R${student.id}`,
+              name: student?.user?.name || student.name || "Unknown Student",
+              classId: getClassNameById(addFormData.classId) || "",
+              sectionId: getSectionNameById(addFormData.classId, addFormData.sectionId) || "",
+              attendance: attendanceRecord ? (attendanceRecord.present ? "Present" : "Absent") : "",
+              present: attendanceRecord ? !!attendanceRecord.present : undefined,
+              absent: attendanceRecord ? !attendanceRecord.present : undefined,
+              notes: student.notes || "",
+              img: student?.user?.profilePic || student.profilePic || "",
+              attendances: student.attendances || [],
+            };
+          });
           
         setStudents(filteredStudents);
       } else {
@@ -377,18 +403,18 @@ const TeacherLeave = () => {
     }
   };
 
-  // Initialize data on component mount
+
   useEffect(() => {
     const initializeData = async () => {
       setIsDataLoading(true);
       try {
-        // Check if user and role exist
+       
         if (!user?.role) {
           setIsDataLoading(false);
           return;
         }
         
-        // For now, let's use the existing API calls to ensure data loads
+        
         if (user.role === "teacher") {
           const teacherId = localStorage.getItem("teacherId");
           if (!teacherId) {
@@ -397,19 +423,19 @@ const TeacherLeave = () => {
             return;
           }
 
-          // Use existing API calls for now to ensure data loads
+        
           const [classesResponse, lessonsResponse, leavesResponse] = await Promise.all([
             getClassesByTeacherId(teacherId),
             getLessonByteacherId(teacherId),
             getMyLeaves(),
           ]);
 
-          // Set class list
+       
           if (classesResponse?.data) {
             let classesData: any[] = [];
             const responseData = classesResponse.data as any;
             
-            // Handle different response structures
+         
             if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
               if (responseData.data && Array.isArray(responseData.data)) {
                 classesData = responseData.data;
@@ -420,7 +446,7 @@ const TeacherLeave = () => {
               classesData = responseData;
             }
             
-            // Ensure classesData is always an array
+           
             if (!Array.isArray(classesData)) {
               classesData = [];
             }
@@ -428,7 +454,7 @@ const TeacherLeave = () => {
             setClassList(classesData as ExtendedIClassData[]);
           }
 
-          // Set lessons/timetable
+          
           if (lessonsResponse?.data) {
             const lessonsData = Array.isArray(lessonsResponse.data) 
               ? lessonsResponse.data 
@@ -436,7 +462,7 @@ const TeacherLeave = () => {
             setTimetable(lessonsData as ILesson[]);
           }
 
-          // Set leaves - use a different state for processed leaves
+         
           if (leavesResponse?.data) {
             const leaveData = leavesResponse.data.map((leave: ILeaveRequest) => ({
               id: leave?.id || "",
@@ -462,11 +488,11 @@ const TeacherLeave = () => {
                 ? leave.status.charAt(0).toUpperCase() + leave.status.slice(1)
                 : "",
             }));
-            // Use a different state for processed leaves
+          
             setLeaves(leaveData as ProcessedLeave[]);
           }
 
-          // Set teacher data
+       
           setLocalTeacherData({ id: teacherId, role: "teacher" });
         } else if (user.role === "admin") {
           const schoolId = localStorage.getItem("schoolId");
@@ -481,7 +507,7 @@ const TeacherLeave = () => {
           }
         }
 
-        // Set some default attendance data for now
+      
         setAttendance([
           {
             date: currentDateStr,
@@ -492,7 +518,7 @@ const TeacherLeave = () => {
           },
         ]);
 
-        // Set default leave balances
+      
         setLeaveBalances({
           "Medical Leave": { total: 10, used: 2 },
           "Casual Leave": { total: 15, used: 5 },
@@ -510,14 +536,13 @@ const TeacherLeave = () => {
     initializeData();
   }, [user?.role]);
 
-  // Fetch student leave requests when teacher data is available
+ 
   useEffect(() => {
     if (localTeacherData && user.role === "teacher") {
       fetchStudentLeaveRequests();
     }
   }, [localTeacherData, user.role, fetchStudentLeaveRequests]);
 
-  // Fetch students when class changes (not section, since students don't have sectionId)
   useEffect(() => {
     if (addFormData.classId) {
       fetchStudentsForAttendance();
@@ -526,7 +551,6 @@ const TeacherLeave = () => {
       }
   }, [addFormData.classId]);
 
-  // Update lesson selection when class/subject changes
   useEffect(() => {
     if (addFormData.classId && addFormData.subjectId) {
       const matchingLessons = timetable.filter(
@@ -544,10 +568,53 @@ const TeacherLeave = () => {
     }
   }, [addFormData.classId, addFormData.subjectId, timetable]);
 
+  useEffect(() => {
+    if (!addFormData.status || !attendanceDate) {
+      setExistingAttendance({});
+      return;
+    }
+    console.log('Current students array:', students);
+    const normalizeDate = (d: string | Date) => new Date(d).toISOString().split("T")[0];
+    const map: { [studentId: string]: any } = {};
+    students.forEach((student) => {
+      if (!Array.isArray(student.attendances)) {
+        console.warn('Student missing attendances array:', student);
+        return;
+      }
+      const found = student.attendances.find(
+        (att: any) =>
+          att.lessonId === addFormData.status &&
+          normalizeDate(att.date) === normalizeDate(attendanceDate)
+      );
+      if (found) {
+        map[student.id] = found;
+      }
+    });
+    console.log('existingAttendance map:', map);
+    setExistingAttendance(map);
+    setStudents((prev) => prev.map((student) => {
+      const marked = map[student.id];
+      if (marked) {
+        return {
+          ...student,
+          attendance: marked.present ? 'Present' : 'Absent',
+          present: !!marked.present,
+          absent: !marked.present,
+        };
+      } else {
+        return {
+          ...student,
+          attendance: 'Present',
+          present: true,
+          absent: false,
+        };
+      }
+    }));
+  }, [students, addFormData.status, attendanceDate]);
+
   const getAvailableSections = useCallback(
     (classId: string) => {
       const selectedClass = classList.find((cls) => cls.id === classId);
-      // Handle the case where Section is an array of objects
       if (selectedClass?.Section && Array.isArray(selectedClass.Section)) {
         return selectedClass.Section.map((section: { id: string; name: string }) => ({
           value: section.id,
@@ -591,7 +658,7 @@ const TeacherLeave = () => {
   const getAvailableSubjects = useCallback(
     (classId: string) => {
       const selectedClass = classList.find((cls) => cls.id === classId);
-      // Handle the case where Subject is an array of objects
+  
       if (selectedClass?.Subject && Array.isArray(selectedClass.Subject)) {
         return selectedClass.Subject.map((subject: { id: string; name: string; code: string }) => ({
           value: subject.id,
@@ -647,14 +714,12 @@ const TeacherLeave = () => {
     setAddErrors((prevErrors) => ({ ...prevErrors, status: undefined }));
   }, []);
 
-  // Remove the complex filteredStudents logic and simplify it
   const filteredStudents = useMemo(() => {
-    // Simply return all students for the selected class - no section filtering needed
-    // since students don't have sectionId field in the database
+    
     return students;
   }, [students, addFormData.classId]);
 
-  // Remove the filter form data and handlers
+ 
   // const [filterFormData, setFilterFormData] = useState({
   //   classId: "",
   //   sectionId: "",
@@ -667,7 +732,7 @@ const TeacherLeave = () => {
   //   sectionId?: string;
   // }>({});
 
-  // Remove filter handlers
+  
   // const handleFilterClassClick = useCallback((classData: any) => {
   //   if (!classData || !classData.id) {
   //     console.error("Invalid class data for filter:", classData);
@@ -684,7 +749,7 @@ const TeacherLeave = () => {
   //   setFilterErrors((prevErrors) => ({ ...prevErrors, sectionId: undefined }));
   // }, []);
 
-  // Remove the handleApplyClick function
+ 
   // const handleApplyClick = useCallback(() => {
   //   const errors: { classId?: string; sectionId?: string } = {};
   //   if (!filterFormData.classId) {
@@ -732,7 +797,6 @@ const TeacherLeave = () => {
       };
       await createLeaveRequest(leaveRequest);
       
-      // Create a new leave object for the UI
       const newLeave: ProcessedLeave = {
         id: `temp-${Date.now()}`,
         leaveType,
@@ -765,21 +829,26 @@ const TeacherLeave = () => {
     }
   };
 
-  const handleBulkMarkPresent = () => {
+  const handleBulkMark = (type: 'Present' | 'Absent') => {
+    setShowBulkModal(type.toLowerCase() as 'present' | 'absent');
+  };
+  const confirmBulkMark = (type: 'Present' | 'Absent') => {
     setStudents((prev) =>
       prev.map((student) => {
+        if (existingAttendance[student.id]) return student; // skip already marked
         if (selectedRowKeys.length === 0 || selectedRowKeys.includes(student.key)) {
-          return { ...student, attendance: "Present", present: true, absent: false };
+          return { ...student, attendance: type, present: type === 'Present', absent: type === 'Absent' };
         }
         return student;
       })
     );
     toast.success(
       selectedRowKeys.length > 0
-        ? "Selected students marked as Present"
-        : "All students marked as Present"
+        ? `Selected students marked as ${type}`
+        : `All students marked as ${type}`
     );
     setSelectedRowKeys([]);
+    setShowBulkModal(null);
   };
 
   const handleAttendanceChange = (index: number, value: string) => {
@@ -806,11 +875,10 @@ const TeacherLeave = () => {
   const handleSaveAttendance = async () => {
     if (
       !addFormData.classId ||
-      !addFormData.sectionId ||
       !addFormData.subjectId ||
       !addFormData.status
     ) {
-      toast.error("Please select class, section, subject, and lesson");
+      toast.error("Please select class, subject, and lesson");
       return;
     }
     setSavingAttendance(true);
@@ -819,24 +887,19 @@ const TeacherLeave = () => {
         selectedRowKeys.length > 0
           ? students.filter((s) => selectedRowKeys.includes(s.key))
           : students;
-      
-      // Check if we have 2 or more students to determine which endpoint to use
       if (targetStudents.length >= 2) {
-        // Use multiple attendance endpoint for 2 or more students
         const attendancePayload: IAttendancePayload = {
           lessonId: addFormData.status,
-          date: new Date(),
+          date: new Date(attendanceDate),
           records: targetStudents.map((student) => ({
             studentId: student.id || student.key.toString(),
             present: student.attendance === "Present",
             status: AttendanceStatus.PRESENT,
           })),
         };
-
         await markMultipleAttendance([attendancePayload]);
         toast.success("Student attendance saved successfully");
       } else if (targetStudents.length === 1) {
-        // Use single attendance endpoint for 1 student
         const student = targetStudents[0];
         const attendanceData: IAttendance = {
           id: student.id || student.key.toString(),
@@ -844,16 +907,14 @@ const TeacherLeave = () => {
           lessonId: addFormData.status,
           present: student.attendance === "Present",
           status: AttendanceStatus.PRESENT,
-          date: new Date(),
+          date: new Date(attendanceDate),
         };
-
         await createAttendance(attendanceData);
         toast.success("Student attendance saved successfully");
       } else {
         toast.error("No students selected for attendance");
         return;
       }
-      
       setSelectedRowKeys([]);
     } catch (error) {
       toast.error("Failed to save attendance");
@@ -974,30 +1035,40 @@ const TeacherLeave = () => {
     {
       title: "Attendance",
       dataIndex: "attendance",
-      render: (text: string, record: any, index: number) => (
-        <div className="d-flex align-items-center check-radio-group flex-nowrap">
-          <label className="custom-radio me-3">
-            <input
-              type="radio"
-              name={`student${record.key}`}
-              checked={record.present}
-              onChange={() => handleAttendanceChange(index, "Present")}
-              className="me-1"
-            />
-            <span className="checkmark bg-success"></span> Present
-          </label>
-          <label className="custom-radio">
-            <input
-              type="radio"
-              name={`student${record.key}`}
-              checked={record.absent}
-              onChange={() => handleAttendanceChange(index, "Absent")}
-              className="me-1"
-            />
-            <span className="checkmark bg-danger"></span> Absent
-          </label>
-        </div>
-      ),
+      render: (text: string, record: any, index: number) => {
+        const alreadyMarked = existingAttendance[record.id];
+        if (alreadyMarked) {
+          return (
+            <span className={`badge badge-soft-${alreadyMarked.present ? "success" : "danger"}`}>{alreadyMarked.present ? "Present" : "Absent"}</span>
+          );
+        }
+        return (
+          <div className="d-flex align-items-center check-radio-group flex-nowrap">
+            <label className="custom-radio me-3">
+              <input
+                type="radio"
+                name={`student${record.key}`}
+                checked={record.present}
+                onChange={() => handleAttendanceChange(index, "Present")}
+                className="me-1"
+                disabled={!!alreadyMarked}
+              />
+              <span className="checkmark bg-success"></span> Present
+            </label>
+            <label className="custom-radio">
+              <input
+                type="radio"
+                name={`student${record.key}`}
+                checked={record.absent}
+                onChange={() => handleAttendanceChange(index, "Absent")}
+                className="me-1"
+                disabled={!!alreadyMarked}
+              />
+              <span className="checkmark bg-danger"></span> Absent
+            </label>
+          </div>
+        );
+      },
       sorter: (a: any, b: any) => a.attendance.length - b.attendance.length,
     },
     {
@@ -1013,6 +1084,18 @@ const TeacherLeave = () => {
         />
       ),
       sorter: (a: any, b: any) => a.notes.length - b.notes.length,
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      render: (_: any, record: any) => (
+        <button
+          className="btn btn-outline-info btn-sm"
+          onClick={() => handleViewStudentAttendance(record)}
+        >
+          View Attendance
+        </button>
+      ),
     },
   ];
 
@@ -1151,6 +1234,23 @@ const TeacherLeave = () => {
       ),
     },
   ];
+
+  // Compute if all students are already marked
+  const allMarked = students.length > 0 && students.every((s) => existingAttendance[s.id]);
+
+  // Handler to open student overview modal
+  const handleViewStudentAttendance = async (student: any) => {
+    setLoadingStudentOverview(true);
+    try {
+      // Fetch attendance history for this student
+      const res = await api.get(`/student/dashboard/attendance-leave/${student.id}`);
+      setShowStudentModal({ student, records: res.data?.attendance || [] });
+    } catch (e) {
+      setShowStudentModal({ student, records: [] });
+    } finally {
+      setLoadingStudentOverview(false);
+    }
+  };
 
   return (
     <ErrorBoundary>
@@ -1608,29 +1708,44 @@ const TeacherLeave = () => {
                               </div>
                               <div className="mb-3">
                                 <button
-                                  className="btn btn-secondary"
-                                  onClick={handleBulkMarkPresent}
+                                  className="btn btn-secondary me-2"
+                                  onClick={() => handleBulkMark('Present')}
+                                  disabled={allMarked || students.length === 0}
                                 >
-                                  Bulk Mark
+                                  Bulk Mark Present
+                                </button>
+                                <button
+                                  className="btn btn-danger"
+                                  onClick={() => handleBulkMark('Absent')}
+                                  disabled={allMarked || students.length === 0}
+                                >
+                                  Bulk Mark Absent
                                 </button>
                               </div>
                               <div className="mb-3">
                                 <button
-                                  className={`btn btn-success ${
-                                    savingAttendance
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
+                                  className={`btn btn-success ${savingAttendance || allMarked || students.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                                   onClick={() =>
-                                    !savingAttendance && handleSaveAttendance()
+                                    !savingAttendance && !allMarked && students.length > 0 && handleSaveAttendance()
                                   }
-                                  disabled={savingAttendance}
+                                  disabled={savingAttendance || allMarked || students.length === 0}
+                                  title={allMarked ? "All students already marked for this lesson and date" : students.length === 0 ? "No students to mark" : ""}
                                 >
-                                  {savingAttendance ? "Saving..." : "Save Attendance"}
+                                  {allMarked ? "All Marked" : savingAttendance ? "Saving..." : "Save Attendance"}
                                 </button>
                               </div>
                               <div className="input-icon-start mb-3 mb-0 position-relative">
                                 {/* Removed PredefinedDateRanges */}
+                              </div>
+                              <div className="mb-3" style={{ minWidth: 180 }}>
+                                <label className="form-label mb-1">Attendance Date</label>
+                                <input
+                                  type="date"
+                                  className="form-control"
+                                  value={attendanceDate}
+                                  max={new Date().toISOString().split("T")[0]}
+                                  onChange={(e) => setAttendanceDate(e.target.value)}
+                                />
                               </div>
                             </div>
                           </div>
@@ -1902,7 +2017,60 @@ const TeacherLeave = () => {
             </div>
           </Modal.Body>
         </Modal>
+        {/* Bulk Mark Confirmation Modal */}
+        <Modal show={!!showBulkModal} onHide={() => setShowBulkModal(null)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Confirm Bulk Mark</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Are you sure you want to mark {selectedRowKeys.length > 0 ? 'selected' : 'all'} students as <b>{showBulkModal === 'present' ? 'Present' : 'Absent'}</b>? This will not affect students already marked for this lesson and date.
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowBulkModal(null)}>
+              Cancel
+            </Button>
+            <Button variant={showBulkModal === 'present' ? 'success' : 'danger'} onClick={() => confirmBulkMark(showBulkModal === 'present' ? 'Present' : 'Absent')}>
+              Confirm
+            </Button>
+          </Modal.Footer>
+        </Modal>
         <TeacherModal />
+        {/* Student Attendance Overview Modal */}
+        <Modal show={!!showStudentModal} onHide={() => setShowStudentModal(null)} centered size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Attendance Overview - {showStudentModal?.student?.name || ''}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {loadingStudentOverview ? (
+              <div className="text-center p-4">Loading...</div>
+            ) : showStudentModal && showStudentModal.records?.length === 0 ? (
+              <div className="text-center p-4">No attendance records found.</div>
+            ) : showStudentModal ? (
+              <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                <table className="table table-bordered table-striped">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Lesson</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {showStudentModal.records.map((rec, idx) => (
+                      <tr key={idx}>
+                        <td>{new Date(rec.date).toLocaleDateString('en-IN')}</td>
+                        <td>{rec.lesson?.name || '-'}</td>
+                        <td>
+                          <span className={`badge badge-soft-${rec.present ? 'success' : 'danger'}`}>{rec.present ? 'Present' : 'Absent'}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </Modal.Body>
+        </Modal>
       </div>
     </ErrorBoundary>
   );
