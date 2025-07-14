@@ -69,3 +69,16 @@ export const deleteAttendance = async (
 ): Promise<AxiosResponse<IattendanceTeacher>> => {
   return await BaseApi.deleteRequest(`/teacher/attendence/${attendanceId}`);
 };
+
+/**
+ * ✅ Get Attendance Records by Lesson and Date
+ * Sends a GET request to fetch attendance records for a specific lesson and date
+ * @param lessonId - Lesson identifier
+ * @param date - Date string (yyyy-mm-dd)
+ * @returns AxiosResponse<IattendanceTeacher[]>
+ */
+export const getAttendanceByLessonAndDate = async (
+  
+): Promise<AxiosResponse<any[]>> => {
+  return await BaseApi.getRequest(`/teacher/attendence`);
+};
