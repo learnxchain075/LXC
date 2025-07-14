@@ -34,6 +34,7 @@ export const all_routes = {
   schoolProfilePage: "/school-profile-page/:schoolId",
 
   // ************************************  Teacher Routes *********************************************************
+  teacheruimodern:"/teacher-ui-modern",
   teacherDashboard: "/teacher-dashboard",
   markFaceAttendance: "/teacher/mark-face-attendance",
   addExam: "/teacher/addexam",

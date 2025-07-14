@@ -214,10 +214,12 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
       try {
         if (obj.role === "admin") {
           const res = await getClasses();
-          setClasses(res.data);
+         // //console.log('[API] getClasses response:', res);
+          setClasses(res.data.data || []);
         } else if (obj.role === "teacher") {
-          const res = await getClassesByTeacherId(obj.id);
-          setClasses(res.data);
+          const res = await getClassesByTeacherId(localStorage.getItem("teacherId") || "");
+         // //console.log('[API] getClassesByTeacherId response:', res);
+          setClasses(res.data.data || []);
         } else {
           setClasses([]);
         }
@@ -241,6 +243,7 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
             return;
           }
           const response = await getExamsByClass(selectedClassId);
+          ////console.log('[API] getExamsByClass response:', response);
           const formattedExams = response.data.map((exam: any) => {
             const fallbackClassId = selectedClassId || obj?.classId || obj?.id || '';
             const mappedClassId = exam.classId || fallbackClassId;
@@ -488,14 +491,19 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
   const fetchSubjectsForClass = async (classId: string) => {
     if (!classId) {
       setClassSubjects([]);
+      ////console.log('[fetchSubjectsForClass] No classId provided');
       return;
     }
     try {
+      ////console.log('[fetchSubjectsForClass] Fetching subjects for classId:', classId);
       const res = await getSubjectByClassId(classId);
+      ////console.log('[API] getSubjectByClassId response:', res);
       const arr = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
       setClassSubjects(arr);
+      ////console.log('[fetchSubjectsForClass] Subjects fetched:', arr);
     } catch (e) {
       setClassSubjects([]);
+      ////console.log('[fetchSubjectsForClass] Error fetching subjects:', e);
     }
   };
 
@@ -504,6 +512,7 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
     setIsLoadingStudents(true);
     try {
       const response = await getAllStudentsInAclass(classId);
+      ////console.log('[API] getAllStudentsInAclass response:', response);
       let studentsArray: any[] = [];
       if (response?.data && typeof response.data === 'object' && !Array.isArray(response.data) && 'students' in response.data && Array.isArray((response.data as any).students)) {
         studentsArray = (response.data as any).students;
@@ -529,7 +538,7 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
       setStudents(formattedStudents);
       setStudentsMessage(formattedStudents.length === 0 ? "No students found for this class/section." : "");
     } catch (error) {
-      console.error("Error fetching students:", error);
+      ////console.error("Error fetching students:", error);
       setStudents([]);
       setStudentsMessage("Failed to fetch students. Please try again later.");
     } finally {
@@ -1136,17 +1145,10 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
     const modal = document.getElementById('add_exam_schedule');
     if (modal) {
       const handleModalShow = () => {
-        // Auto-set the class field when modal opens
-        const classSelect = modal.querySelector('select[name="class"]') as HTMLSelectElement;
-        if (classSelect && selectedClassId) {
-          classSelect.value = selectedClassId;
-          // Update the newContents state
-          setNewContents(prev => prev.map((content, index) => ({
-            ...content,
-            classId: selectedClassId
-          })));
-          // Fetch subjects for the selected class
+        ////console.log('[Add Exam Modal] Opened. selectedClassId:', selectedClassId);
+        if (selectedClassId) {
           fetchSubjectsForClass(selectedClassId);
+          //console.log('[Add Exam Modal] Called fetchSubjectsForClass with:', selectedClassId);
         }
       };
       
@@ -1495,244 +1497,255 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                           ))}
                         </div>
                       ) : (
-                        newContents.map((_, index) => (
-                          <div className="exam-schedule-add border rounded-3 p-4 mb-4 bg-light" key={index}>
-                            <div className="d-flex align-items-center justify-content-between mb-3">
-                              <h6 className="mb-0 text-primary">
-                                <i className="ti ti-calendar-plus me-2"></i>
-                                Exam Schedule #{index + 1}
-                              </h6>
-                              {newContents.length > 1 && (
-                                <button
-                                  type="button"
-                                  className="btn btn-outline-danger btn-sm"
-                                  onClick={() => removeContent(index)}
-                                >
-                                  <i className="ti ti-trash me-1"></i> Remove
-                                </button>
-                              )}
-                            </div>
-                            <div className="row g-3">
-                              <div className="col-md-6">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-school me-1 text-primary"></i>
-                                    Class *
-                                  </label>
-                                  <select
-                                    className="form-select border-2"
-                                    name="class"
-                                    value={selectedClassId}
-                                    required
-                                    disabled
-                                    onChange={e => {
-                                      const newClassId = e.target.value;
-                                      (newContents[index] as any).classId = newClassId;
-                                      setSectionOptions(getSectionsForClass(newClassId));
-                                      fetchSubjectsForClass(newClassId);
-                                    }}
+                        newContents.map((_, index) => {
+                          const classIdForThisForm = (newContents[index] as any).classId || selectedClassId;
+                          const selectedClassObj = classes.find(cls => cls.id === classIdForThisForm);
+                          const subjectsFromClass = selectedClassObj && Array.isArray(selectedClassObj.Subject) ? selectedClassObj.Subject : [];
+                          return (
+                            <div className="exam-schedule-add border rounded-3 p-4 mb-4 bg-light" key={index}>
+                              <div className="d-flex align-items-center justify-content-between mb-3">
+                                <h6 className="mb-0 text-primary">
+                                  <i className="ti ti-calendar-plus me-2"></i>
+                                  Exam Schedule #{index + 1}
+                                </h6>
+                                {newContents.length > 1 && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline-danger btn-sm"
+                                    onClick={() => removeContent(index)}
                                   >
-                                    <option value="">Select Class</option>
-                                    {roleBasedClassOptions.map((opt) => (
-                                      <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <small className="text-muted">Automatically set from class selection above</small>
-                                  {/* Hidden input to ensure classId is submitted */}
-                                  <input type="hidden" name="classId" value={selectedClassId} />
-                                </div>
+                                    <i className="ti ti-trash me-1"></i> Remove
+                                  </button>
+                                )}
                               </div>
-                              <div className="col-md-6">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-edit me-1 text-info"></i>
-                                    Exam Name *
-                                  </label>
-                                  <input
-                                    type="text"
-                                    className="form-control border-2"
-                                    name="examName"
-                                    placeholder="Enter exam name"
-                                    required
-                                  />
+                              <div className="row g-3">
+                                <div className="col-md-6">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-school me-1 text-primary"></i>
+                                      Class *
+                                    </label>
+                                    <select
+                                      className="form-select border-2"
+                                      name="class"
+                                      value={selectedClassId}
+                                      required
+                                      disabled
+                                      onChange={e => {
+                                        const newClassId = e.target.value;
+                                        (newContents[index] as any).classId = newClassId;
+                                        setSectionOptions(getSectionsForClass(newClassId));
+                                        fetchSubjectsForClass(newClassId);
+                                      }}
+                                    >
+                                      <option value="">Select Class</option>
+                                      {roleBasedClassOptions.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                          {opt.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <small className="text-muted">Automatically set from class selection above</small>
+                                    {/* Hidden input to ensure classId is submitted */}
+                                    <input type="hidden" name="classId" value={selectedClassId} />
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="col-md-6">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-calendar me-1 text-success"></i>
-                                    Start Time *
-                                  </label>
-                                  <input
-                                    type="datetime-local"
-                                    className="form-control border-2"
-                                    name="startTime"
-                                    required
-                                    onChange={(e) => {
-                                      // Auto-calculate duration when start time changes
-                                      const startTime = new Date(e.target.value);
-                                      const endTimeInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="endTime"]') as HTMLInputElement;
-                                      if (endTimeInput && endTimeInput.value) {
-                                        const endTime = new Date(endTimeInput.value);
-                                        const durationInMs = endTime.getTime() - startTime.getTime();
-                                        const durationInMinutes = Math.round(durationInMs / (1000 * 60));
-                                        const durationInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="duration"]') as HTMLInputElement;
-                                        if (durationInput && durationInMinutes > 0) {
-                                          durationInput.value = durationInMinutes.toString();
+                                <div className="col-md-6">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-edit me-1 text-info"></i>
+                                      Exam Name *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      className="form-control border-2"
+                                      name="examName"
+                                      placeholder="Enter exam name"
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                                <div className="col-md-6">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-calendar me-1 text-success"></i>
+                                      Start Time *
+                                    </label>
+                                    <input
+                                      type="datetime-local"
+                                      className="form-control border-2"
+                                      name="startTime"
+                                      required
+                                      onChange={(e) => {
+                                        // Auto-calculate duration when start time changes
+                                        const startTime = new Date(e.target.value);
+                                        const endTimeInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="endTime"]') as HTMLInputElement;
+                                        if (endTimeInput && endTimeInput.value) {
+                                          const endTime = new Date(endTimeInput.value);
+                                          const durationInMs = endTime.getTime() - startTime.getTime();
+                                          const durationInMinutes = Math.round(durationInMs / (1000 * 60));
+                                          const durationInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="duration"]') as HTMLInputElement;
+                                          if (durationInput && durationInMinutes > 0) {
+                                            durationInput.value = durationInMinutes.toString();
+                                          }
                                         }
-                                      }
-                                    }}
-                                  />
+                                      }}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="col-md-6">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-calendar me-1 text-warning"></i>
-                                    End Time *
-                                  </label>
-                                  <input
-                                    type="datetime-local"
-                                    className="form-control border-2"
-                                    name="endTime"
-                                    required
-                                    onChange={(e) => {
-                                      // Auto-calculate duration when end time changes
-                                      const endTime = new Date(e.target.value);
-                                      const startTimeInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="startTime"]') as HTMLInputElement;
-                                      if (startTimeInput && startTimeInput.value) {
-                                        const startTime = new Date(startTimeInput.value);
-                                        const durationInMs = endTime.getTime() - startTime.getTime();
-                                        const durationInMinutes = Math.round(durationInMs / (1000 * 60));
-                                        const durationInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="duration"]') as HTMLInputElement;
-                                        if (durationInput && durationInMinutes > 0) {
-                                          durationInput.value = durationInMinutes.toString();
+                                <div className="col-md-6">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-calendar me-1 text-warning"></i>
+                                      End Time *
+                                    </label>
+                                    <input
+                                      type="datetime-local"
+                                      className="form-control border-2"
+                                      name="endTime"
+                                      required
+                                      onChange={(e) => {
+                                        // Auto-calculate duration when end time changes
+                                        const endTime = new Date(e.target.value);
+                                        const startTimeInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="startTime"]') as HTMLInputElement;
+                                        if (startTimeInput && startTimeInput.value) {
+                                          const startTime = new Date(startTimeInput.value);
+                                          const durationInMs = endTime.getTime() - startTime.getTime();
+                                          const durationInMinutes = Math.round(durationInMs / (1000 * 60));
+                                          const durationInput = (e.target.form as HTMLFormElement)?.querySelector('input[name="duration"]') as HTMLInputElement;
+                                          if (durationInput && durationInMinutes > 0) {
+                                            durationInput.value = durationInMinutes.toString();
+                                          }
                                         }
-                                      }
-                                    }}
-                                  />
+                                      }}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-clock me-1 text-info"></i>
-                                    Duration (min) *
-                                  </label>
-                                  <input
-                                    type="number"
-                                    className="form-control border-2"
-                                    name="duration"
-                                    placeholder="Auto-calculated"
-                                    required
-                                    readOnly
-                                    style={{ backgroundColor: '#f8f9fa' }}
-                                  />
-                                  <small className="text-muted">Automatically calculated from start and end time</small>
+                                <div className="col-md-4">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-clock me-1 text-info"></i>
+                                      Duration (min) *
+                                    </label>
+                                    <input
+                                      type="number"
+                                      className="form-control border-2"
+                                      name="duration"
+                                      placeholder="Auto-calculated"
+                                      required
+                                      readOnly
+                                      style={{ backgroundColor: '#f8f9fa' }}
+                                    />
+                                    <small className="text-muted">Automatically calculated from start and end time</small>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-building me-1 text-secondary"></i>
-                                    Room Number *
-                                  </label>
-                                  <input
-                                    type="number"
-                                    className="form-control border-2"
-                                    name="roomNo"
-                                    placeholder="Enter room number"
-                                    required
-                                  />
+                                <div className="col-md-4">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-building me-1 text-secondary"></i>
+                                      Room Number *
+                                    </label>
+                                    <input
+                                      type="number"
+                                      className="form-control border-2"
+                                      name="roomNo"
+                                      placeholder="Enter room number"
+                                      required
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-book me-1 text-primary"></i>
-                                    Subject *
-                                  </label>
-                                  <select 
-                                    className="form-select border-2" 
-                                    name="subject" 
-                                    required 
-                                    disabled={!((newContents[index] as any)?.classId)}
-                                  >
-                                    <option value="">Select Subject</option>
-                                    {Array.isArray(classSubjects) && classSubjects.map((opt) => (
-                                      <option key={opt.id || opt.value} value={opt.id || opt.value}>
-                                        {opt.name || opt.label}
+                                <div className="col-md-4">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-book me-1 text-primary"></i>
+                                      Subject *
+                                    </label>
+                                    <select 
+                                      className="form-select border-2" 
+                                      name="subject" 
+                                      required 
+                                      disabled={!classIdForThisForm || subjectsFromClass.length === 0}
+                                    >
+                                      <option value="">
+                                        {!classIdForThisForm
+                                          ? 'Select a class first'
+                                          : subjectsFromClass.length === 0
+                                            ? 'No subjects found for this class'
+                                            : 'Select Subject'}
                                       </option>
-                                    ))}
-                                  </select>
+                                      {subjectsFromClass.map((opt: any) => (
+                                        <option key={opt.id} value={opt.id}>
+                                          {opt.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="col-md-6">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-target me-1 text-success"></i>
-                                    Max Marks *
-                                  </label>
-                                  <input
-                                    type="number"
-                                    className="form-control border-2"
-                                    name="maxMarks"
-                                    placeholder="Enter max marks"
-                                    required
-                                  />
+                                <div className="col-md-6">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-target me-1 text-success"></i>
+                                      Max Marks *
+                                    </label>
+                                    <input
+                                      type="number"
+                                      className="form-control border-2"
+                                      name="maxMarks"
+                                      placeholder="Enter max marks"
+                                      required
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="col-md-6">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">
-                                    <i className="ti ti-check me-1 text-warning"></i>
-                                    Min Marks (Pass) *
-                                  </label>
-                                  <input
-                                    type="number"
-                                    className="form-control border-2"
-                                    name="minMarks"
-                                    placeholder="Enter minimum marks to pass"
-                                    required
-                                  />
+                                <div className="col-md-6">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">
+                                      <i className="ti ti-check me-1 text-warning"></i>
+                                      Min Marks (Pass) *
+                                    </label>
+                                    <input
+                                      type="number"
+                                      className="form-control border-2"
+                                      name="minMarks"
+                                      placeholder="Enter minimum marks to pass"
+                                      required
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                              {/* Commented out unwanted fields */}
-                              {/* 
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">Section</label>
-                                  <select
-                                    className="form-select border-2"
-                                    name="section"
-                                    disabled={!((newContents[index] as any)?.classId) || isLoadingSections}
-                                  >
-                                    <option value="">Select Section</option>
-                                    {getSectionsForClass(((newContents[index] as any)?.classId) || '').map((opt) => (
-                                      <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                      </option>
-                                    ))}
-                                  </select>
+                                {/* Commented out unwanted fields */}
+                                {/* 
+                                <div className="col-md-4">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">Section</label>
+                                    <select
+                                      className="form-select border-2"
+                                      name="section"
+                                      disabled={!((newContents[index] as any)?.classId) || isLoadingSections}
+                                    >
+                                      <option value="">Select Section</option>
+                                      {getSectionsForClass(((newContents[index] as any)?.classId) || '').map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                          {opt.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="col-md-4">
-                                <div className="mb-3">
-                                  <label className="form-label fw-semibold">Exam Date</label>
-                                  <input
-                                    type="date"
-                                    className="form-control border-2"
-                                    name="examDate"
-                                    required
-                                  />
+                                <div className="col-md-4">
+                                  <div className="mb-3">
+                                    <label className="form-label fw-semibold">Exam Date</label>
+                                    <input
+                                      type="date"
+                                      className="form-control border-2"
+                                      name="examDate"
+                                      required
+                                    />
+                                  </div>
                                 </div>
+                                */}
                               </div>
-                              */}
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                       <div className="text-center">
                         <button

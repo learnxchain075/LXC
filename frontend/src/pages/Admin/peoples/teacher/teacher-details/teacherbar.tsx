@@ -221,6 +221,7 @@ const TeacherBar: React.FC<TeacherBarProps> = ({ activeTab, setActiveTab }) => {
   const isDark = dataTheme === "dark_data_theme";
 
   const tabs = [
+        { key: routes.teacheruimodern, label: "Dashboard", icon: "ti ti-school" },
     { key: routes.teacherDetails, label: "Teacher Details", icon: "ti ti-school" },
     { key: routes.teachersRoutine, label: "Routine", icon: "ti ti-table-options" },
     { key: routes.teacherLeaves, label: "Leave & Attendance", icon: "ti ti-calendar-due" },
