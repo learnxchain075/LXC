@@ -386,7 +386,7 @@ import AcademicUploads from "../../pages/Common/AcademicUploads";
 import SelfEnhancement from "../../pages/Common/SelfEnhancement";
 import DoubtForum from "../../pages/Common/DoubtForum";
 import { useSelector } from "react-redux";
-import Teacherui from "../../pages/Admin/peoples/teacher/teacher-details/teacherui";
+// import Teacherui from "../../pages/Admin/peoples/teacher/teacher-details/teacherui";
 
 const TeacherDashboard = () => {
   const routes = all_routes;
@@ -674,7 +674,7 @@ const TeacherDashboard = () => {
       case routes.teacherDetails:
         return <TeacherDetails />;
       case routes.teacheruimodern:
-        return <Teacherui />;
+        // return <Teacherui />;
       case routes.teachersRoutine:
         return <TeachersRoutine />;
       case routes.teacherLeaves:

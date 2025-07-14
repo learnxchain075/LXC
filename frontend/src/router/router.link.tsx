@@ -271,7 +271,7 @@ import TriggerNotification from "../pages/admin/TriggerNotification";
 import AdminNotificationLogs from "../pages/admin/NotificationLogs";
 import NotificationTemplates from "../pages/superadmin/NotificationTemplates";
 import SuperNotificationLogs from "../pages/superadmin/NotificationLogs";
-import Teacherui from "../pages/Admin/peoples/teacher/teacher-details/teacherui";
+// import Teacherui from "../pages/Admin/peoples/teacher/teacher-details/teacherui";
 // import Teacherui from "../pages/admin/peoples/teacher/teacher-details/teacherui";
 
 const routes = all_routes;
@@ -1532,7 +1532,7 @@ export const publicRoutes = [
   },
   {
     path: routes.teacheruimodern,
-    element: <Teacherui />,
+    // element: <Teacherui />,
     route: Route,
     role: ["admin", "accounts","teacher"],
   },
