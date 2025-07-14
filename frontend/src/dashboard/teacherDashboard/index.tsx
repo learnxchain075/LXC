@@ -231,10 +231,10 @@
 //     fetchTeacherDetails();
 //   }, []);
 
- 
+
 //   const [activeTab, setActiveTab] = useState(routes.teacherDetails);
 
- 
+
 //   const renderContent = () => {
 //     switch (activeTab) {
 //       case routes.teacherDetails:
@@ -308,18 +308,18 @@
 //             <TeacherBreadcrumb />
 //             {/* /Page Header */}
 //             {/* Teacher Information */}
-           
+
 //    <TeacherSidebar />
 
-         
-         
+
+
 //             {/* /Teacher Information */}
 //             <div className="col-xxl-9 col-xl-8">
 //               {/* // <div className={ismobile ? "col-12" : "col-xxl-9 col-xl-8"}> */}
 //               <div className="row">
 //                 <div className="col-md-12">
 //                   <TeacherBar activeTab={activeTab} setActiveTab={setActiveTab} />
-                  
+
 //                   {renderContent()}
 //                 </div>
 //               </div>
@@ -330,7 +330,7 @@
 //       {/* /Page Wrapper */}
 //       <TeacherModal />
 //     </>
- 
+
 
 //   );
 // };
@@ -515,10 +515,10 @@ const TeacherDashboard = () => {
       console.log("Fetching teacher details...");
       const teacherId = localStorage.getItem("teacherId");
       console.log("Teacher ID:", teacherId);
-      
+
       const response = await getTeacherById(teacherId ?? "");
       console.log("Teacher API Response:", response);
-      
+
       if (response.status === 200) {
         const teacherDetails = response.data;
         console.log("Teacher Details:", teacherDetails);
@@ -673,7 +673,7 @@ const TeacherDashboard = () => {
     switch (activeTab) {
       case routes.teacherDetails:
         return <TeacherDetails />;
-         case routes.teacheruimodern:
+      case routes.teacheruimodern:
         return <Teacherui />;
       case routes.teachersRoutine:
         return <TeachersRoutine />;

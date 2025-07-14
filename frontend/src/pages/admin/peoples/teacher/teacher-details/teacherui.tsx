@@ -2796,3 +2796,5 @@ const Teacherui: React.FC = () => {
 };
 
 export default React.memo(Teacherui); 
+
+// export default Teacherui;
