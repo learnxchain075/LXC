@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../../db/prisma";
 
 // POST /api/notifications/send
-export const sendDriverNotification = async (req: Request, res: Response) => {
+export const sendDriverNotification = async (req: Request, res: Response):Promise<any> => {
   try {
     const { driverId, type, content } = req.body;
 
@@ -25,7 +25,7 @@ export const sendDriverNotification = async (req: Request, res: Response) => {
 };
 
 // GET /api/notifications
-export const getDriverNotifications = async (req: Request, res: Response) => {
+export const getDriverNotifications = async (req: Request, res: Response):Promise<any> => {
   try {
     const driverId = req.user?.driverId;
 
@@ -44,7 +44,7 @@ export const getDriverNotifications = async (req: Request, res: Response) => {
 };
 
 // PATCH /api/notifications/read/:id
-export const markNotificationAsRead = async (req: Request, res: Response) => {
+export const markNotificationAsRead = async (req: Request, res: Response):Promise<any> => {
   try {
     const { id } = req.params;
 

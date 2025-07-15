@@ -30,7 +30,7 @@ export const getBusRoute = async (req: Request, res: Response) :Promise<any> => 
 
 // Start Bus Route Controller
 
-export const startDriverRoute = async (req: Request, res: Response) => {
+export const startDriverRoute = async (req: Request, res: Response):Promise<any> => {
   try {
     const driverId = req.user?.driverId;
 
@@ -54,7 +54,7 @@ export const startDriverRoute = async (req: Request, res: Response) => {
 // Bus Stop Controller
 
 
-export const stopDriverRoute = async (req: Request, res: Response) => {
+export const stopDriverRoute = async (req: Request, res: Response) :Promise<any> => {
   try {
     const driverId = req.user?.driverId;
 
@@ -78,7 +78,7 @@ export const stopDriverRoute = async (req: Request, res: Response) => {
 // Get Route Status Controller
 
 
-export const getRouteStatus = async (req: Request, res: Response) => {
+export const getRouteStatus = async (req: Request, res: Response) :Promise<any> => {
   try {
     const { busId } = req.params;
 
