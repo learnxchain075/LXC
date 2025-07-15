@@ -236,6 +236,9 @@ async function getAssignments(studentId: string) {
     status: a.AssignmentSubmission.length > 0 ? "Submitted" : "Not Submitted",
     submittedAt: a.AssignmentSubmission[0]?.submittedAt || null,
     score: a.results[0]?.score || null,
+
+    attachment: a.attachment || null, 
+    submittedFile: a.AssignmentSubmission[0]?.file || null, 
   }));
 }
 
@@ -247,10 +250,7 @@ async function getTimetable(classId: string) {
       subject: true,
       teacher: { include: { user: true } },
     },
-    orderBy: [
-      { day: "asc" },
-      { startTime: "asc" }
-    ],
+    orderBy: [{ day: "asc" }, { startTime: "asc" }],
   });
 
   return timetable.map((t) => ({

@@ -111,6 +111,7 @@ import permissionsRoute from "../modules/superadmin/routes/core/permissionsRoute
 import inventoryRoutes from "../modules/admin/routes/dashboard/hrm/inventory/inventoryRoutes";
 import DashboardHomeRoutes from "./DashboardHomeRoutes/DashboardHomeRoutes";
 import subscriptionRoutes from "../modules/superadmin/routes/dashboard/subscriptionRoutes";
+import gpsRoutes from "../modules/driver/routes/gps.routes";
 
 // Create a main API router
 const apiRouter = express.Router();
@@ -234,5 +235,7 @@ apiRouter.use(subscriptionRoutes);
 
 apiRouter.use(studentDetailsRoutes);
 apiRouter.use(idCardRoutes);
+
+apiRouter.use(gpsRoutes);
 
 export default apiRouter;

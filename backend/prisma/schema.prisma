@@ -1389,15 +1389,50 @@ model Bus {
 }
 
 model Driver {
+  id                String           @id @default(cuid())
+  name              String
+  license           String           @unique
+  busId             String           @map("bus_id")
+  bus               Bus              @relation(fields: [busId], references: [id], onDelete: Cascade)
+  schoolId          String           @map("school_id")
+  school            School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at")
+  currentLocationId String?          @map("current_location_id")
+  currentLocation   DriverLocation?  @relation("CurrentLocation", fields: [currentLocationId], references: [id])
+  routeActive       Boolean          @default(false) @map("route_active")
+  DriverLocation    DriverLocation[]
+
+  DriverNotification DriverNotification[]
+}
+
+// Driver Location
+
+model DriverLocation {
   id        String   @id @default(cuid())
-  name      String
-  license   String   @unique
-  busId     String   @map("bus_id")
-  bus       Bus      @relation(fields: [busId], references: [id], onDelete: Cascade)
-  schoolId  String   @map("school_id")
-  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  driverId  String   @map("driver_id")
+  driver    Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  speed     Float
+  timestamp DateTime @default(now()) @map("timestamp")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  Driver Driver[] @relation("CurrentLocation")
+}
+
+model DriverNotification {
+  id       String @id @default(cuid()) @map("notification_id")
+  driverId String @map("driver_id")
+  driver   Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  type    String  @map("notification_type") // e.g. "alert", "instruction", "info"
+  content String  @map("notification_content")
+  isRead  Boolean @default(false) @map("is_read")
+
+  sentAt    DateTime @default(now()) @map("sent_at")
+  createdAt DateTime @default(now()) @map("created_at")
 }
 
 model Conductor {
@@ -1929,6 +1964,7 @@ enum Role {
   account
   staff
   employee
+  driver
 }
 
 enum MaritalStatus {
@@ -2384,6 +2420,7 @@ model TaskNotification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
+
 model GitHubToken {
   id        String   @id @default(cuid()) @map("github_token_id")
   userId    String   @unique @map("user_id")
@@ -2437,4 +2474,3 @@ model OtpToken {
 
   @@index([userId])
 }
-
