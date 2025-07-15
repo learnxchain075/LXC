@@ -10,18 +10,18 @@ import {
 
 const router = Router();
 
-// POST /api/gps/update
-router.post("/update", updateDriverLocation);
+// POST /api/gps/driver-location/update
+router.post("/driver-location/update", updateDriverLocation);
 
-router.get("/route/:busId", getBusRoute);
-router.patch("/start", startDriverRoute);
-router.patch("/stop", stopDriverRoute);
-router.get("/status/:busId", getRouteStatus);
+router.get("/driver-location/route/:busId", getBusRoute);
+router.patch("/driver-location/start", startDriverRoute);
+router.patch("/driver-location/stop", stopDriverRoute);
+router.get("/driver-location/status/:busId", getRouteStatus);
 
 // DRIVER NOTFICATION 'ROUTES
 
-router.post("/send", sendDriverNotification);
-router.get("/", getDriverNotifications);
-router.patch("/read/:id", markNotificationAsRead);
+router.post("/driver-location/send", sendDriverNotification);
+router.get("/driver-location", getDriverNotifications);
+router.patch("/driver-location/read/:id", markNotificationAsRead);
 
 export default router;
