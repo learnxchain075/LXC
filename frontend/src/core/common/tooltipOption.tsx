@@ -2,6 +2,13 @@ import React from "react";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { Link } from "react-router-dom";
 const TooltipOption = () => {
+  const handleRefresh = () => {
+    window.location.replace(window.location.pathname + window.location.search);
+  };
+  
+  const handlePrint = () => {
+    window.print();
+  };
   return (
     <>
       <div className="pe-1 mb-2">
@@ -9,9 +16,9 @@ const TooltipOption = () => {
           placement="top"
           overlay={<Tooltip id="tooltip-top">Refresh</Tooltip>}
         >
-          <Link to="#" className="btn btn-outline-light bg-white btn-icon me-1">
+          <button type="button" className="btn btn-outline-light bg-white btn-icon me-1" onClick={handleRefresh}>
             <i className="ti ti-refresh" />
-          </Link>
+          </button>
         </OverlayTrigger>
       </div>
       <div className="pe-1 mb-2">
@@ -22,6 +29,7 @@ const TooltipOption = () => {
           <button
             type="button"
             className="btn btn-outline-light bg-white btn-icon me-1"
+            onClick={handlePrint}
           >
             <i className="ti ti-printer" />
           </button>

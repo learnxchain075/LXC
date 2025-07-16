@@ -340,7 +340,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
         try {
             const response: AxiosResponse<any> = await getAssignments();
             
-            // Handle different possible response structures
+         
             let assignmentData = [];
             const responseData = response?.data;
             
@@ -1031,6 +1031,19 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             sorter: (a: Homework, b: Homework) => new Date(a.dueDate || '').getTime() - new Date(b.dueDate || '').getTime(),
         },
         {
+            title: "View Attachment",
+            dataIndex: "attachment",
+            render: (text: string, record: Homework) =>
+                text ? (
+                    <a href={text} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm">
+                        <i className="ti ti-download me-1"></i>
+                        View
+                    </a>
+                ) : (
+                    <span className="text-muted">No file</span>
+                ),
+        },
+        {
             title: "Action",
             dataIndex: "action",
             render: (_: any, record: Homework) => (
@@ -1321,14 +1334,14 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                                     <i className="ti ti-users me-2 text-warning"></i>
                                                     Sections
                                                 </th>
-                                                <th className="border-0">
+                                                {/* <th className="border-0">
                                                     <i className="ti ti-user me-2 text-success"></i>
                                                     Students
-                                                </th>
-                                                <th className="border-0">
+                                                </th> */}
+                                                {/* <th className="border-0">
                                                     <i className="ti ti-file-text me-2 text-danger"></i>
                                                     Assignments
-                                                </th>
+                                                </th> */}
                                                 <th className="border-0 text-center">Actions</th>
                                             </tr>
                                         </thead>
@@ -1367,16 +1380,16 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                                             {cls.Section?.length || 0} Sections
                                                         </span>
                                                     </td>
-                                                    <td>
+                                                    {/* <td>
                                                         <span className="badge bg-success-subtle text-success">
                                                             {cls.students?.length || 0} Students
                                                         </span>
-                                                    </td>
-                                                    <td>
+                                                    </td> */}
+                                                    {/* <td>
                                                         <span className="badge bg-danger-subtle text-danger">
                                                             {assignmentData.filter(a => a.classId === cls.id).length} Assignments
                                                         </span>
-                                                    </td>
+                                                    </td> */}
                                                     <td className="text-center">
                                                         <button
                                                             className={`btn btn-sm ${selectedClass?.id === cls.id ? 'btn-primary' : 'btn-outline-primary'}`}

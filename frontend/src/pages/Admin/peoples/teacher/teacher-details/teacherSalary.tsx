@@ -1,227 +1,4 @@
 
-// import React, { useEffect, useState } from "react";
-// import { Link } from "react-router-dom";
-// import ImageWithBasePath from "../../../../../core/common/imageWithBasePath";
-// import { all_routes } from "../../../../../router/all_routes";
-
-// import { TableData } from "../../../../../core/data/interface";
-// import TeacherSidebar from "./teacherSidebar";
-// import TeacherBreadcrumb from "./teacherBreadcrumb";
-// import TeacherModal from "../teacherModal";
-// import useMobileDetection from "../../../../../core/common/mobileDetection";
-// import { getTeacherById } from "../../../../../services/admin/teacherRegistartion";
-// import { useSelector } from "react-redux";
-// import { Table } from "antd";
-// // import { salarydata } from "../../../../core/data/json/salary";
-
-// const TeacherSalary = ({teacherdata}:{teacherdata?:any}) => {
-//   const routes = all_routes;
-//   const ismobile = useMobileDetection();
-//   const userobj = useSelector((state: any) => state.auth.userObj);
-//   //const [teacherdata, setteacherdata] = useState<any>({});
-//   const [loading, setLoading] = useState(false);
-
-//   // const fetchTeacherDetails = async () => {
-//   //   try {
-//   //     setLoading(true);
-//   //     const response = await getTeacherById(localStorage.getItem("teacherId") ?? "");
-//   //     if (response.status === 200) {
-//   //       const teacherDetails = response.data;
-//   //       console.log("Teacher Details:", teacherDetails);
-//   //       setteacherdata(teacherDetails);
-//   //       setLoading(false);
-//   //     } else {
-//   //       console.error("Failed to fetch teacher details");
-//   //     }
-//   //   } catch (error) {
-//   //     console.error("Error fetching teacher details:", error);
-//   //     setLoading(false);
-//   //   }
-//   // };
-
-//   useEffect(() => {
-//     // fetchTeacherDetails();
-//   }, [userobj.role]);
-
-//   // const data = salarydata;
-//   const columns = [
-//     {
-//       title: "ID",
-//       dataIndex: "id",
-//       render: (text: string) => (
-//         <Link to="#" className="link-primary">
-//           {text}
-//         </Link>
-//       ),
-//       sorter: (a: TableData, b: TableData) => a.id.length - b.id.length,
-//     },
-//     {
-//       title: "Salary For",
-//       dataIndex: "Salary_For",
-//       sorter: (a: any, b: any) => a.Salary_For.length - b.Salary_For.length,
-//     },
-//     {
-//       title: "Date",
-//       dataIndex: "date",
-//       sorter: (a: TableData, b: TableData) =>
-//         parseFloat(a.date) - parseFloat(b.date),
-//     },
-//     {
-//       title: "Payment Method",
-//       dataIndex: "Payment_Method",
-//       sorter: (a: any, b: any) =>
-//         a.Payment_Method.length - b.Payment_Method.length,
-//     },
-//     {
-//       title: "Net Salary",
-//       dataIndex: "Net_Salary",
-//       sorter: (a: any, b: any) => a.Net_Salary.length - b.Net_Salary.length,
-//     },
-//     {
-//       title: " ",
-//       dataIndex: "Net_Salary",
-//       render: () => (
-//         <>
-//           <Link to="#" className="btn btn-light add-fee">
-//             View Payslip
-//           </Link>
-//         </>
-//       ),
-//     },
-//   ];
-
-//   return (
-//     <>
-//       {/* Page Wrapper */}
-//       {/* <div className={ismobile ? "page-wrapper" : "p-3"}> */}
-      
-//         <div className="content">
-//           <div className="row">
-//             {/* Page Header */}
-//             {/* <TeacherBreadcrumb /> */}
-//             {/* /Page Header */}
-//           </div>
-//           <div className="row">
-//             {/* Student Information */}
-//             {/* <TeacherSidebar /> */}
-//             {/* /Student Information */}
-//             <div className="col-12 d-flex flex-column">
-//               <div className="row">
-//                 <div className="col-md-12 ">
-//                   {/* List */}
-//                   {/* <ul className="nav nav-tabs nav-tabs-bottom mb-4">
-//                     <li>
-//                       <Link to={routes.teacherDetails} className="nav-link">
-//                         <i className="ti ti-school me-2" />
-//                         Teacher Details
-//                       </Link>
-//                     </li>
-//                     <li>
-//                       <Link to={routes.teachersRoutine} className="nav-link">
-//                         <i className="ti ti-table-options me-2" />
-//                         Routine
-//                       </Link>
-//                     </li>
-//                     <li>
-//                       <Link to={routes.teacherLeaves} className="nav-link">
-//                         <i className="ti ti-calendar-due me-2" />
-//                         Leave & Attendance
-//                       </Link>
-//                     </li>
-//                     <li>
-//                       <Link to={routes.teacherSalary} className="nav-link active">
-//                         <i className="ti ti-report-money me-2" />
-//                         Salary
-//                       </Link>
-//                     </li>
-//                     <li>
-//                       <Link to={routes.teacherLibrary} className="nav-link">
-//                         <i className="ti ti-bookmark-edit me-2" />
-//                         Library
-//                       </Link>
-//                     </li>
-//                   </ul> */}
-//                   {/* /List */}
-//                   <div className="students-leaves-tab">
-//                     <div className="row">
-//                       <div className="col-md-6 col-xxl-3 d-flex">
-//                         <div className="d-flex align-items-center justify-content-between rounded border p-3 mb-3 flex-fill bg-white">
-//                           <div className="ms-2">
-//                             <p className="mb-1">Monthly Net Salary</p>
-//                             <h5>{teacherdata.salary ? `$${teacherdata.salary}` : "N/A"}</h5>
-//                           </div>
-//                           <span className="avatar avatar-lg bg-secondary-transparent rounded flex-shrink-0 text-secondary">
-//                             <i className="ti ti-user-dollar fs-24" />
-//                           </span>
-//                         </div>
-//                       </div>
-//                       <div className="col-md-6 col-xxl-3 d-flex">
-//                         <div className="d-flex align-items-center justify-content-between rounded border p-3 mb-3 flex-fill bg-white">
-//                           <div className="ms-2">
-//                             <p className="mb-1">Payment Date</p>
-//                             <h5>{teacherdata.dateOfPayment ? new Date(teacherdata.dateOfPayment).toLocaleDateString() : "N/A"}</h5>
-//                           </div>
-//                           <span className="avatar avatar-lg bg-success-transparent rounded flex-shrink-0 text-success">
-//                             <i className="ti ti-moneybag fs-24" />
-//                           </span>
-//                         </div>
-//                       </div>
-//                       <div className="col-md-6 col-xxl-3 d-flex">
-//                         <div className="d-flex align-items-center justify-content-between rounded border p-3 mb-3 flex-fill bg-white">
-//                           <div className="ms-2">
-//                             <p className="mb-1">Total Amount</p>
-//                             <h5>{teacherdata.totalAmount || "N/A"}</h5>
-//                           </div>
-//                           <span className="avatar avatar-lg bg-warning-transparent rounded flex-shrink-0 text-warning">
-//                             <i className="ti ti-building-bank fs-24" />
-//                           </span>
-//                         </div>
-//                       </div>
-//                       <div className="col-md-6 col-xxl-3 d-flex">
-//                         <div className="d-flex align-items-center justify-content-between rounded border p-3 mb-3 flex-fill bg-white">
-//                           <div className="ms-2">
-//                             <p className="mb-1">Account Number</p>
-//                             <h5>{teacherdata.accountNumber || "N/A"}</h5>
-//                           </div>
-//                           <span className="avatar avatar-lg bg-info-transparent rounded flex-shrink-0 text-info">
-//                             <i className="ti ti-credit-card fs-24" />
-//                           </span>
-//                         </div>
-//                       </div>
-//                     </div>
-//                     <div className="card">
-//                       <div className="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
-//                         <h4 className="mb-3">Salary History</h4>
-//                       </div>
-//                       <div className="card-body p-0 py-3">
-//                         {/* Payroll List */}
-//                         {/* <Table
-//                           // dataSource={data}
-//                           columns={columns}
-//                           Selection={true}
-//                         /> */}
-//                         <Table
-//                           dataSource={[]}
-//                           columns={columns}
-//                           loading={loading}
-//                         />
-//                         {/* /Payroll List */}
-//                       </div>
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//         {/* /Page Wrapper */}
-//         <TeacherModal />
-//     </>
-//   );
-// };
-
-// export default TeacherSalary;
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ImageWithBasePath from "../../../../../core/common/imageWithBasePath";
@@ -232,16 +9,17 @@ import TeacherBreadcrumb from "./teacherBreadcrumb";
 import TeacherModal from "../teacherModal";
 import useMobileDetection from "../../../../../core/common/mobileDetection";
 import { getTeacherById } from "../../../../../services/admin/teacherRegistartion";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { Table } from "antd";
 import { getPayrollsByTeacherId } from "../../../../../services/teacher/payrollService";
 import { IPayroll } from "../../../../../services/types/teacher/IPayroll";
+import { setDataTheme } from "../../../../../Store/themeSettingSlice";
 
 // Error Boundary Component
-class ErrorBoundary extends React.Component {
+class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, { hasError: boolean; error: any }> {
   state = { hasError: false, error: null };
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: any) {
     return { hasError: true, error };
   }
 
@@ -262,9 +40,21 @@ const TeacherSalary = () => {
   const routes = all_routes;
   const ismobile = useMobileDetection();
   const userobj = useSelector((state: any) => state.auth.userObj);
+  const dispatch = useDispatch();
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
+  const isDark = dataTheme === "dark_data_theme";
+
+  const handleToggleTheme = () => {
+    dispatch(
+      dataTheme === "default_data_theme"
+        ? setDataTheme("dark_data_theme")
+        : setDataTheme("default_data_theme")
+    );
+  };
   const [loading, setLoading] = useState(false);
   const [localTeacherData, setLocalTeacherData] = useState<any>(null); // Added local state
-  const [payrolls, setPayrolls] = useState<IPayroll[]>([]);
+  // Change payrolls state to any[] | any for flexible type
+  const [payrolls, setPayrolls] = useState<any[] | any>([]);
 
   // Added fetchTeacherDetails
   const fetchTeacherDetails = async () => {
@@ -303,18 +93,59 @@ const TeacherSalary = () => {
   useEffect(() => {
     fetchTeacherDetails();
     fetchPayrolls();
+   
+    const teacherId = localStorage.getItem('teacherId');
+    if (teacherId) {
+      getPayrollsByTeacherId(teacherId).then(res => {
+        ////console.log('Teacher Salary Payments:', res.data);
+      }).catch(err => {
+        //console.error('Error fetching teacher salary payments:', err);
+      });
+    }
   }, [userobj.role]);
 
+  // Ensure payrolls is always an array
+  const safePayrolls = Array.isArray(payrolls)
+    ? payrolls
+    : (payrolls && typeof payrolls === 'object' && Array.isArray((payrolls as any).payrolls)
+        ? (payrolls as any).payrolls
+        : []);
+
   const columns = [
+    // {
+    //   title: "ID",
+    //   dataIndex: "id",
+    //   render: (text: string) => (
+    //     <Link to="#" className="link-primary">
+    //       {text}
+    //     </Link>
+    //   ),
+    //   sorter: (a: any, b: any) => a.id.length - b.id.length,
+    // },
     {
-      title: "ID",
-      dataIndex: "id",
-      render: (text: string) => (
-        <Link to="#" className="link-primary">
-          {text}
-        </Link>
+      title: "Teacher Name",
+      dataIndex: "teacherName",
+      render: (text: string, record: any) => (
+        <span>
+          {record.user?.profilePic && (
+            <img src={record.user.profilePic} alt="profile" style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8 }} />
+          )}
+          {record.user?.name || "-"}
+        </span>
       ),
-      sorter: (a: TableData, b: TableData) => a.id.length - b.id.length,
+      sorter: (a: any, b: any) => (a.user?.name || '').localeCompare(b.user?.name || ''),
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      render: (_: string, record: any) => record.user?.email || "-",
+      sorter: (a: any, b: any) => (a.user?.email || '').localeCompare(b.user?.email || ''),
+    },
+    {
+      title: "Phone",
+      dataIndex: "phone",
+      render: (_: string, record: any) => record.user?.phone || "-",
+      sorter: (a: any, b: any) => (a.user?.phone || '').localeCompare(b.user?.phone || ''),
     },
     {
       title: "Salary For",
@@ -324,52 +155,64 @@ const TeacherSalary = () => {
     {
       title: "Date",
       dataIndex: "date",
-      sorter: (a: TableData, b: TableData) =>
-        parseFloat(a.date) - parseFloat(b.date),
+      sorter: (a: any, b: any) => a.date.length - b.date.length,
     },
     {
       title: "Payment Method",
       dataIndex: "Payment_Method",
-      sorter: (a: any, b: any) =>
-        a.Payment_Method.length - b.Payment_Method.length,
+      sorter: (a: any, b: any) => a.Payment_Method.length - b.Payment_Method.length,
     },
     {
       title: "Net Salary",
       dataIndex: "Net_Salary",
-      sorter: (a: any, b: any) => a.Net_Salary.length - b.Net_Salary.length,
+      sorter: (a: any, b: any) => a.Net_Salary - b.Net_Salary,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      render: (text: string) => (
+        <span className={`badge badge-soft-${text === 'PAID' ? 'success' : text === 'PENDING' ? 'warning' : 'danger'}`}>{text}</span>
+      ),
+      sorter: (a: any, b: any) => (a.status || '').localeCompare(b.status || ''),
     },
     {
       title: " ",
       dataIndex: "Net_Salary",
-      render: () => (
-        <>
-          <Link to="#" className="btn btn-light add-fee">
-            View Payslip
-          </Link>
-        </>
+      render: (_: any, record: any) => (
+        <Link to="#" className="btn btn-light add-fee">
+          View Payslip
+        </Link>
       ),
     },
   ];
 
-  const payrollData = payrolls.map((p) => ({
+  const payrollData = safePayrolls.map((p: any) => ({
     id: p.id,
+    teacherName: p.user?.name || '-',
+    email: p.user?.email || '-',
+    phone: p.user?.phone || '-',
+    user: p.user,
     Salary_For: `${new Date(p.periodStart).toLocaleDateString()} - ${new Date(p.periodEnd).toLocaleDateString()}`,
-    date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : "-",
+    date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : '-',
     Payment_Method: p.status,
     Net_Salary: p.netSalary,
+    status: p.status,
   }));
 
-  const SkeletonPlaceholder = ({ className = "" }) => (
-    <span className={`placeholder bg-secondary ${className}`} />
+  // Update SkeletonPlaceholder to accept style prop
+  const SkeletonPlaceholder = ({ className = "", style = {} }: { className?: string; style?: React.CSSProperties }) => (
+    <span className={`placeholder bg-secondary ${className}`} style={style} />
   );
 
   return (
     <ErrorBoundary>
-      <div className={ismobile ? "page-wrapper" : "p-3"}>
-        <div className="content">
+      <div className={(ismobile ? "page-wrapper" : "p-3") + (isDark ? " bg-dark text-light min-vh-100" : "") }>
+        <div className={"content" + (isDark ? " bg-dark text-light" : "") }>
           <div className="row">
             {/* Page Header */}
-            {/* <TeacherBreadcrumb /> */}
+            {/* <div className="d-flex align-items-center justify-content-between mb-3">
+              <TeacherBreadcrumb />
+            </div> */}
             {/* /Page Header */}
           </div>
           <div className="row">
@@ -469,17 +312,18 @@ const TeacherSalary = () => {
                         </>
                       )}
                     </div>
-                    <div className="card">
-                      <div className="card-header d-flex align-items-center justify-content-between flex-wrap pb-0">
+                    <div className={"card" + (isDark ? " bg-dark text-light" : "") }>
+                      <div className={"card-header d-flex align-items-center justify-content-between flex-wrap pb-0" + (isDark ? " bg-dark text-light" : "") }>
                         <h4 className="mb-3">Salary History</h4>
                       </div>
-                      <div className="card-body p-0 py-3">
+                      <div className={"card-body p-0 py-3" + (isDark ? " bg-dark text-light" : "") }>
                         {/* Payroll List */}
                         <Table
-                          dataSource={payrollData}
+                          dataSource={payrollData as any}
                           columns={columns}
                           loading={loading}
                           rowKey="id"
+                          className={isDark ? "table-dark" : ""}
                         />
                         {loading && (
                           <div className="placeholder-glow">
