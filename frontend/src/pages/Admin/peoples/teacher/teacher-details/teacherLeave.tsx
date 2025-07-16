@@ -364,7 +364,6 @@ const TeacherLeave = () => {
        
         const filteredStudents = studentsData
           .map((student: any) => {
-           
             let attendanceRecord;
             if (Array.isArray(student.attendances)) {
               const normalizeDate = (d: string | Date) => new Date(d).toISOString().split("T")[0];
@@ -383,8 +382,8 @@ const TeacherLeave = () => {
               classId: getClassNameById(addFormData.classId) || "",
               sectionId: getSectionNameById(addFormData.classId, addFormData.sectionId) || "",
               attendance: attendanceRecord ? (attendanceRecord.present ? "Present" : "Absent") : "",
-              present: attendanceRecord ? !!attendanceRecord.present : undefined,
-              absent: attendanceRecord ? !attendanceRecord.present : undefined,
+              present: attendanceRecord ? !!attendanceRecord.present : false,
+              absent: attendanceRecord ? !attendanceRecord.present : false,
               notes: student.notes || "",
               img: student?.user?.profilePic || student.profilePic || "",
               attendances: student.attendances || [],
@@ -602,15 +601,10 @@ const TeacherLeave = () => {
           absent: !marked.present,
         };
       } else {
-        return {
-          ...student,
-          attendance: 'Present',
-          present: true,
-          absent: false,
-        };
+        return student;
       }
     }));
-  }, [students, addFormData.status, attendanceDate]);
+  }, [addFormData.status, attendanceDate]);
 
   const getAvailableSections = useCallback(
     (classId: string) => {
@@ -916,6 +910,8 @@ const TeacherLeave = () => {
         return;
       }
       setSelectedRowKeys([]);
+      // Refresh student attendance data after save
+      await fetchStudentsForAttendance();
     } catch (error) {
       toast.error("Failed to save attendance");
     } finally {

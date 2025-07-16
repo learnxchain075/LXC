@@ -71,13 +71,12 @@ const SelfEnhancement = () => {
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useMobileDetection();
   const isStudent = user?.role === "student";
+  const isTeacher = user?.role === "teacher";
   const [activeTab, setActiveTab] = useState<"quiz" | "newspaper">("quiz");
   const [loading, setLoading] = useState(false);
   const [addingQuiz, setAddingQuiz] = useState(false);
   const [addingNewspaper, setAddingNewspaper] = useState(false);
   const dataTheme = useReduxSelector((state: any) => state.themeSetting.dataTheme);
-
- 
   const [selectedNewspaper, setSelectedNewspaper] = useState<SelfEnhancementItem | null>(null);
   const [translatedText, setTranslatedText] = useState<string>("");
   const [voiceFile, setVoiceFile] = useState<File | null>(null);
@@ -103,31 +102,26 @@ const SelfEnhancement = () => {
     }
   };
 
+  // Fetch classes for teacher on mount
   const fetchClasses = useCallback(async () => {
     if (isStudent) return;
     try {
       setLoading(true);
       const teacherId = user?.teacherId || localStorage.getItem("teacherId") || "";
-      
       if (!teacherId) {
         toast.error("Teacher ID not found", { autoClose: 3000 });
         return;
       }
-      
       const response = user.role === "admin"
         ? await getClassByschoolId(localStorage.getItem("schoolId") ?? "")
         : await getClassesByTeacherId(teacherId);
-      
       const classesData = response?.data?.data || response?.data || [];
-      
       if (!classesData || !Array.isArray(classesData)) {
         toast.error("No classes data received", { autoClose: 3000 });
         return;
       }
-      
       const res = await getLessonByteacherId(teacherId);
       setTimetable(Array.isArray(res?.data) ? res.data : res?.data ? [res.data] : []);
-      
       const classes = classesData.map((cls: any) => ({
         id: cls.id,
         className: cls.name || cls.className,
@@ -137,9 +131,7 @@ const SelfEnhancement = () => {
           classId: sec.classId,
         })) || [],
       }));
-      
       setClassList(classes);
-      
       if (classes.length === 0) {
         toast.warning("No classes found for this teacher", { autoClose: 3000 });
       }
@@ -151,68 +143,28 @@ const SelfEnhancement = () => {
     }
   }, [user.role, isStudent]);
 
-  const fetchStudentItems = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await getQuizNewspaperByStudentId();
-      const quizzes: SelfEnhancementItem[] = response.data.quizzes.map((quiz: IQuiz) => ({
-        id: quiz.id,
-        type: "Quiz",
-        title: quiz.question,
-        options: quiz.options,
-        answer: quiz.answer,
-        classId: "",
-        section: "",
-        createdAt: quiz.createdAt ? new Date(quiz.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
-      }));
-      const newspapers: SelfEnhancementItem[] = response.data.newspapers.map((news: INewspaper) => ({
-        id: news.id,
-        type: "Newspaper",
-        title: news.title,
-        content: news.content,
-        attachmentCount: news.attachment ? 1 : 0,
-        classId: "",
-        section: "",
-        createdAt: news.createdAt ? new Date(news.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
-      }));
-      setItems([...quizzes, ...newspapers]);
-    } catch (error) {
-     // console.error("Error fetching student items:", error);
-      toast.error("Failed to fetch quizzes and newspapers.", { autoClose: 3000 });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Fetch quizzes and newspapers for a selected class (for teacher)
   const fetchItemsForClass = useCallback(async (classId: string) => {
-    if (!classId) {
-      return;
-    }
-    
+    if (!classId) return;
     try {
       setLoading(true);
-      
       let quizResponse, newspaperResponse;
-      
       try {
         quizResponse = await getQuizzesByClassId(classId);
       } catch (quizError: any) {
-        const errorMessage = quizError?.response?.data?.message || quizError?.message || "Failed to fetch quizzes";
+        const errorMessage = quizError?.response?.data?.message || quizError?.message || "Failed to fetch quizzes for this class";
         toast.error(`Quiz Error: ${errorMessage}`, { autoClose: 3000 });
         quizResponse = { data: [] };
       }
-      
       try {
         newspaperResponse = await getNewspapersByClassId(classId);
       } catch (newspaperError: any) {
-        const errorMessage = newspaperError?.response?.data?.message || newspaperError?.message || "Failed to fetch newspapers";
+        const errorMessage = newspaperError?.response?.data?.message || newspaperError?.message || "Failed to fetch newspapers for this class";
         toast.error(`Newspaper Error: ${errorMessage}`, { autoClose: 3000 });
         newspaperResponse = { data: [] };
       }
-
       const quizData = Array.isArray(quizResponse.data) ? quizResponse.data : (quizResponse.data ? [quizResponse.data] : []);
       const newspaperData = Array.isArray(newspaperResponse.data) ? newspaperResponse.data : (newspaperResponse.data ? [newspaperResponse.data] : []);
-
       const quizzes: SelfEnhancementItem[] = quizData.map((quiz: IServiceQuiz) => ({
         id: (quiz as any)._id || (quiz as any).id || Math.random().toString(36).substr(2, 9),
         type: "Quiz",
@@ -223,7 +175,6 @@ const SelfEnhancement = () => {
         section: "",
         createdAt: new Date().toLocaleDateString(),
       }));
-
       const newspapers: SelfEnhancementItem[] = newspaperData.map((news: IServiceNewspaper) => ({
         id: (news as any)._id || (news as any).id || Math.random().toString(36).substr(2, 9),
         type: "Newspaper",
@@ -234,47 +185,31 @@ const SelfEnhancement = () => {
         section: "",
         createdAt: new Date().toLocaleDateString(),
       }));
-
       const filteredItems = selectedSection
         ? [...quizzes, ...newspapers].filter((item) => item.section === selectedSection)
         : [...quizzes, ...newspapers];
-
       setItems(filteredItems);
-      
       if (filteredItems.length === 0) {
         toast.info("No quizzes or newspapers found for this class. You can create new ones!", { autoClose: 3000 });
       }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || "Failed to fetch items for class";
-    
       setItems([]);
+      toast.error(errorMessage, { autoClose: 3000 });
     } finally {
       setLoading(false);
     }
   }, [selectedSection]);
 
-
-  useEffect(() => {
-    if (isStudent) {
-      fetchStudentItems();
-    } else {
-      fetchClasses();
-    }
-  }, [fetchClasses, fetchStudentItems, isStudent]);
-
- 
+  // Only fetch all quizzes/newspapers for admin (not for teacher)
   const fetchAllItems = useCallback(async () => {
-    if (isStudent) return;
-    
+    if (isStudent || isTeacher) return;
     try {
       setLoading(true);
-      
       let allItems: SelfEnhancementItem[] = [];
-      
       try {
         const allQuizzesResponse = await getAllQuizzes();
         const allQuizzesData = Array.isArray(allQuizzesResponse.data) ? allQuizzesResponse.data : (allQuizzesResponse.data ? [allQuizzesResponse.data] : []);
-        
         const quizzes: SelfEnhancementItem[] = allQuizzesData.map((quiz: IServiceQuiz) => ({
           id: (quiz as any)._id || (quiz as any).id || Math.random().toString(36).substr(2, 9),
           type: "Quiz",
@@ -285,16 +220,13 @@ const SelfEnhancement = () => {
           section: "",
           createdAt: new Date().toLocaleDateString(),
         }));
-        
         allItems.push(...quizzes);
       } catch (quizError: any) {
         toast.error("Failed to fetch all quizzes", { autoClose: 3000 });
       }
-      
       try {
         const allNewspapersResponse = await getAllNewspapers();
         const allNewspapersData = Array.isArray(allNewspapersResponse.data) ? allNewspapersResponse.data : (allNewspapersResponse.data ? [allNewspapersResponse.data] : []);
-
         const newspapers: SelfEnhancementItem[] = allNewspapersData.map((news: IServiceNewspaper) => ({
           id: (news as any)._id || (news as any).id || Math.random().toString(36).substr(2, 9),
           type: "Newspaper",
@@ -305,14 +237,11 @@ const SelfEnhancement = () => {
           section: "",
           createdAt: new Date().toLocaleDateString(),
         }));
-
         allItems.push(...newspapers);
       } catch (newspaperError: any) {
         toast.error("Failed to fetch all newspapers", { autoClose: 3000 });
       }
-      
       setItems(allItems);
-      
       if (allItems.length === 0) {
         toast.info("No quizzes or newspapers found. You can create new ones!", { autoClose: 3000 });
       } else {
@@ -320,7 +249,6 @@ const SelfEnhancement = () => {
       }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || "Failed to fetch items";
-      
       if (errorMessage.includes("Prisma") || errorMessage.includes("database")) {
         toast.error("Database error occurred. Please try again later.", { autoClose: 3000 });
       } else {
@@ -329,20 +257,28 @@ const SelfEnhancement = () => {
     } finally {
       setLoading(false);
     }
-  }, [isStudent]);
+  }, [isStudent, isTeacher]);
 
-  // Fetch items when selectedClass changes
+  // Fetch logic on mount and when selectedClass changes
   useEffect(() => {
-    if (!isStudent) {
-      if (selectedClass) {
-        // If a class is selected, fetch items for that specific class
-        fetchItemsForClass(selectedClass);
-      } else {
-        // If no class is selected, fetch all items for all classes
-        fetchAllItems();
-      }
+    if (isStudent) {
+      // No fetchStudentItems function, do nothing for students
+    } else if (isTeacher) {
+      fetchClasses();
+    } else {
+      fetchClasses();
+      fetchAllItems();
     }
-  }, [selectedClass, selectedSection, isStudent, fetchItemsForClass, fetchAllItems]);
+  }, [fetchClasses, fetchAllItems, isStudent, isTeacher]);
+
+  // Fetch items for selected class (for teacher)
+  useEffect(() => {
+    if (isTeacher && selectedClass) {
+      fetchItemsForClass(selectedClass);
+    } else if (!isStudent && !isTeacher && selectedClass) {
+      fetchItemsForClass(selectedClass);
+    }
+  }, [selectedClass, selectedSection, isStudent, isTeacher, fetchItemsForClass]);
 
   // Add useEffect to auto-set class when modals open
   useEffect(() => {

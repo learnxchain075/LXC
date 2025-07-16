@@ -220,10 +220,10 @@
 //         const teacherDetails = response.data;
 //         setTeacherdata(teacherDetails);
 //       } else {
-//         console.error("Failed to fetch teacher details");
+//         //console.error("Failed to fetch teacher details");
 //       }
 //     } catch (error) {
-//       console.error("Error fetching teacher details:", error);
+//       //console.error("Error fetching teacher details:", error);
 //     }
 //   };
 
@@ -386,6 +386,7 @@ import AcademicUploads from "../../pages/Common/AcademicUploads";
 import SelfEnhancement from "../../pages/Common/SelfEnhancement";
 import DoubtForum from "../../pages/Common/DoubtForum";
 import { useSelector } from "react-redux";
+import Teacherui from "../../pages/Admin/peoples/teacher/teacher-details/teacherui";
 // import Teacherui from "../../pages/Admin/peoples/teacher/teacher-details/teacherui";
 
 const TeacherDashboard = () => {
@@ -512,29 +513,29 @@ const TeacherDashboard = () => {
   const fetchTeacherDetails = async () => {
     try {
       setLoading(true); // Start loading
-      console.log("Fetching teacher details...");
+      ////console.log("Fetching teacher details...");
       const teacherId = localStorage.getItem("teacherId");
-      console.log("Teacher ID:", teacherId);
+      //console.log("Teacher ID:", teacherId);
 
       const response = await getTeacherById(teacherId ?? "");
-      console.log("Teacher API Response:", response);
+      //console.log("Teacher API Response:", response);
 
       if (response.status === 200) {
         const teacherDetails = response.data;
-        console.log("Teacher Details:", teacherDetails);
+        //console.log("Teacher Details:", teacherDetails);
         setTeacherdata(teacherDetails);
       } else {
-        console.error("Failed to fetch teacher details");
+        //console.error("Failed to fetch teacher details");
       }
     } catch (error) {
-      console.error("Error fetching teacher details:", error);
+      //console.error("Error fetching teacher details:", error);
     } finally {
       setLoading(false); // End loading
     }
   };
 
   useEffect(() => {
-    //console.log("TeacherDashboard mounted, fetching teacher details...");
+    ////console.log("TeacherDashboard mounted, fetching teacher details...");
     fetchTeacherDetails();
   }, []);
 
@@ -674,7 +675,7 @@ const TeacherDashboard = () => {
       case routes.teacherDetails:
         return <TeacherDetails />;
       case routes.teacheruimodern:
-        // return <Teacherui />;
+        return <Teacherui />;
       case routes.teachersRoutine:
         return <TeachersRoutine />;
       case routes.teacherLeaves:
