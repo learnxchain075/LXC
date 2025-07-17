@@ -28,6 +28,7 @@ import {
   getResourcesByStudentId,
   IAssignment,
 } from '../../../../services/student/StudentAllApi';
+import BaseApi from '../../../../services/BaseApi';
 
 interface DashboardData {
   personalInfo: {
@@ -956,7 +957,7 @@ const HomeDashboard = () => {
                       const score = selectedOption === selectedQuiz.answer ? 1 : 0;
                       const userId = localStorage.getItem('userId');
                       if (!userId) throw new Error('User ID not found');
-                      await axios.post('/quiz-results', {
+                      await BaseApi.postRequest('/quiz-results', {
                         userId,
                         quizId: selectedQuiz.id,
                         score,

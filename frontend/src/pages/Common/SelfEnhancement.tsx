@@ -26,7 +26,7 @@ import {
 import { getQuizNewspaperByStudentId, INewspaper, IQuiz } from "../../services/student/StudentAllApi";
 import TooltipOption from "../../core/common/tooltipOption";
 import PredefinedDateRanges from "../../core/common/datePicker";
-import { Table } from "antd";
+import { Table, ConfigProvider, theme as antdTheme } from "antd";
 import { closeModal } from "./modalclose";
 
 interface SelfEnhancementItem {
@@ -77,9 +77,19 @@ const SelfEnhancement = () => {
   const [addingQuiz, setAddingQuiz] = useState(false);
   const [addingNewspaper, setAddingNewspaper] = useState(false);
   const dataTheme = useReduxSelector((state: any) => state.themeSetting.dataTheme);
+  const isDarkMode = dataTheme === 'dark_data_theme';
   const [selectedNewspaper, setSelectedNewspaper] = useState<SelfEnhancementItem | null>(null);
   const [translatedText, setTranslatedText] = useState<string>("");
   const [voiceFile, setVoiceFile] = useState<File | null>(null);
+  // Add state for sort order and sort by
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState<'title' | 'createdAt'>('title');
+
+  // Add temporary filter state for class, section, and date range
+  const [pendingClass, setPendingClass] = useState<string>(selectedClass);
+  const [pendingSection, setPendingSection] = useState<string>(selectedSection);
+  const [pendingDateRange, setPendingDateRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
+  const [appliedDateRange, setAppliedDateRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
 
   const openNewspaperSubmissionModal = (newspaper: SelfEnhancementItem) => {
     setSelectedNewspaper(newspaper);
@@ -151,6 +161,7 @@ const SelfEnhancement = () => {
       let quizResponse, newspaperResponse;
       try {
         quizResponse = await getQuizzesByClassId(classId);
+        // console.log("d f",quizResponse)
       } catch (quizError: any) {
         const errorMessage = quizError?.response?.data?.message || quizError?.message || "Failed to fetch quizzes for this class";
         toast.error(`Quiz Error: ${errorMessage}`, { autoClose: 3000 });
@@ -163,31 +174,33 @@ const SelfEnhancement = () => {
         toast.error(`Newspaper Error: ${errorMessage}`, { autoClose: 3000 });
         newspaperResponse = { data: [] };
       }
-      const quizData = Array.isArray(quizResponse.data) ? quizResponse.data : (quizResponse.data ? [quizResponse.data] : []);
-      const newspaperData = Array.isArray(newspaperResponse.data) ? newspaperResponse.data : (newspaperResponse.data ? [newspaperResponse.data] : []);
-      const quizzes: SelfEnhancementItem[] = quizData.map((quiz: IServiceQuiz) => ({
-        id: (quiz as any)._id || (quiz as any).id || Math.random().toString(36).substr(2, 9),
+      const quizData = Array.isArray(quizResponse.data) ? (quizResponse.data as any[]) : (quizResponse.data ? [quizResponse.data] : []);
+      const newspaperData = Array.isArray(newspaperResponse.data) ? (newspaperResponse.data as any[]) : (newspaperResponse.data ? [newspaperResponse.data] : []);
+      const quizzes: SelfEnhancementItem[] = quizData.map((quiz) => ({
+        id: quiz._id || quiz.id || Math.random().toString(36).substr(2, 9),
         type: "Quiz",
         title: quiz.question,
         options: quiz.options,
         answer: quiz.answer,
-        classId: quiz.classId,
-        section: "",
-        createdAt: new Date().toLocaleDateString(),
+        classId: quiz.classId || '',
+        section: quiz.section || '',
+        createdAt: quiz.createdAt || new Date().toISOString(),
       }));
-      const newspapers: SelfEnhancementItem[] = newspaperData.map((news: IServiceNewspaper) => ({
-        id: (news as any)._id || (news as any).id || Math.random().toString(36).substr(2, 9),
+      const newspapers: SelfEnhancementItem[] = newspaperData.map((news) => ({
+        id: news._id || news.id || Math.random().toString(36).substr(2, 9),
         type: "Newspaper",
         title: news.title,
         content: news.content,
         attachmentCount: typeof news.attachments === 'string' ? 1 : (Array.isArray(news.attachments) ? news.attachments.length : (news.attachments instanceof File ? 1 : 0)),
-        classId: news.classId,
-        section: "",
-        createdAt: new Date().toLocaleDateString(),
+        classId: news.classId || '',
+        section: news.section || '',
+        createdAt: news.createdAt || new Date().toISOString(),
       }));
-      const filteredItems = selectedSection
-        ? [...quizzes, ...newspapers].filter((item) => item.section === selectedSection)
-        : [...quizzes, ...newspapers];
+      const filteredItems = [...quizzes, ...newspapers].filter((item) => {
+        if (selectedClass && item.classId !== selectedClass) return false;
+        if (selectedSection && item.section && item.section !== selectedSection) return false;
+        return true;
+      });
       setItems(filteredItems);
       if (filteredItems.length === 0) {
         toast.info("No quizzes or newspapers found for this class. You can create new ones!", { autoClose: 3000 });
@@ -199,7 +212,7 @@ const SelfEnhancement = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedSection]);
+  }, [selectedClass, selectedSection]);
 
   // Only fetch all quizzes/newspapers for admin (not for teacher)
   const fetchAllItems = useCallback(async () => {
@@ -209,7 +222,7 @@ const SelfEnhancement = () => {
       let allItems: SelfEnhancementItem[] = [];
       try {
         const allQuizzesResponse = await getAllQuizzes();
-        const allQuizzesData = Array.isArray(allQuizzesResponse.data) ? allQuizzesResponse.data : (allQuizzesResponse.data ? [allQuizzesResponse.data] : []);
+        const allQuizzesData = Array.isArray(allQuizzesResponse.data) ? (allQuizzesResponse.data as any[]) : (allQuizzesResponse.data ? [allQuizzesResponse.data] : []);
         const quizzes: SelfEnhancementItem[] = allQuizzesData.map((quiz: IServiceQuiz) => ({
           id: (quiz as any)._id || (quiz as any).id || Math.random().toString(36).substr(2, 9),
           type: "Quiz",
@@ -226,7 +239,7 @@ const SelfEnhancement = () => {
       }
       try {
         const allNewspapersResponse = await getAllNewspapers();
-        const allNewspapersData = Array.isArray(allNewspapersResponse.data) ? allNewspapersResponse.data : (allNewspapersResponse.data ? [allNewspapersResponse.data] : []);
+        const allNewspapersData = Array.isArray(allNewspapersResponse.data) ? (allNewspapersResponse.data as any[]) : (allNewspapersResponse.data ? [allNewspapersResponse.data] : []);
         const newspapers: SelfEnhancementItem[] = allNewspapersData.map((news: IServiceNewspaper) => ({
           id: (news as any)._id || (news as any).id || Math.random().toString(36).substr(2, 9),
           type: "Newspaper",
@@ -259,10 +272,57 @@ const SelfEnhancement = () => {
     }
   }, [isStudent, isTeacher]);
 
-  // Fetch logic on mount and when selectedClass changes
   useEffect(() => {
     if (isStudent) {
-      // No fetchStudentItems function, do nothing for students
+      // Fetch quizzes and newspapers for student
+      const fetchStudentItems = async () => {
+        setLoading(true);
+        try {
+          const response = await getQuizNewspaperByStudentId();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const quizzes: SelfEnhancementItem[] = Array.isArray(response.data?.quizzes)
+            ? (response.data.quizzes as any[]).map((quiz) => ({
+                id: quiz._id || quiz.id || Math.random().toString(36).substr(2, 9),
+                type: 'Quiz' as 'Quiz',
+                title: quiz.question,
+                options: quiz.options,
+                answer: quiz.answer,
+                classId: (quiz as any).classId || '',
+                section: '',
+                createdAt: (quiz as any).createdAt || new Date().toISOString(),
+              })).filter((quiz) => {
+                // Only today's quizzes
+                const created = new Date(quiz.createdAt);
+                created.setHours(0, 0, 0, 0);
+                return created.getTime() === today.getTime();
+              })
+            : [];
+          const newspapers: SelfEnhancementItem[] = Array.isArray(response.data?.newspapers)
+            ? (response.data.newspapers as any[]).map((news) => ({
+                id: news._id || news.id || Math.random().toString(36).substr(2, 9),
+                type: 'Newspaper' as 'Newspaper',
+                title: news.title,
+                content: news.content,
+                attachmentCount: typeof (news as any).attachments === 'string' ? 1 : (Array.isArray((news as any).attachments) ? (news as any).attachments.length : ((news as any).attachments instanceof File ? 1 : 0)),
+                classId: (news as any).classId || '',
+                section: '',
+                createdAt: (news as any).createdAt || new Date().toISOString(),
+              })).filter((news) => {
+                
+                const created = new Date(news.createdAt);
+                created.setHours(0, 0, 0, 0);
+                return created.getTime() === today.getTime();
+              })
+            : [];
+          setItems([...quizzes, ...newspapers]);
+        } catch (error: any) {
+          setItems([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchStudentItems();
     } else if (isTeacher) {
       fetchClasses();
     } else {
@@ -277,6 +337,8 @@ const SelfEnhancement = () => {
       fetchItemsForClass(selectedClass);
     } else if (!isStudent && !isTeacher && selectedClass) {
       fetchItemsForClass(selectedClass);
+    } else if (!selectedClass) {
+      fetchAllItems();
     }
   }, [selectedClass, selectedSection, isStudent, isTeacher, fetchItemsForClass]);
 
@@ -545,7 +607,7 @@ const SelfEnhancement = () => {
           userId, 
         };
         
-        console.log("Updating newspaper with validated data:", updateData);
+        //console.log("Updating newspaper with validated data:", updateData);
         await updateNewspaper(newspaperId, updateData);
         
         // Refresh items
@@ -559,7 +621,7 @@ const SelfEnhancement = () => {
       toast.success("Item updated successfully!", { autoClose: 3000 });
       closeModal("edit_item");
     } catch (error: any) {
-      console.error("Error updating item:", error);
+      //console.error("Error updating item:", error);
       const errorMessage = error?.response?.data?.message || error?.message || "Failed to update item";
       
       if (errorMessage.includes("Validation failed")) {
@@ -591,7 +653,7 @@ const SelfEnhancement = () => {
       
       toast.success("Item deleted successfully!", { autoClose: 3000 });
     } catch (error: any) {
-     // console.error("Error deleting item:", error);
+     // //console.error("Error deleting item:", error);
       const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete item";
       toast.error(errorMessage, { autoClose: 3000 });
     }
@@ -665,9 +727,33 @@ const SelfEnhancement = () => {
     return selectedClassObj?.Section || [];
   };
 
-  const filteredItems = items.filter(item => 
-    activeTab === "quiz" ? item.type === "Quiz" : item.type === "Newspaper"
-  );
+  // Update filteredItems to apply sorting
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const filteredItems = items
+    .filter(item => activeTab === "quiz" ? item.type === "Quiz" : item.type === "Newspaper")
+    .filter(item => {
+      if (appliedDateRange.start && appliedDateRange.end) {
+        const created = new Date(item.createdAt);
+        created.setHours(0, 0, 0, 0);
+        return created >= appliedDateRange.start && created <= appliedDateRange.end;
+      } else {
+        // Default: show only today's items
+        const created = new Date(item.createdAt);
+        created.setHours(0, 0, 0, 0);
+        return created.getTime() === today.getTime();
+      }
+    })
+    .sort((a, b) => {
+      let compare = 0;
+      if (sortBy === 'title') {
+        compare = a.title.localeCompare(b.title, 'en-US');
+      } else if (sortBy === 'createdAt') {
+        // Use true date comparison
+        compare = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      return sortOrder === 'asc' ? compare : -compare;
+    });
 
  
   const renderTableSkeleton = () => {
@@ -766,12 +852,6 @@ const SelfEnhancement = () => {
           </span>
         ),
     },
-    {
-      title: "Created At",
-      dataIndex: "createdAt",
-      sorter: (a: SelfEnhancementItem, b: SelfEnhancementItem) =>
-        a.createdAt.localeCompare(b.createdAt, 'en-US'),
-    },
   ];
 
   // Columns for non-student (admin/teacher)
@@ -815,12 +895,6 @@ const SelfEnhancement = () => {
         const section = classObj?.Section.find((sec) => sec.id === sectionId);
         return section ? section.name : sectionId || "N/A";
       },
-    },
-    {
-      title: "Created At",
-      dataIndex: "createdAt",
-      sorter: (a: SelfEnhancementItem, b: SelfEnhancementItem) =>
-        a.createdAt.localeCompare(b.createdAt, 'en-US'),
     },
     {
       title: "Action",
@@ -996,7 +1070,7 @@ const SelfEnhancement = () => {
               </nav>
             </div>
             <div className="d-flex my-xl-auto right-content align-items-center flex-wrap">
-              <TooltipOption />
+              {/* <TooltipOption /> */}
             </div>
           </div>
           
@@ -1057,20 +1131,24 @@ const SelfEnhancement = () => {
               </div>
               
               {!isStudent && (
-                <div className="d-flex align-items-center flex-wrap">
-                  {/* Class Selector */}
-                  <div className="mb-3 me-3">
-                    <label className="form-label fw-semibold me-2">Select Class:</label>
+                <div className="d-flex align-items-center gap-2 flex-wrap mb-3" style={{ minHeight: 48 }}>
+                 
+                  <div>
+                    <label className="form-label fw-semibold me-2 mb-0">Select Class:</label>
                     <select
-                      className="form-select"
+                      className="form-select d-inline-block w-auto"
                       value={selectedClass}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const newClassId = e.target.value;
                         setSelectedClass(newClassId);
                         setSelectedSection("");
-                        // The useEffect will handle the data fetching based on selectedClass
+                        if (newClassId) {
+                          await fetchItemsForClass(newClassId);
+                        } else {
+                          await fetchAllItems();
+                        }
                       }}
-                      style={{ minWidth: '200px' }}
+                      style={{ minWidth: '160px' }}
                     >
                       <option value="">All Classes</option>
                       {classList.map((cls) => (
@@ -1080,117 +1158,134 @@ const SelfEnhancement = () => {
                       ))}
                     </select>
                   </div>
-                  
-                  <div className="input-icon-start mb-3 me-2 position-relative">
-                    <PredefinedDateRanges />
-                  </div>
-                  <div className="dropdown mb-3 me-2">
-                    <Link
-                      to="#"
-                      className="btn btn-outline-light bg-white dropdown-toggle"
-                      data-bs-toggle="dropdown"
-                      data-bs-auto-close="outside"
-                    >
-                      <i className="ti ti-filter me-2" />
-                      Filter
-                    </Link>
-                    <div className="dropdown-menu drop-width" ref={dropdownMenuRef}>
-                      <form>
-                        <div className="d-flex align-items-center border-bottom p-3">
-                          <h4>Filter</h4>
-                        </div>
-                        <div className="p-3 border-bottom pb-0">
-                          {loading ? renderFilterSkeleton() : (
-                            <div className="row">
-                              <div className="col-md-12">
-                                <div className="mb-3">
-                                  <label className="form-label">Class</label>
-                                  <select
-                                    className="form-select"
-                                    value={selectedClass}
-                                    onChange={(e) => {
-                                      setSelectedClass(e.target.value);
-                                      setSelectedSection("");
-                                    }}
-                                  >
-                                    <option value="">All Classes</option>
-                                    {classList.map((cls) => (
-                                      <option key={cls.id} value={cls.id}>
-                                        {cls.className}
-                                      </option>
-                                    ))}
-                                  </select>
+                  {/* Filter */}
+                  <div>
+                    <div className="dropdown">
+                      <button
+                        className="btn btn-outline-secondary dropdown-toggle"
+                        data-bs-toggle="dropdown"
+                        type="button"
+                      >
+                        <i className="ti ti-filter me-2" /> Filter
+                      </button>
+                      <div className="dropdown-menu drop-width" ref={dropdownMenuRef}>
+                        <form>
+                          <div className="d-flex align-items-center border-bottom p-3">
+                            <h4>Filter</h4>
+                          </div>
+                          <div className="p-3 border-bottom pb-0">
+                            {loading ? renderFilterSkeleton() : (
+                              <div className="row">
+                                <div className="col-md-12">
+                                  <div className="mb-3">
+                                    <label className="form-label">Class</label>
+                                    <select
+                                      className="form-select"
+                                      value={pendingClass}
+                                      onChange={e => {
+                                        setPendingClass(e.target.value);
+                                        setPendingSection("");
+                                      }}
+                                    >
+                                      <option value="">All Classes</option>
+                                      {classList.map((cls) => (
+                                        <option key={cls.id} value={cls.id}>
+                                          {cls.className}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="col-md-12">
+                                  <div className="mb-3">
+                                    <label className="form-label">Section</label>
+                                    <select
+                                      className="form-select"
+                                      value={pendingSection}
+                                      onChange={e => setPendingSection(e.target.value)}
+                                      disabled={!pendingClass}
+                                    >
+                                      <option value="">Select Section</option>
+                                      {getSectionsForClass(pendingClass).map((section) => (
+                                        <option key={section.id} value={section.id}>
+                                          {section.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="col-md-12">
-                                <div className="mb-3">
-                                  <label className="form-label">Section</label>
-                                  <select
-                                    className="form-select"
-                                    value={selectedSection}
-                                    onChange={(e) => setSelectedSection(e.target.value)}
-                                    disabled={!selectedClass}
-                                  >
-                                    <option value="">Select Section</option>
-                                    {getSectionsForClass(selectedClass).map((section) => (
-                                      <option key={section.id} value={section.id}>
-                                        {section.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3 d-flex align-items-center justify-content-end">
-                          <Link to="#" className="btn btn-light me-3" data-bs-dismiss="modal">
-                            Cancel
-                          </Link>
-                          <Link to="#" className="btn btn-primary" onClick={handleApplyClick}>
-                            Apply
-                          </Link>
-                        </div>
-                      </form>
+                            )}
+                          </div>
+                          <div className="p-3 d-flex align-items-center justify-content-end">
+                            <Link to="#" className="btn btn-light me-3" data-bs-dismiss="modal">
+                              Cancel
+                            </Link>
+                            <Link to="#" className="btn btn-primary" onClick={async () => {
+                              setSelectedClass(pendingClass);
+                              setSelectedSection(pendingSection);
+                              setAppliedDateRange(pendingDateRange);
+                              handleApplyClick();
+                              if (pendingClass) {
+                                await fetchItemsForClass(pendingClass);
+                              } else {
+                                await fetchAllItems();
+                              }
+                            }}>
+                              Apply
+                            </Link>
+                          </div>
+                        </form>
+                      </div>
                     </div>
                   </div>
-                  <div className="dropdown mb-3 me-2">
-                    <Link
-                      to="#"
-                      className="btn btn-outline-light bg-white dropdown-toggle"
-                      data-bs-toggle="dropdown"
-                    >
-                      <i className="ti ti-sort-ascending-2 me-2" />
-                      Sort by
-                    </Link>
-                    <ul className="dropdown-menu p-3">
-                      <li>
-                        <Link to="#" className="dropdown-item rounded-1 active">Ascending</Link>
-                      </li>
-                      <li>
-                        <Link to="#" className="dropdown-item rounded-1">Descending</Link>
-                      </li>
-                      <li>
-                        <Link to="#" className="dropdown-item rounded-1">Recently Viewed</Link>
-                      </li>
-                      <li>
-                        <Link to="#" className="dropdown-item rounded-1">Recently Added</Link>
-                      </li>
-                    </ul>
+                  {/* Sort By */}
+                  <div>
+                    <div className="dropdown">
+                      <button
+                        className="btn btn-outline-secondary dropdown-toggle"
+                        data-bs-toggle="dropdown"
+                        type="button"
+                      >
+                        <i className="ti ti-sort-ascending-2 me-2" /> Sort by
+                      </button>
+                      <ul className="dropdown-menu p-3">
+                        <li>
+                          <Link to="#" className={`dropdown-item rounded-1${sortBy === 'title' && sortOrder === 'asc' ? ' active' : ''}`} onClick={() => { setSortBy('title'); setSortOrder('asc'); }}>A-Z (Title)</Link>
+                        </li>
+                        <li>
+                          <Link to="#" className={`dropdown-item rounded-1${sortBy === 'title' && sortOrder === 'desc' ? ' active' : ''}`} onClick={() => { setSortBy('title'); setSortOrder('desc'); }}>Z-A (Title)</Link>
+                        </li>
+                        <li>
+                          <Link to="#" className={`dropdown-item rounded-1${sortBy === 'createdAt' && sortOrder === 'desc' ? ' active' : ''}`} onClick={() => { setSortBy('createdAt'); setSortOrder('desc'); }}>Recently Added</Link>
+                        </li>
+                        <li>
+                          <Link to="#" className={`dropdown-item rounded-1${sortBy === 'createdAt' && sortOrder === 'asc' ? ' active' : ''}`} onClick={() => { setSortBy('createdAt'); setSortOrder('asc'); }}>Oldest First</Link>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
-                  <div className="mb-3">
-                    <button
-                      className="btn btn-outline-primary"
-                      onClick={() => {
-                        setSelectedClass("");
-                        setSelectedSection("");
+                  {/* Refresh */}
+                  {((localStorage.getItem('schoolId') && localStorage.getItem('schoolId') !== '' && localStorage.getItem("schoolId")!==undefined ) || user.role === 'admin') && (
+                    <div>
+                      <button
+                        className="btn btn-outline-primary"
+                        onClick={async () => {
+                          setLoading(true);
+                          if (selectedClass) {
+                            await fetchItemsForClass(selectedClass);
+                          } else {
+                            await fetchAllItems();
+                          }
+                          setLoading(false);
                       }}
                       disabled={loading}
                     >
                       <i className="ti ti-refresh me-2" />
-                      {loading ? "Loading..." : "Show All Classes"}
+                        {loading ? "Refreshing..." : "Refresh"}
                     </button>
                   </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1199,21 +1294,31 @@ const SelfEnhancement = () => {
                 renderTableSkeleton()
               ) : filteredItems.length === 0 ? (
                 <div className="text-center p-4">
-                  <div className="avatar avatar-lg bg-secondary bg-opacity-10 rounded-circle mb-3">
-                    <i className="ti ti-file-off fs-1 text-secondary"></i>
+                  <div className="avatar avatar-lg bg-gradient rounded-circle mb-3" style={{background: activeTab === 'quiz' ? 'linear-gradient(135deg,#6a11cb,#2575fc)' : 'linear-gradient(135deg,#f7971e,#ffd200)'}}>
+                    <i className={`ti ${activeTab === 'quiz' ? 'ti-puzzle' : 'ti-news'} fs-1 text-white`}></i>
                   </div>
-                  <h5 className={dataTheme === 'dark_data_theme' ? 'text-light' : ''}>No {activeTab === "quiz" ? "quizzes" : "newspapers"} found</h5>
+                  <h5 className={dataTheme === 'dark_data_theme' ? 'text-light' : ''}>
+                    {activeTab === 'quiz' ? 'No Quiz has been uploaded for today!' : 'No Newspaper has been uploaded for today!'}
+                  </h5>
                   <p className={dataTheme === 'dark_data_theme' ? 'text-light' : 'text-muted'}>
-                    {!isStudent && `Click "Add ${activeTab === "quiz" ? "Quiz" : "Newspaper"}" to create your first item`}
+                    {activeTab === 'quiz'
+                      ? 'There are no quizzes available for you today. Please check back tomorrow or ask your teacher!'
+                      : 'There are no newspapers available for you today. Please check back tomorrow or ask your teacher!'}
                   </p>
                 </div>
               ) : (
+                <ConfigProvider
+                  theme={{
+                    algorithm: isDarkMode ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+                  }}
+                >
                 <Table
                   columns={isStudent ? studentColumns : columns}
                   dataSource={filteredItems}
                   rowKey="id"
                   className={dataTheme === 'dark_data_theme' ? 'table-dark' : ''}
                 />
+                </ConfigProvider>
               )}
             </div>
           </div>

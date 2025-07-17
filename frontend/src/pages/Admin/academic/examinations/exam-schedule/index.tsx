@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Table } from "antd";
+import { Table, ConfigProvider, theme as antdTheme } from "antd";
 import { all_routes } from "../../../../../router/all_routes";
 import TooltipOption from "../../../../../core/common/tooltipOption";
 import useMobileDetection from "../../../../../core/common/mobileDetection";
@@ -167,6 +167,11 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
   const [isLoadingViewResultStudents, setIsLoadingViewResultStudents] = useState(false);
   const [isLoadingViewResultStudentResults, setIsLoadingViewResultStudentResults] = useState(false);
   const [viewResultError, setViewResultError] = useState<string>("");
+
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
+  const isDarkMode = dataTheme === 'dark_data_theme';
 
   const fetchSchoolStudentsforresult = async (classid:string) => {
     setIsLoadingSchoolStudents(true);
@@ -357,9 +362,24 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
     }
   }, [modalClassId, localTeacherData]);
 
-  const filteredExams = exams.filter((exam) =>
-    selectedSection ? exam.sectionId === selectedSection : true
-  );
+  // 2. Update filteredExams to include search and sort logic
+  const filteredExams = exams
+    .filter((exam) => {
+      // Filter by section if selected
+      const matchesSection = selectedSection ? exam.sectionId === selectedSection : true;
+      // Search by exam name or subject
+      const matchesSearch = exam.title.toLowerCase().includes(examSearch.toLowerCase()) ||
+        (exam.subjectName || '').toLowerCase().includes(examSearch.toLowerCase());
+      return matchesSection && matchesSearch;
+    })
+    .sort((a, b) => {
+      // Sort by exam name (A-Z or Z-A)
+      if (sortOrder === 'asc') {
+        return a.title.localeCompare(b.title);
+      } else {
+        return b.title.localeCompare(a.title);
+      }
+    });
 
   const modalFilteredExams = allExams.filter((exam) => {
     const matchesClass = modalClassId ? exam.classId === modalClassId : true;
@@ -604,7 +624,6 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
     setResults([]);
     setStudents([]);
     setIsStudentListOpen(false);
-    toast.info("Filters reset");
   };
 
   const addNewContent = () => {
@@ -654,13 +673,18 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
 
     const toastId = toast.loading("Creating exam...");
     try {
-      await createExam(examData);
-      toast.update(toastId, { render: "Exam created successfully!", type: "success", isLoading: false, autoClose: 3000 });
-      fetchExams();
-      setNewContents([{}]);
-      closeModal("add_exam_schedule");
+      const response = await createExam(examData);
+      if (response.status === 200 || response.status === 201) {
+        // Show toast at center
+        toast.success("Exam created", { position: "top-center", autoClose: 3000 });
+        // Refresh the exam list without reloading the page
+        fetchExams(examData.classId);
+        closeModal("add_exam_schedule");
+      } else {
+        toast.error("Failed to create exam");
+      }
     } catch (error) {
-      toast.update(toastId, { render: "Failed to create exam", type: "error", isLoading: false, autoClose: 3000 });
+      toast.error("Failed to create exam");
     }
   };
 
@@ -1200,6 +1224,8 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                   value={selectedClassId}
                   onChange={e => {
                     setSelectedClassId(e.target.value);
+                   
+                    setSelectedSection("");
                   }}
                   disabled={isLoadingExams}
                 >
@@ -1232,7 +1258,7 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
             {/* Action buttons for admin/teacher */}
             {(obj.role === "admin" || obj.role === "teacher") && selectedClassId && (
               <div className="d-flex my-xl-auto right-content align-items-center flex-wrap tw-mb-3">
-                <TooltipOption />
+                {/* <TooltipOption /> */}
                 <div className="mb-2 me-2">
                   <Link
                     to="#"
@@ -1291,7 +1317,7 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
               <div className="card-header d-flex align-items-center justify-content-between flex-wrap pb-0 tw-p-4">
                 <h4 className="mb-3 tw-text-lg sm:tw-text-xl">Exam Schedule</h4>
                 <div className="d-flex align-items-center flex-wrap">
-                  <div className="dropdown mb-3 me-2">
+                  {/* <div className="dropdown mb-3 me-2">
                     <Link
                       to="#"
                       className="btn btn-outline-light bg-white dropdown-toggle tw-text-sm"
@@ -1317,10 +1343,14 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                                   <select
                                     className="form-control tw-text-sm"
                                     value={selectedClassId}
-                                    onChange={(e) => {
+                                    onChange={e => {
                                       setSelectedClassId(e.target.value);
+                                      // Only fetch exams for the new class, do not reset all state
+                                      // No need to clear allExams, exams, results, students, etc. here
+                                      // Section will be reset if class changes
                                       setSelectedSection("");
                                     }}
+                                    disabled={isLoadingExams}
                                   >
                                     <option value="">Select Class</option>
                                     {roleBasedClassOptions.map((opt) => (
@@ -1344,7 +1374,7 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                                     <select
                                       className="form-control tw-text-sm"
                                       value={selectedSection}
-                                      onChange={(e) => setSelectedSection(e.target.value)}
+                                      onChange={e => setSelectedSection(e.target.value)}
                                       disabled={!selectedClassId || isLoadingSections}
                                     >
                                       <option value="">Select Section</option>
@@ -1370,7 +1400,7 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                         </div>
                       </form>
                     </div>
-                  </div>
+                  </div> */}
                   <div className="dropdown mb-3">
                     <Link
                       to="#"
@@ -1382,22 +1412,22 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                     </Link>
                     <ul className="dropdown-menu p-3">
                       <li>
-                        <Link to="#" className="dropdown-item rounded-1 active tw-text-sm">
+                        <Link to="#" className={`dropdown-item rounded-1 tw-text-sm${sortOrder === 'asc' ? ' active' : ''}`} onClick={() => setSortOrder('asc')}>
                           Ascending
                         </Link>
                       </li>
                       <li>
-                        <Link to="#" className="dropdown-item rounded-1 tw-text-sm">
+                        <Link to="#" className={`dropdown-item rounded-1 tw-text-sm${sortOrder === 'desc' ? ' active' : ''}`} onClick={() => setSortOrder('desc')}>
                           Descending
                         </Link>
                       </li>
                       <li>
-                        <Link to="#" className="dropdown-item rounded-1 tw-text-sm">
+                        <Link to="#" className="dropdown-item rounded-1 tw-text-sm" disabled>
                           Recently Viewed
                         </Link>
                       </li>
                       <li>
-                        <Link to="#" className="dropdown-item rounded-1 tw-text-sm">
+                        <Link to="#" className="dropdown-item rounded-1 tw-text-sm" disabled>
                           Recently Added
                         </Link>
                       </li>
@@ -1450,9 +1480,24 @@ const ExamSchedule = ({ teacherdata }: { teacherdata?: TeacherData }) => {
                     </table>
                   </div>
                 ) : filteredExams.length === 0 ? (
-                  <p className="tw-text-center tw-text-gray-500 tw-py-4">No exams available</p>
+                  <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '150px' }}>
+                    <p className="text-center text-muted mb-2" style={{ fontSize: '1.1rem' }}>No exams available</p>
+                    <p className="text-center text-secondary" style={{ fontSize: '0.95rem' }}>Please choose a class</p>
+                  </div>
                 ) : (
-                  <Table columns={columns} dataSource={filteredExams} rowKey="id" scroll={{ x: 900 }} />
+                  <ConfigProvider
+                    theme={{
+                      algorithm: isDarkMode ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+                    }}
+                  >
+                    <Table
+                      columns={columns}
+                      dataSource={filteredExams}
+                      rowKey="id"
+                      pagination={{ pageSize: 10 }}
+                      loading={isLoadingExams || isLoadingTeacher}
+                    />
+                  </ConfigProvider>
                 )}
               </div>
             </div>

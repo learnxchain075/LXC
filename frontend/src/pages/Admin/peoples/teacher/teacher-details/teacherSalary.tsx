@@ -11,6 +11,7 @@ import useMobileDetection from "../../../../../core/common/mobileDetection";
 import { getTeacherById } from "../../../../../services/admin/teacherRegistartion";
 import { useSelector, useDispatch } from "react-redux";
 import { Table } from "antd";
+import type { ColumnType } from "antd/es/table";
 import { getPayrollsByTeacherId } from "../../../../../services/teacher/payrollService";
 import { IPayroll } from "../../../../../services/types/teacher/IPayroll";
 import { setDataTheme } from "../../../../../Store/themeSettingSlice";
@@ -112,75 +113,72 @@ const TeacherSalary = () => {
         : []);
 
   const columns = [
-    // {
-    //   title: "ID",
-    //   dataIndex: "id",
-    //   render: (text: string) => (
-    //     <Link to="#" className="link-primary">
-    //       {text}
-    //     </Link>
-    //   ),
-    //   sorter: (a: any, b: any) => a.id.length - b.id.length,
-    // },
+    // Email column removed
     {
-      title: "Teacher Name",
-      dataIndex: "teacherName",
-      render: (text: string, record: any) => (
-        <span>
-          {record.user?.profilePic && (
-            <img src={record.user.profilePic} alt="profile" style={{ width: 32, height: 32, borderRadius: '50%', marginRight: 8 }} />
-          )}
-          {record.user?.name || "-"}
-        </span>
-      ),
-      sorter: (a: any, b: any) => (a.user?.name || '').localeCompare(b.user?.name || ''),
-    },
-    {
-      title: "Email",
-      dataIndex: "email",
-      render: (_: string, record: any) => record.user?.email || "-",
-      sorter: (a: any, b: any) => (a.user?.email || '').localeCompare(b.user?.email || ''),
-    },
-    {
-      title: "Phone",
+      title: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-phone me-1" />Phone</span>,
       dataIndex: "phone",
-      render: (_: string, record: any) => record.user?.phone || "-",
+      align: 'center' as ColumnType<any>["align"],
+      render: (_: string, record: any) => <span style={{ whiteSpace: 'nowrap' }}>{record.user?.phone || "-"}</span>,
       sorter: (a: any, b: any) => (a.user?.phone || '').localeCompare(b.user?.phone || ''),
     },
     {
-      title: "Salary For",
+      title: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-calendar me-1" />Salary For</span>,
       dataIndex: "Salary_For",
+      align: 'center' as ColumnType<any>["align"],
+      render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text}</span>,
       sorter: (a: any, b: any) => a.Salary_For.length - b.Salary_For.length,
     },
     {
-      title: "Date",
+      title: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-calendar-time me-1" />Date</span>,
       dataIndex: "date",
+      align: 'center' as ColumnType<any>["align"],
+      render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text}</span>,
       sorter: (a: any, b: any) => a.date.length - b.date.length,
     },
     {
-      title: "Payment Method",
+      title: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-credit-card me-1" />Payment Method</span>,
       dataIndex: "Payment_Method",
+      align: 'center' as ColumnType<any>["align"],
+      render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text}</span>,
       sorter: (a: any, b: any) => a.Payment_Method.length - b.Payment_Method.length,
     },
     {
-      title: "Net Salary",
-      dataIndex: "Net_Salary",
-      sorter: (a: any, b: any) => a.Net_Salary - b.Net_Salary,
+      title: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-currency-rupee me-1" />Gross Salary</span>,
+      dataIndex: "Gross_Salary",
+      align: 'center' as ColumnType<any>["align"],
+      render: (_: any, record: any) => <span style={{ whiteSpace: 'nowrap' }}>{record.grossSalary || '-'}</span>,
+      sorter: (a: any, b: any) => (a.grossSalary || 0) - (b.grossSalary || 0),
     },
     {
-      title: "Status",
+      title: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-minus me-1" />Deductions</span>,
+      dataIndex: "Deductions",
+      align: 'center' as ColumnType<any>["align"],
+      render: (_: any, record: any) => <span style={{ whiteSpace: 'nowrap' }}>{record.deductions || '-'}</span>,
+      sorter: (a: any, b: any) => (a.deductions || 0) - (b.deductions || 0),
+    },
+    {
+      title: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-currency-rupee me-1" />Net Salary</span>,
+      dataIndex: "Net_Salary",
+      align: 'center' as ColumnType<any>["align"],
+      render: (_: any, record: any) => <span style={{ whiteSpace: 'nowrap' }}>{record.netSalary || '-'}</span>,
+      sorter: (a: any, b: any) => (a.netSalary || 0) - (b.netSalary || 0),
+    },
+    {
+      title: <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="ti ti-badge me-1" />Status</span>,
       dataIndex: "status",
+      align: 'center' as ColumnType<any>["align"],
       render: (text: string) => (
-        <span className={`badge badge-soft-${text === 'PAID' ? 'success' : text === 'PENDING' ? 'warning' : 'danger'}`}>{text}</span>
+        <span className={`badge bg-${text === 'PAID' ? 'success' : text === 'PENDING' ? 'warning' : 'danger'}`} style={{ whiteSpace: 'nowrap' }}>{text}</span>
       ),
       sorter: (a: any, b: any) => (a.status || '').localeCompare(b.status || ''),
     },
     {
       title: " ",
       dataIndex: "Net_Salary",
+      align: 'center' as ColumnType<any>["align"],
       render: (_: any, record: any) => (
         <Link to="#" className="btn btn-light add-fee">
-          View Payslip
+          <i className="ti ti-file-invoice me-1" />View Payslip
         </Link>
       ),
     },
@@ -188,16 +186,22 @@ const TeacherSalary = () => {
 
   const payrollData = safePayrolls.map((p: any) => ({
     id: p.id,
-    teacherName: p.user?.name || '-',
     email: p.user?.email || '-',
     phone: p.user?.phone || '-',
     user: p.user,
     Salary_For: `${new Date(p.periodStart).toLocaleDateString()} - ${new Date(p.periodEnd).toLocaleDateString()}`,
     date: p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : '-',
     Payment_Method: p.status,
-    Net_Salary: p.netSalary,
+    grossSalary: p.grossSalary,
+    deductions: p.deductions,
+    netSalary: p.netSalary,
     status: p.status,
   }));
+
+  // Calculate summary
+  const totalGross = payrollData.reduce((sum: number, p: any) => sum + (p.grossSalary || 0), 0);
+  const totalDeductions = payrollData.reduce((sum: number, p: any) => sum + (p.deductions || 0), 0);
+  const totalNet = payrollData.reduce((sum: number, p: any) => sum + (p.netSalary || 0), 0);
 
   // Update SkeletonPlaceholder to accept style prop
   const SkeletonPlaceholder = ({ className = "", style = {} }: { className?: string; style?: React.CSSProperties }) => (
@@ -317,13 +321,23 @@ const TeacherSalary = () => {
                         <h4 className="mb-3">Salary History</h4>
                       </div>
                       <div className={"card-body p-0 py-3" + (isDark ? " bg-dark text-light" : "") }>
-                        {/* Payroll List */}
                         <Table
                           dataSource={payrollData as any}
                           columns={columns}
                           loading={loading}
                           rowKey="id"
                           className={isDark ? "table-dark" : ""}
+                          pagination={{ pageSize: 5 }}
+                          bordered
+                          summary={pageData => (
+                            <Table.Summary.Row>
+                              <Table.Summary.Cell index={0} colSpan={5}><b>Totals</b></Table.Summary.Cell>
+                              <Table.Summary.Cell index={1}><b>{totalGross}</b></Table.Summary.Cell>
+                              <Table.Summary.Cell index={2}><b>{totalDeductions}</b></Table.Summary.Cell>
+                              <Table.Summary.Cell index={3}><b>{totalNet}</b></Table.Summary.Cell>
+                              <Table.Summary.Cell index={4} colSpan={2}></Table.Summary.Cell>
+                            </Table.Summary.Row>
+                          )}
                         />
                         {loading && (
                           <div className="placeholder-glow">
@@ -359,7 +373,6 @@ const TeacherSalary = () => {
                               ))}
                           </div>
                         )}
-                        {/* /Payroll List */}
                       </div>
                     </div>
                   </div>

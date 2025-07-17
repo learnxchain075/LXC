@@ -124,6 +124,7 @@ const TeacherLeave = () => {
   const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
   const user = useSelector((state: any) => state.auth.userObj);
   const isDark = dataTheme === "dark_data_theme";
+  const isDarkMode = dataTheme === 'dark_data_theme';
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -572,12 +573,12 @@ const TeacherLeave = () => {
       setExistingAttendance({});
       return;
     }
-    console.log('Current students array:', students);
+    ////console.log('Current students array:', students);
     const normalizeDate = (d: string | Date) => new Date(d).toISOString().split("T")[0];
     const map: { [studentId: string]: any } = {};
     students.forEach((student) => {
       if (!Array.isArray(student.attendances)) {
-        console.warn('Student missing attendances array:', student);
+        ////console.warn('Student missing attendances array:', student);
         return;
       }
       const found = student.attendances.find(
@@ -589,7 +590,7 @@ const TeacherLeave = () => {
         map[student.id] = found;
       }
     });
-    console.log('existingAttendance map:', map);
+    ////console.log('existingAttendance map:', map);
     setExistingAttendance(map);
     setStudents((prev) => prev.map((student) => {
       const marked = map[student.id];
@@ -729,16 +730,16 @@ const TeacherLeave = () => {
   
   // const handleFilterClassClick = useCallback((classData: any) => {
   //   if (!classData || !classData.id) {
-  //     console.error("Invalid class data for filter:", classData);
+  //     //console.error("Invalid class data for filter:", classData);
   //     return;
   //   }
-  //   console.log("Filter class selected:", classData);
+  //   //console.log("Filter class selected:", classData);
   //   setFilterFormData((prev) => ({ ...prev, classId: classData.id, sectionId: "" }));
   //   setFilterErrors({});
   // }, []);
 
   // const handleFilterSectionClick = useCallback((sectionId: string) => {
-  //   console.log("Filter section selected:", sectionId);
+  //   //console.log("Filter section selected:", sectionId);
   //   setFilterFormData((prev) => ({ ...prev, sectionId }));
   //   setFilterErrors((prevErrors) => ({ ...prevErrors, sectionId: undefined }));
   // }, []);
@@ -877,10 +878,40 @@ const TeacherLeave = () => {
     }
     setSavingAttendance(true);
     try {
+      const anyPresent = students.some((student) => student.attendance === "Present");
+      const anyAbsent = students.some((student) => student.attendance === "Absent");
+      let updatedStudents;
+      if (anyPresent && !anyAbsent) {
+        updatedStudents = students.map((student) => {
+          if (!student.attendance) {
+            return { ...student, attendance: "Absent", present: false, absent: true };
+          }
+          return student;
+        });
+      } else if (anyAbsent && !anyPresent) {
+        updatedStudents = students.map((student) => {
+          if (!student.attendance) {
+            return { ...student, attendance: "Present", present: true, absent: false };
+          }
+          return student;
+        });
+      } else if (anyPresent && anyAbsent) {
+        updatedStudents = students.map((student) => {
+          if (!student.attendance) {
+            return { ...student, attendance: "Present", present: true, absent: false };
+          }
+          return student;
+        });
+      } else {
+        toast.error('Please mark at least one student as Present or Absent');
+        setSavingAttendance(false);
+        return;
+      }
+
       const targetStudents =
         selectedRowKeys.length > 0
-          ? students.filter((s) => selectedRowKeys.includes(s.key))
-          : students;
+          ? updatedStudents.filter((s) => selectedRowKeys.includes(s.key))
+          : updatedStudents;
       if (targetStudents.length >= 2) {
         const attendancePayload: IAttendancePayload = {
           lessonId: addFormData.status,
@@ -1081,18 +1112,18 @@ const TeacherLeave = () => {
       ),
       sorter: (a: any, b: any) => a.notes.length - b.notes.length,
     },
-    {
-      title: "Action",
-      dataIndex: "action",
-      render: (_: any, record: any) => (
-        <button
-          className="btn btn-outline-info btn-sm"
-          onClick={() => handleViewStudentAttendance(record)}
-        >
-          View Attendance
-        </button>
-      ),
-    },
+    // {
+    //   title: "Action",
+    //   dataIndex: "action",
+    //   render: (_: any, record: any) => (
+    //     <button
+    //       className="btn btn-outline-info btn-sm"
+    //       onClick={() => handleViewStudentAttendance(record)}
+    //     >
+    //       View Attendance
+    //     </button>
+    //   ),
+    // },
   ];
 
   const studentLeaveRequestColumns = [
@@ -1405,6 +1436,9 @@ const TeacherLeave = () => {
                     </div>
                   </div>
                   <div className="tab-pane fade" id="teacher_attendance">
+                    <div className="mb-2">
+                      <Link to={routes.markFaceAttendance} className="btn btn-sm btn-primary">Mark Face Attendance</Link>
+                    </div>
                     <div className="card flex-fill mb-3">
                       <div className="card-header d-flex align-items-center justify-content-between flex-wrap p-2 pb-1">
                         <h4 className="mb-2">Attendance</h4>
@@ -1916,7 +1950,7 @@ const TeacherLeave = () => {
                             dataSource={studentLeaveRequests || []}
                             columns={studentLeaveRequestColumns}
                             rowKey="id"
-                            className={isDark ? "table table-dark" : "table table-light"}
+                            className={isDarkMode ? "table table-dark" : "table table-light"}
                             rowClassName={(record) => {
                               if (record.status === "APPROVED") return "table-success";
                               if (record.status === "REJECTED") return "table-danger";

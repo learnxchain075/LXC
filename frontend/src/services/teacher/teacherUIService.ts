@@ -39,63 +39,9 @@ export const getTeacherUILeaveBalances = async () => {
   }
 };
 
-// Teacher UI Attendance Stats - using actual backend endpoint
-export const getTeacherUIAttendanceStats = async () => {
-  try {
-    const teacherId = getTeacherId();
-    if (!teacherId) {
-      throw new Error("Teacher ID not found");
-    }
-    
-    // This endpoint doesn't exist, return mock data for now
-    return {
-      status: 200,
-      data: {
-        attendanceRate: 85,
-        totalDays: 20,
-        presentDays: 17,
-        absentDays: 2,
-        lateDays: 1,
-        currentMonth: {
-          present: 15,
-          absent: 2,
-          late: 1
-        }
-      }
-    };
-  } catch (error) {
-    console.error("Error fetching teacher attendance stats:", error);
-    throw error;
-  }
-};
 
 // Teacher UI Today Attendance - using actual backend endpoint
-export const getTeacherUITodayAttendance = async () => {
-  try {
-    const teacherId = getTeacherId();
-    if (!teacherId) {
-      throw new Error("Teacher ID not found");
-    }
-    
-    // This endpoint doesn't exist, return mock data for now
-    return {
-      status: 200,
-      data: {
-        id: "att1",
-        teacherId,
-        date: new Date().toISOString(),
-        checkIn: null,
-        checkOut: null,
-        status: "PRESENT" as const,
-        location: "School Campus",
-        notes: "No attendance marked yet"
-      }
-    };
-  } catch (error) {
-    console.error("Error fetching teacher today attendance:", error);
-    throw error;
-  }
-};
+
 
 // Teacher UI Student Leave Requests - using actual backend endpoint
 export const getTeacherUIStudentLeaveRequests = async () => {
@@ -147,7 +93,7 @@ export const markTeacherUIFaceAttendance = async (faceAttendanceData: any) => {
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result as string;
-        // Try with and without the prefix
+      
         // const base64 = result.split(',')[1];
         resolve(result); // send full data URL for debugging
       };
