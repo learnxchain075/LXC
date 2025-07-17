@@ -7,6 +7,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { all_routes } from "../../router/all_routes";
 import useMobileDetection from "../../core/common/mobileDetection";
 import { getClassesByTeacherId, getAllStudentsInAclass } from "../../services/teacher/classServices";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
+
 
 interface Class {
   id: string;
@@ -72,7 +74,7 @@ const MyClassesWithStudents = () => {
       const teacherId = user?.teacherId || localStorage.getItem("teacherId") || user?.id || "";
       
       if (!teacherId) {
-        toast.error("Teacher ID not found. Please login again.", { autoClose: 3000 });
+        // toast.error("Teacher ID not found. Please login again.", { autoClose: 3000 });
         setClassList([]);
         return;
       }
@@ -96,7 +98,7 @@ const MyClassesWithStudents = () => {
       }
       
       if (!Array.isArray(classesData)) {
-        toast.error("Invalid classes data format received", { autoClose: 3000 });
+        // toast.error("Invalid classes data format received", { autoClose: 3000 });
         setClassList([]);
         return;
       }
@@ -117,13 +119,13 @@ const MyClassesWithStudents = () => {
       setClassList(processedClasses);
       
       if (processedClasses.length === 0) {
-        toast.info("No classes assigned to you yet.", { autoClose: 3000 });
+        // toast.info("No classes assigned to you yet.", { autoClose: 3000 });
       } else {
-        toast.success(`Loaded ${processedClasses.length} classes successfully`, { autoClose: 2000 });
+        // toast.success(`Loaded ${processedClasses.length} classes successfully`, { autoClose: 2000 });
       }
       
     } catch (error: any) {
-      toast.error("Failed to load classes. Please try again.", { autoClose: 3000 });
+      // toast.error("Failed to load classes. Please try again.", { autoClose: 3000 });
       setClassList([]);
     } finally {
       setIsLoadingClasses(false);
@@ -154,7 +156,7 @@ const MyClassesWithStudents = () => {
         }
         
         if (!Array.isArray(studentsData)) {
-          toast.error("Invalid students data format received", { autoClose: 3000 });
+          // toast.error("Invalid students data format received", { autoClose: 3000 });
           return [];
         }
         
@@ -182,14 +184,14 @@ const MyClassesWithStudents = () => {
           });
         
         if (students.length === 0) {
-          toast.info("No students found for this class", { autoClose: 3000 });
+          // toast.info("No students found for this class", { autoClose: 3000 });
         } else {
-          toast.success(`Loaded ${students.length} students successfully`, { autoClose: 2000 });
+          // toast.success(`Loaded ${students.length} students successfully`, { autoClose: 2000 });
         }
         
         return students;
       } catch (error: any) {
-        toast.error("Failed to load students. Please try again.", { autoClose: 3000 });
+        // toast.error("Failed to load students. Please try again.", { autoClose: 3000 });
         return [];
       } finally {
         setIsLoadingStudents(false);
@@ -207,13 +209,14 @@ const MyClassesWithStudents = () => {
       const selected = classList.find((cls) => cls.id === classId);
       if (selected) {
         if (!selected.students) {
-          const students = await fetchStudents(classId);
-          setClassList((prev) =>
-            prev.map((cls) =>
-              cls.id === classId ? { ...cls, students } : cls
-            )
-          );
-          setSelectedClass({ ...selected, students });
+          fetchStudents(classId).then(students => {
+            setClassList((prev) =>
+              prev.map((cls) =>
+                cls.id === classId ? { ...cls, students } : cls
+              )
+            );
+            setSelectedClass({ ...selected, students });
+          });
         } else {
           setSelectedClass(selected);
         }
@@ -428,19 +431,12 @@ const MyClassesWithStudents = () => {
 
   return (
     <div className={isMobile ? "page-wrapper" : "pt-4"}>
-      <ToastContainer position="top-center" autoClose={3000} />
       <div className="content">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
         </div>
         
         {isLoadingClasses ? (
-          <div className={`rounded-lg shadow p-8 text-center ${isDark ? "bg-gray-800" : "bg-white"}`}>
-            <div className="spinner-border text-primary mb-3" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-            <h5 className={`${isDark ? "text-gray-100" : "text-gray-800"}`}>Loading Classes...</h5>
-            <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>Please wait while we fetch your class information.</p>
-          </div>
+          <LoadingSkeleton type="card" />
         ) : (
           <>
             <div
@@ -538,12 +534,7 @@ const MyClassesWithStudents = () => {
                           </span>
                         ),
                         children: isLoadingStudents ? (
-                          <div className="text-center py-8">
-                            <div className="spinner-border text-primary mb-3" role="status">
-                              <span className="visually-hidden">Loading...</span>
-                            </div>
-                            <p className={`${isDark ? "text-gray-400" : "text-gray-600"}`}>Loading students...</p>
-                          </div>
+                          <LoadingSkeleton type="card" />
                         ) : (
                           <Table
                             className={isDark ? "table table-dark" : "table table-light"}

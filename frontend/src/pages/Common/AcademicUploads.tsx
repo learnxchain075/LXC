@@ -20,6 +20,8 @@ import { getLessonByteacherId } from "../../services/teacher/lessonServices";
 import { AxiosResponse } from "axios";
 import { Iassignment } from "../../services/types/teacher/assignmentService";
 import { createAssignment, deleteAssignment, getAssignments, updateAssignment, getAssignmentById } from "../../services/teacher/assignmentServices";
+import LoadingSkeleton from "../../components/LoadingSkeleton";
+
 
 const MAX_SIZE_MB = 5;
 
@@ -78,6 +80,8 @@ interface Pyq {
     fileName: string;
     fileSize: string;
     classId: string;
+    question: string;
+    solution: string;
 }
 
 interface Homework {
@@ -166,16 +170,21 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
         try {
             const teacherId = user?.teacherId || localStorage.getItem("teacherId") || user?.id || "";
             if (!teacherId) {
-                toast.error("Teacher ID not found", { autoClose: 3000 });
+                // toast.error("Teacher ID not found", { autoClose: 3000 });
                 return;
             }
-
             const response = await getLessonByteacherId(teacherId);
+            let lessonsArr: Lesson[] = [];
             if (response?.data) {
-                setLessons(response.data);
+                if (Array.isArray(response.data)) {
+                    lessonsArr = response.data as Lesson[];
+                } else if (typeof response.data === 'object') {
+                    lessonsArr = [response.data as Lesson];
+                }
             }
+            setLessons(lessonsArr);
         } catch (error) {
-            toast.error("Failed to load lessons", { autoClose: 3000 });
+            // toast.error("Failed to load lessons", { autoClose: 3000 });
         }
     }, [user]);
 
@@ -199,7 +208,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             const teacherId = user?.teacherId || localStorage.getItem("teacherId") || user?.id || "";
             
             if (!teacherId) {
-                toast.error("Teacher ID not found. Please login again.", { autoClose: 3000 });
+                // toast.error("Teacher ID not found. Please login again.", { autoClose: 3000 });
                 setClassList([]);
                 return;
             }
@@ -229,7 +238,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             
             // Ensure classesData is an array before mapping
             if (!Array.isArray(classesData)) {
-                toast.error("Invalid classes data format received", { autoClose: 3000 });
+                // toast.error("Invalid classes data format received", { autoClose: 3000 });
                 setClassList([]);
                 return;
             }
@@ -247,12 +256,12 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             setClassList(processedClasses);
             
             if (processedClasses.length === 0) {
-                toast.info("No classes assigned to you yet.", { autoClose: 3000 });
+                // toast.info("No classes assigned to you yet.", { autoClose: 3000 });
             } else {
-                toast.success(`Successfully loaded ${processedClasses.length} classes`, { autoClose: 2000 });
+                // toast.success(`Successfully loaded ${processedClasses.length} classes`, { autoClose: 2000 });
             }
         } catch (error: any) {
-            toast.error("Failed to load classes. Please try again.", { autoClose: 3000 });
+            // toast.error("Failed to load classes. Please try again.", { autoClose: 3000 });
             setClassList([]);
         } finally {
             setLoading(false);
@@ -301,7 +310,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                 }));
             
             if (filteredStudents.length > 0) {
-                toast.success(`Successfully loaded ${filteredStudents.length} students`, { autoClose: 2000 });
+              //  toast.success(`Successfully loaded ${filteredStudents.length} students`, { autoClose: 2000 });
             }
             
             return filteredStudents;
@@ -325,13 +334,18 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
     const fetchPyqData = useCallback(async (classId: string) => {
         try {
             const response = await getPyqsByClassId(classId);
-            const data = Array.isArray(response.data) ? response.data : response.data?.data || [];
-            setPyqData(data);
-            if (data.length > 0) {
-                toast.success(`Successfully loaded ${data.length} PYQ files`, { autoClose: 2000 });
+            //////console.log('Raw API response:', response);
+            let data: Pyq[] = [];
+            if (Array.isArray(response.data)) {
+                data = response.data;
+            } else if (response.data && Array.isArray(response.data.data)) {
+                data = response.data.data;
+            } else {
+                data = [];
             }
+            setPyqData(data);
+            //////console.log('PYQ API Response:', data);
         } catch (error) {
-            toast.error("Failed to load PYQ data", { autoClose: 3000 });
             setPyqData([]);
         }
     }, []);
@@ -354,7 +368,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             
             // Ensure assignmentData is an array before filtering
             if (!Array.isArray(assignmentData)) {
-                toast.error("Invalid assignment data format received", { autoClose: 3000 });
+                // toast.error("Invalid assignment data format received", { autoClose: 3000 });
                 setAssignmentData([]);
                 return;
             }
@@ -363,10 +377,10 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             setAssignmentData(filteredAssignments);
             
             if (filteredAssignments.length > 0) {
-                toast.success(`Successfully loaded ${filteredAssignments.length} assignments`, { autoClose: 2000 });
+                // toast.success(`Successfully loaded ${filteredAssignments.length} assignments`, { autoClose: 2000 });
             }
         } catch (error) {
-            toast.error("Failed to load assignments", { autoClose: 3000 });
+            // toast.error("Failed to load assignments", { autoClose: 3000 });
             setAssignmentData([]);
         }
     }, []);
@@ -496,62 +510,43 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
         
         try {
             setLoading(true);
-                
-    for (let i = 0; i < validFiles.length; i++) {
-      const content = validFiles[i];
-                
+            for (let i = 0; i < validFiles.length; i++) {
+                const content = validFiles[i];
                 const formData = new FormData();
-                
-                // Add question file (required)
                 if (content.question) {
                     formData.append("question", content.question);
-          
                 } else {
-          
                     toast.error("Question file is required", { autoClose: 3000 });
                     continue;
                 }
-                
-                // Add solution file (required)
                 if (content.solution) {
                     formData.append("solution", content.solution);
                 } else {
                     toast.error("Solution file is required", { autoClose: 3000 });
                     continue;
                 }
-                
-                // Add string fields for backend validation (these will be in req.body)
                 formData.append("question", content.question ? content.question.name : "");
                 formData.append("solution", content.solution ? content.solution.name : "");
-                
-                // Add other required fields
                 formData.append("subjectId", content.subjectId);
                 formData.append("classId", selectedClass!.id);
                 formData.append("uploaderId", content.uploaderId);
                 formData.append("topic", content.topic);
-                
-                console.log("Uploading PYQ with formData:", {
-                    subjectId: content.subjectId,
-                    classId: selectedClass!.id,
-                    uploaderId: content.uploaderId,
-                    topic: content.topic,
-                    questionFile: content.question?.name,
-                    solutionFile: content.solution?.name
-                });
-                
-                
+                ////console.log("Uploading PYQ with formData:", {
+                //     subjectId: content.subjectId,
+                //     classId: selectedClass!.id,
+                //     uploaderId: content.uploaderId,
+                //     topic: content.topic,
+                //     questionFile: content.question?.name,
+                //     solutionFile: content.solution?.name
+                // });
                 const response = await createPYQ(formData);
-        
-                
+                ////console.log('PYQ Create API Response:', response);
                 toast.success(`File ${i + 1} uploaded successfully!`, { autoClose: 2000 });
             }
-            
             setTimeout(() => {
                 closeModal("add_pyq_upload");
             }, 100);
             toast.success("All PYQ files uploaded successfully! 🎉", { autoClose: 3000 });
-            
-            // Reset form
             setNewPyqContents([{
                 question: null,
                 solution: null,
@@ -559,13 +554,9 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                 topic: "",
                 uploaderId: localStorage.getItem("userId") ?? "",
             }]);
-            
-            // Refresh PYQ data
             if (selectedClass?.id) {
-        
                 await fetchPyqData(selectedClass.id);
             }
-            
         } catch (error: any) {
             toast.error("Upload failed. Please check your files and try again.", { autoClose: 4000 });
         } finally {
@@ -810,19 +801,49 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
             sorter: (a: Pyq, b: Pyq) => (a.subject || "").localeCompare(b.subject || ""),
         },
         {
-            title: "File Name",
-            dataIndex: "fileName",
-            render: (text: string) => <span className="text-muted">{text || "N/A"}</span>,
-            sorter: (a: Pyq, b: Pyq) => (a.fileName || "").localeCompare(b.fileName || ""),
+            title: "Question",
+            dataIndex: "question",
+            render: (url: string) =>
+                url ? (
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline-primary btn-sm"
+                    >
+                        <i className="ti ti-eye me-1"></i>
+                        View
+                    </a>
+                ) : (
+                    <span className="text-muted">No file</span>
+                ),
         },
         {
-            title: "File Size",
-            dataIndex: "fileSize",
-            sorter: (a: Pyq, b: Pyq) => {
-                const getSizeInKB = (size: string) => parseFloat(size?.replace("KB", "") || "0");
-                return getSizeInKB(a.fileSize) - getSizeInKB(b.fileSize);
-            },
+            title: "Solution",
+            dataIndex: "solution",
+            render: (url: string) =>
+                url ? (
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline-success btn-sm"
+                    >
+                        <i className="ti ti-eye me-1"></i>
+                        View
+                    </a>
+                ) : (
+                    <span className="text-muted">No file</span>
+                ),
         },
+        // {
+        //     title: "File Size",
+        //     dataIndex: "fileSize",
+        //     sorter: (a: Pyq, b: Pyq) => {
+        //         const getSizeInKB = (size: string) => parseFloat(size?.replace("KB", "") || "0");
+        //         return getSizeInKB(a.fileSize) - getSizeInKB(b.fileSize);
+        //     },
+        // },
         {
             title: "Action",
             dataIndex: "action",
@@ -840,18 +861,35 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                         <li>
                             <a
                                 className="dropdown-item rounded-1"
-                                href={`/files/${record.fileName}`}
+                                href={record.question}
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
                                 <i className="ti ti-eye me-2" />
-                                View
+                                View Question
                             </a>
                         </li>
                         <li>
-                            <a className="dropdown-item rounded-1" href={`/download/${record.id}`}>
+                            <a
+                                className="dropdown-item rounded-1"
+                                href={record.solution}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <i className="ti ti-eye me-2" />
+                                View Solution
+                            </a>
+                        </li>
+                        <li>
+                            <a className="dropdown-item rounded-1" href={record.question} download>
                                 <i className="ti ti-download me-2" />
-                                Download
+                                Download Question
+                            </a>
+                        </li>
+                        <li>
+                            <a className="dropdown-item rounded-1" href={record.solution} download>
+                                <i className="ti ti-download me-2" />
+                                Download Solution
                             </a>
                         </li>
                         <li>
@@ -951,21 +989,20 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
         {
             title: "Attachment",
             dataIndex: "attachment",
-            render: (text: string) => (
-                text ? (
-                    <a 
-                        href={text} 
-                        target="_blank" 
+            render: (url: string) =>
+                url ? (
+                    <a
+                        href={url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-outline-primary btn-sm"
                     >
-                        <i className="ti ti-download me-1"></i>
+                        <i className="ti ti-eye me-1"></i>
                         View
                     </a>
                 ) : (
                     <span className="text-muted">No file</span>
-                )
-            ),
+                ),
         },
         {
             title: "Action",
@@ -1033,10 +1070,15 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
         {
             title: "View Attachment",
             dataIndex: "attachment",
-            render: (text: string, record: Homework) =>
-                text ? (
-                    <a href={text} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm">
-                        <i className="ti ti-download me-1"></i>
+            render: (url: string, record: Homework) =>
+                url ? (
+                    <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline-primary btn-sm"
+                    >
+                        <i className="ti ti-eye me-1"></i>
                         View
                     </a>
                 ) : (
@@ -1231,7 +1273,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                             <h3 className="page-title mb-1">Academic Uploads</h3>
                         </div>
                         <div className="d-flex my-xl-auto right-content align-items-center flex-wrap">
-                            <TooltipOption />
+                            {/* <TooltipOption /> */}
                             {(user.role === "admin" || user.role === "teacher") && selectedClass && (
                                 <>
                                     <div className="mb-2 me-2">
@@ -1297,9 +1339,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                         <div className="card-body p-0">
                             {loading ? (
                                 <div className="text-center p-4">
-                                    <div className="spinner-border text-primary" role="status">
-                                        <span className="visually-hidden">Loading...</span>
-                                    </div>
+                                    <LoadingSkeleton type="card" />
                                     <p className="mt-2 text-muted">Loading classes...</p>
                                 </div>
                             ) : classList.length === 0 ? (
@@ -1501,9 +1541,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                             key: "pyq",
                                             children: loading ? (
                                                 <div className="text-center p-4">
-                                                    <div className="spinner-border text-primary" role="status">
-                                                        <span className="visually-hidden">Loading...</span>
-                                                    </div>
+                                                    <LoadingSkeleton type="card" />
                                                     <p className="mt-2 text-muted">Loading PYQ data...</p>
                                                 </div>
                                             ) : pyqData.length === 0 ? (
@@ -1531,9 +1569,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                             key: "assignment",
                                             children: loading ? (
                                                 <div className="text-center p-4">
-                                                    <div className="spinner-border text-primary" role="status">
-                                                        <span className="visually-hidden">Loading...</span>
-                                                    </div>
+                                                    <LoadingSkeleton type="card" />
                                                     <p className="mt-2 text-muted">Loading assignments...</p>
                                                 </div>
                                             ) : assignmentData.length === 0 ? (
@@ -1561,9 +1597,7 @@ const AcademicUploads: React.FC<AcademicUploadsProps> = ({ teacherdata }: Academ
                                             key: "homework",
                                             children: loading ? (
                                                 <div className="text-center p-4">
-                                                    <div className="spinner-border text-primary" role="status">
-                                                        <span className="visually-hidden">Loading...</span>
-                                                    </div>
+                                                    <LoadingSkeleton type="card" />
                                                     <p className="mt-2 text-muted">Loading homework...</p>
                                                 </div>
                                             ) : homeworkData.length === 0 ? (

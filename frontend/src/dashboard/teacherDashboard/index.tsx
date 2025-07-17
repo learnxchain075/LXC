@@ -713,9 +713,9 @@ const TeacherDashboard = () => {
             ) : (
               <>
                 <TeacherBreadcrumb />
-                <div className="mb-2">
+                {/* <div className="mb-2">
                   <Link to={all_routes.markFaceAttendance} className="btn btn-sm btn-primary">Mark Face Attendance</Link>
-                </div>
+                </div> */}
               </>
             )}
             {/* Teacher Information */}
