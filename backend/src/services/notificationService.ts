@@ -1,9 +1,9 @@
-import { prisma } from '../prismaClient';
-import { replacePlaceholders } from '../utils/templateEngine';
-import { sendEmail } from './emailService';
-import { sendSMS } from './smsService';
-import { sendWhatsApp } from './whatsappService';
-import { NotificationType, NotificationStatus } from '@prisma/client';
+import { prisma } from "../../../notification-system/prismaClient";
+import { replacePlaceholders } from "../utils/templateEngine";
+import { sendEmail } from "./emailService";
+import { sendSMS } from "./smsService";
+import { sendWhatsApp } from "./whatsappService";
+import { NotificationType, NotificationStatus } from "@prisma/client";
 
 interface SendManualInput {
   templateId: string;
@@ -17,22 +17,19 @@ export async function sendManualNotification(input: SendManualInput) {
   const template = await prisma.notificationTemplate.findFirst({
     where: {
       id: input.templateId,
-      OR: [
-        { schoolId: input.schoolId },
-        { schoolId: null }
-      ]
-    }
+      OR: [{ schoolId: input.schoolId }, { schoolId: null }],
+    },
   });
-  if (!template) throw new Error('Template not found');
+  if (!template) throw new Error("Template not found");
 
   const channel = await prisma.notificationChannel.findFirst({
     where: {
       schoolId: input.schoolId,
       type: template.type,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
-  if (!channel) throw new Error('No active channel');
+  if (!channel) throw new Error("No active channel");
 
   const message = replacePlaceholders(template.content, input.data);
 
@@ -85,18 +82,15 @@ export async function triggerNotification(input: TriggerInput) {
     where: {
       triggerEvent: input.triggerEvent,
       isAutomated: true,
-      OR: [
-        { schoolId: input.schoolId },
-        { schoolId: null }
-      ]
-    }
+      OR: [{ schoolId: input.schoolId }, { schoolId: null }],
+    },
   });
   if (!template) return;
   await sendManualNotification({
     templateId: template.id,
     recipients: [input.data.recipient],
     data: input.data,
-    userId: 'system',
-    schoolId: input.schoolId
+    userId: "system",
+    schoolId: input.schoolId,
   });
 }
