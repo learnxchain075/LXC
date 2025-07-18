@@ -1520,3 +1520,15 @@ body.app-chat {
     opacity: 1;
   }
 }
+
+// Custom dark mode for Chat Bot modal
+.lxc-chatbot-modal-dark .modal-content {
+  background: #23272e !important;
+  border: none !important;
+  box-shadow: 0 0 32px 8px rgba(102, 126, 234, 0.18), 0 2px 24px 0 rgba(0,0,0,0.45) !important;
+  /* Soft blue glow and subtle shadow for visibility */
+}
+
+.lxc-chatbot-modal-dark .modal-header {
+  border: none !important;
+}

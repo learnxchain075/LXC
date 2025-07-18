@@ -203,3 +203,15 @@ export const updateTeacherAssignment = async (assignmentId: string, data: any): 
 export const deleteTeacherAssignment = async (assignmentId: string): Promise<AxiosResponse<any>> => {
   return await BaseApi.deleteRequest(`/teacher/assign-teacher/${assignmentId}`);
 };
+
+/**
+ * ✅ Get Class (and Subjects) of a Student by Student ID
+ * @param studentId - Student ID
+ * @returns AxiosResponse<any>
+ */
+export const getClassOfStudent = async (
+  studentId: string
+): Promise<AxiosResponse<any>> => {
+  
+  return await BaseApi.getRequest(`/student/${studentId}/students`);
+};
