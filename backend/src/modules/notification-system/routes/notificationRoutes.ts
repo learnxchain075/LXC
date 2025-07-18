@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { authenticate } from "../../../../../notification-system/middleware/auth";
-import { isSuperAdmin, isSchoolAdmin } from "../../../../../notification-system/middleware/roleCheck";
+
 import {
   createTemplate,
   getTemplates,
@@ -9,14 +8,15 @@ import {
   sendNotification,
   trigger,
 } from "../controllers/notificationController";
+import { isSchoolAdmin, isSuperAdmin } from "../../../middlewares/roleCheck";
 
 const router = Router();
 
-router.post("/api/notification/template", authenticate, isSuperAdmin, createTemplate);
-router.get("/api/notification/template", authenticate, getTemplates);
-router.post("/api/notification/channel", authenticate, isSchoolAdmin, createChannel);
-router.get("/api/notification/logs", authenticate, isSuperAdmin, getLogs);
-router.post("/api/notification/send", authenticate, sendNotification);
-router.post("/api/notification/trigger", trigger);
+router.post("/notification/template", isSuperAdmin, createTemplate);
+router.get("/notification/template",  getTemplates);
+router.post("/notification/channel",  isSchoolAdmin, createChannel);
+router.get("/notification/logs",  isSuperAdmin, getLogs);
+router.post("/notification/send",  sendNotification);
+router.post("/notification/trigger", trigger);
 
 export default router;

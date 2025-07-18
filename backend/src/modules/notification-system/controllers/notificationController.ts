@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../../../../../notification-system/prismaClient";
+import { prisma } from "../../../db/prisma";
 import { sendManualNotification, triggerNotification } from "../../../services/notificationService";
 
 export const createTemplate = async (req: Request, res: Response) => {

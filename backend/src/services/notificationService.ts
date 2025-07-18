@@ -1,9 +1,10 @@
-import { prisma } from "../../../notification-system/prismaClient";
+
 import { replacePlaceholders } from "../utils/templateEngine";
 import { sendEmail } from "./emailService";
 import { sendSMS } from "./smsService";
 import { sendWhatsApp } from "./whatsappService";
-import { NotificationType, NotificationStatus } from "@prisma/client";
+import { NotificationType, NotificationStatus, NotificationTrigger } from "@prisma/client";
+import { prisma } from "../db/prisma";
 
 interface SendManualInput {
   templateId: string;
@@ -72,7 +73,7 @@ export async function sendManualNotification(input: SendManualInput) {
 }
 
 interface TriggerInput {
-  triggerEvent: string;
+  triggerEvent: NotificationTrigger;
   schoolId: string;
   data: Record<string, any>;
 }

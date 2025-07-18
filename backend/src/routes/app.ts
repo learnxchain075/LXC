@@ -112,6 +112,7 @@ import inventoryRoutes from "../modules/admin/routes/dashboard/hrm/inventory/inv
 import DashboardHomeRoutes from "./DashboardHomeRoutes/DashboardHomeRoutes";
 import subscriptionRoutes from "../modules/superadmin/routes/dashboard/subscriptionRoutes";
 import gpsRoutes from "../modules/driver/routes/gps.routes";
+import notificationRoutes from "../modules/notification-system/routes/notificationRoutes";
 
 // Create a main API router
 const apiRouter = express.Router();
@@ -237,5 +238,10 @@ apiRouter.use(studentDetailsRoutes);
 apiRouter.use(idCardRoutes);
 
 apiRouter.use(gpsRoutes);
+
+
+// Notification System
+
+apiRouter.use(notificationRoutes);
 
 export default apiRouter;
