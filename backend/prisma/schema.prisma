@@ -81,6 +81,12 @@ model School {
   invoiceCounters InvoiceCounter[]
 
   FeeGroup FeeGroup[]
+
+  NotificationLog NotificationLog[]
+
+  NotificationChannel NotificationChannel[]
+
+  NotificationTemplate NotificationTemplate[]
 }
 
 // ***********************************************HRM Models************************************************
@@ -305,6 +311,8 @@ model User {
   GitHubToken GitHubToken[]
 
   OtpToken OtpToken[]
+
+  Driver Driver[]
 }
 
 model PasswordResetToken {
@@ -1389,11 +1397,16 @@ model Bus {
 }
 
 model Driver {
-  id                String           @id @default(cuid())
-  name              String
-  license           String           @unique
-  busId             String           @map("bus_id")
-  bus               Bus              @relation(fields: [busId], references: [id], onDelete: Cascade)
+  id         String @id @default(cuid())
+  currentLat Float? @map("current_lat") // ✅ Add this
+  currentLng Float? @map("current_lng")
+  license    String @unique
+  busId      String @map("bus_id")
+  bus        Bus    @relation(fields: [busId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   schoolId          String           @map("school_id")
   school            School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   createdAt         DateTime         @default(now()) @map("created_at")
@@ -2473,4 +2486,69 @@ model OtpToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+
+
+// SNS
+
+
+
+model NotificationTemplate {
+  id            String   @id @default(cuid())
+  schoolId      String?  // null = global
+  name          String
+  type          NotificationType
+  content       String
+  isAutomated   Boolean  @default(false)
+  triggerEvent  NotificationTrigger?
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  school        School? @relation(fields: [schoolId], references: [id])
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum NotificationTrigger {
+  STUDENT_ABSENT
+  FEE_PAID
+  FEE_DUE
+  HOLIDAY
+  EVENT
+  CUSTOM
+}
+
+model NotificationLog {
+  id             String   @id @default(cuid())
+  recipient      String
+  type           NotificationType
+  message        String
+  triggerEvent   NotificationTrigger?
+  status         NotificationStatus
+  channelUsed    String
+  schoolId       String
+  sentBy         String
+  createdAt      DateTime @default(now())
+  school         School   @relation(fields: [schoolId], references: [id])
+}
+
+model NotificationChannel {
+  id        String   @id @default(cuid())
+  schoolId  String
+  type      NotificationType
+  provider  String
+  config    Json
+  isActive  Boolean  @default(true)
+  school    School   @relation(fields: [schoolId], references: [id])
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
 }

@@ -4,7 +4,7 @@ import { prisma } from "../../../db/prisma";
 export const updateDriverLocation = async (req: Request, res: Response) :Promise<any> => {
   try {
     const { latitude, longitude, speed, timestamp } = req.body;
-    const driverId = req.user?.driverId;
+    const driverId = req.user?.id;
 
     if (!driverId) {
       return res.status(403).json({ error: "Driver not authenticated" });

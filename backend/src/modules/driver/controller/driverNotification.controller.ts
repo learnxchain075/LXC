@@ -27,7 +27,7 @@ export const sendDriverNotification = async (req: Request, res: Response):Promis
 // GET /api/notifications
 export const getDriverNotifications = async (req: Request, res: Response):Promise<any> => {
   try {
-    const driverId = req.user?.driverId;
+    const driverId = req.user?.id;
 
     if (!driverId) return res.status(403).json({ error: "Unauthorized" });
 

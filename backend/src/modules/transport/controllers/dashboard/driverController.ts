@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../../../db/prisma";
 import { handlePrismaError } from "../../../../utils/prismaErrorHandler";
 import {
-  createDriverSchema,
+  registerDriverSchema,
   updateDriverSchema,
   assignDriverSchema,
   driverIdParamSchema,
@@ -10,23 +11,84 @@ import {
 } from "../../../../validations/Module/TransportDashboard/driverValidation";
 
 // Create a Driver
-export const createDriver = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-):Promise<any> => {
-  const result = createDriverSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({ error: result.error.errors });
-  }
-  const { name, license, busId, schoolId } = result.data;
+import bcrypt from "bcryptjs";
+// import bcrypt from "bcrypt";
+import { sendRegistrationEmail } from "../../../../config/email";
+import { randomBytes } from "crypto";
+
+export const registerDriver = async (req: Request, res: Response): Promise<any> => {
   try {
-    const driver = await prisma.driver.create({
-      data: { name, license, busId, schoolId },
+    const result = registerDriverSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: result.error.errors });
+    }
+
+    const { name, email, phone, address, city, state, country, pincode, bloodType, sex, license, busId, schoolId } =
+      result.data;
+
+    // const profilePicFile = req.file;
+
+    // if (!profilePicFile || !profilePicFile.buffer) {
+    //   return res.status(400).json({ error: "Profile picture is required." });
+    // }
+
+    // const { publicId, url } = await uploadFile(
+    //   profilePicFile.buffer,
+    //   "profile_pics",
+    //   "image"
+    // );
+
+    const tempPassword = randomBytes(6).toString("hex");
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const [user, driver] = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name,
+          email,
+          phone,
+          password: hashedPassword,
+          address,
+          city,
+          state,
+          country,
+          pincode,
+          bloodType,
+          sex,
+          // profilePic: url,
+          role: "driver",
+          schoolId,
+        },
+      });
+
+      const driver = await tx.driver.create({
+        data: {
+          license,
+          busId,
+          schoolId,
+          userId: user.id,
+        },
+      });
+
+      return [user, driver];
     });
-    res.status(201).json(driver);
+
+    try {
+      await sendRegistrationEmail(email, tempPassword);
+    } catch (emailError) {
+      console.error("Failed to send registration email:", emailError);
+    }
+
+    res.status(201).json({
+      message: "Driver registered successfully",
+      user,
+      driver,
+    });
   } catch (error) {
-    next(handlePrismaError(error));
+    console.error("Error registering driver:", error);
+    return res.status(500).json({
+      error: "Something went wrong while registering the driver.",
+    });
   }
 };
 
@@ -44,11 +106,7 @@ export const getDrivers = async (req: Request, res: Response, next: NextFunction
 
 // Get Drivers by School ID
 
-export const getDriversBySchoolId = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-):Promise<any> => {
+export const getDriversBySchoolId = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   const paramsResult = driverSchoolIdParamSchema.safeParse(req.params);
   if (!paramsResult.success) {
     return res.status(400).json({ error: paramsResult.error.errors });
@@ -65,13 +123,8 @@ export const getDriversBySchoolId = async (
   }
 };
 
-
 // Get Driver by ID
-export const getDriver = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<any> => {
+export const getDriver = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   const paramsResult = driverIdParamSchema.safeParse(req.params);
   if (!paramsResult.success) {
     return res.status(400).json({ error: paramsResult.error.errors });
@@ -90,11 +143,7 @@ export const getDriver = async (
 };
 
 // Assign Driver to a Bus
-export const assignDriverToBus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-):Promise<any> => {
+export const assignDriverToBus = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   const result = assignDriverSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({ error: result.error.errors });
@@ -112,11 +161,7 @@ export const assignDriverToBus = async (
 };
 
 // Update Driver Details
-export const updateDriver = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-):Promise<any> => {
+export const updateDriver = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   const paramsResult = driverIdParamSchema.safeParse(req.params);
   const bodyResult = updateDriverSchema.safeParse(req.body);
 
@@ -130,11 +175,11 @@ export const updateDriver = async (
   }
 
   const { id } = paramsResult.data;
-  const { name, license, busId, schoolId } = bodyResult.data;
+  const { license, busId, schoolId } = bodyResult.data;
   try {
     const driver = await prisma.driver.update({
       where: { id },
-      data: { name, license, busId, schoolId },
+      data: { license, busId, schoolId },
     });
     res.json(driver);
   } catch (error) {
@@ -143,11 +188,7 @@ export const updateDriver = async (
 };
 
 // Delete a Driver
-export const deleteDriver = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-):Promise<any> => {
+export const deleteDriver = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   const paramsResult = driverIdParamSchema.safeParse(req.params);
   if (!paramsResult.success) {
     return res.status(400).json({ error: paramsResult.error.errors });

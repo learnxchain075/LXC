@@ -252,47 +252,51 @@ async function getTransportInfo(studentId: string) {
 
   if (!student?.busId) return null;
 
-  // Fetch the full bus info with route and stops
-  const bus = await prisma.bus.findUnique({
-    where: { id: student.busId },
-    include: {
-      drivers: {
-        select: {
-          name: true,
-        },
-        take: 1,
-      },
-      routes: {
-        include: {
-          busStops: {
-            select: {
-              name: true,
-              location: true,
-            },
-            orderBy: {
-              createdAt: 'asc',
-            },
+const bus = await prisma.bus.findUnique({
+  where: { id: student.busId },
+  include: {
+    drivers: {
+      include: {
+        user: {
+          select: {
+            name: true,
           },
         },
-        take: 1,
       },
+      take: 1,
     },
-  });
+    routes: {
+      include: {
+        busStops: {
+          select: {
+            name: true,
+            location: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+      },
+      take: 1,
+    },
+  },
+});
 
-  if (!bus) return null;
+if (!bus) return null;
 
-  const driverName = bus.drivers.length > 0 ? bus.drivers[0].name : null;
-  const route = bus.routes[0];
+const driverName = bus.drivers?.[0]?.user?.name || null;
+const route = bus.routes?.[0];
 
-  return {
-    busNumber: bus.busNumber,
-    driverName: driverName,
-    routeName: route?.name,
-    stops: route?.busStops.map((stop) => ({
-      name: stop.name,
-      location: stop.location,
-    })) || [],
-  };
+return {
+  busNumber: bus.busNumber,
+  driverName,
+  routeName: route?.name || null,
+  stops: route?.busStops?.map((stop) => ({
+    name: stop.name,
+    location: stop.location,
+  })) || [],
+};
+
 }
 
 

@@ -32,7 +32,7 @@ export const getBusRoute = async (req: Request, res: Response) :Promise<any> => 
 
 export const startDriverRoute = async (req: Request, res: Response):Promise<any> => {
   try {
-    const driverId = req.user?.driverId;
+    const driverId = req.user?.id;
 
     if (!driverId) return res.status(403).json({ error: "Unauthorized" });
 
@@ -56,7 +56,7 @@ export const startDriverRoute = async (req: Request, res: Response):Promise<any>
 
 export const stopDriverRoute = async (req: Request, res: Response) :Promise<any> => {
   try {
-    const driverId = req.user?.driverId;
+    const driverId = req.user?.id;
 
     if (!driverId) return res.status(403).json({ error: "Unauthorized" });
 

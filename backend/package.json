@@ -6,6 +6,7 @@
   "scripts": {
     "start": " node dist/index.js",
     "start:dev": "ts-node-dev --no-notify --exit-child --files ./src/index.ts",
+    "nd": "ts-node-dev --no-notify --exit-child --files ./src/index.ts",
     "build": "rimraf dist && npx tsc && npx prisma generate",
     "clean": "rimraf dist",
     "tsc": "tsc",

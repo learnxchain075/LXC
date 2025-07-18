@@ -1,9 +1,9 @@
 import express from 'express';
-import { createDriver, getDrivers, getDriver, assignDriverToBus, updateDriver, deleteDriver, getDriversBySchoolId,  } from '../../controllers/dashboard/driverController';
+import { registerDriver, getDrivers, getDriver, assignDriverToBus, updateDriver, deleteDriver, getDriversBySchoolId,  } from '../../controllers/dashboard/driverController';
 
 const router = express.Router();
 
-router.post("/school/transport/school/driver", createDriver); // Create a driver
+router.post("/school/transport/school/driver", registerDriver); // Create a driver
 router.get("/school/transport/school/drivers", getDrivers); // Get all drivers
 router.get("/school/transport/school/driver/:id", getDriver); // Get driver by ID
 router.patch("/school/transport/school/driver/assign", assignDriverToBus); // Assign driver to a bus
