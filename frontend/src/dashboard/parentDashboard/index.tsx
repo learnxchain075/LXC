@@ -18,8 +18,10 @@ import {
   ExamResultsModal,
   AddTicketModal,
   ContactModal,
+  ParentLeaderboardModal,
+  ParentDoubtForumModal,
 } from "./ParentQuickActionsModals";
-import { Button, Modal } from "react-bootstrap";
+import { Button, Modal, Popover, OverlayTrigger } from "react-bootstrap";
 import { Table as AntdTable, Button as AntdButton, Modal as AntdModal, Tooltip, Badge } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
 import { setStudentId, getStudentId } from "../../utils/general";
@@ -28,6 +30,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useSelector, useDispatch } from "react-redux";
 import { setDataTheme } from "../../Store/themeSettingSlice";
 import { isLogout } from "../../Store/authSlice";
+import { getStudentUserDetails } from '../../services/student/StudentAllApi';
 
 const ParentDashboard = () => {
   const routes = all_routes;
@@ -58,6 +61,11 @@ const ParentDashboard = () => {
   const [examResultsModal, setExamResultsModal] = useState<{ show: boolean, studentId: string, userId: string }>({ show: false, studentId: '', userId: '' });
   const [addTicketModal, setAddTicketModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
   const [contactModal, setContactModal] = useState<{ show: boolean, studentId: string }>({ show: false, studentId: '' });
+  const [leaderboardModal, setLeaderboardModal] = useState(false);
+  const [doubtForumModal, setDoubtForumModal] = useState(false);
+  const [activeStudentClassId, setActiveStudentClassId] = useState<string>('');
+  const [activeStudentSubjects, setActiveStudentSubjects] = useState<any[]>([]);
+  const [showChatBotModal, setShowChatBotModal] = useState(false);
 
   // Dynamic chart data based on actual student data
   const getChartData = (studentData: Student | null) => {
@@ -146,6 +154,24 @@ const ParentDashboard = () => {
       setStudentId("");
     }
   }, [activeStudent]);
+
+  useEffect(() => {
+    if (!activeStudent) {
+      setActiveStudentClassId('');
+      setActiveStudentSubjects([]);
+      return;
+    }
+    const student = dashboardData?.students.find(s => s.studentId === activeStudent);
+    const userId = student?.studentInfo?.userId;
+    if (userId) {
+      getStudentUserDetails(userId).then(res => {
+        const classObj = res?.data?.student?.class;
+        setActiveStudentClassId(classObj?.id || '');
+        setActiveStudentSubjects(classObj?.Subject || []);
+      });
+    }
+  }, [activeStudent, dashboardData]);
+
   useEffect(() => {
     const handleOpenParentModal = (event: CustomEvent) => {
       const { modalType, studentId } = event.detail;
@@ -203,6 +229,12 @@ const ParentDashboard = () => {
           break;
         case 'contact':
           setContactModal({ show: true, studentId: '' });
+          break;
+        case 'leaderboard':
+          setLeaderboardModal(true);
+          break;
+        case 'doubtForum':
+          setDoubtForumModal(true);
           break;
         default:
           break;
@@ -418,6 +450,7 @@ const ParentDashboard = () => {
   }
 
   const activeStudentData = getActiveStudent();
+  const isDarkMode = dataTheme === 'dark_data_theme';
 
   return (
     <>
@@ -577,11 +610,9 @@ const ParentDashboard = () => {
                       value={activeStudent}
                       onChange={(e) => {
                         const selectedStudentId = e.target.value;
-                        
                         if (selectedStudentId) {
                           setActiveStudent(selectedStudentId);
                           setStudentId(selectedStudentId);
-                          
                           localStorage.removeItem('cachedFeesData');
                           localStorage.removeItem('cachedAttendanceData');
                           localStorage.removeItem('cachedTimetableData');
@@ -619,34 +650,62 @@ const ParentDashboard = () => {
                 </small>
               </div>
               <div className={`card-body ${dataTheme === "dark_data_theme" ? "bg-dark" : ""}`}>
-                <div className={`d-flex gap-2 gap-md-3 overflow-auto pb-2 ${dataTheme === "dark_data_theme" ? "scrollbar-dark" : ""}`} style={{ scrollbarWidth: 'thin', scrollbarColor: dataTheme === "dark_data_theme" ? '#495057 #343a40' : '#dee2e6 #f8f9fa' }}>
-                  {[
-                    { key: 'addTicket', icon: 'ti ti-ticket', label: 'Submit Ticket', color: 'warning', description: 'Submit support ticket' },
-                    { key: 'contact', icon: 'ti ti-phone', label: 'Contact School', color: 'info', description: 'Send message to school' },
-                  ].map(action => (
-                    <div key={action.key} className="flex-shrink-0" style={{ minWidth: isMobile ? '160px' : '200px', maxWidth: isMobile ? '160px' : '200px' }}>
-                      <button
-                        className={`btn btn-outline-${action.color} d-flex flex-column align-items-center p-2 p-md-3 rounded-4 shadow-sm border-0 w-100 h-100 ${dataTheme === "dark_data_theme" ? "dark-mode-btn" : ""}`}
-                        style={{ minHeight: isMobile ? 120 : 140 }}
-                        onClick={() => {
-                          const event = new CustomEvent('openParentModal', {
-                            detail: { modalType: action.key, studentId: '' }
-                          });
-                          window.dispatchEvent(event);
-                        }}
-                        title={action.description}
-                      >
-                        <span className={`d-flex align-items-center justify-content-center rounded-circle bg-${action.color} mb-2 mb-md-3`} style={{ width: isMobile ? 48 : 56, height: isMobile ? 48 : 56 }}>
-                          <i className={`${action.icon} text-white ${isMobile ? 'fs-4' : 'fs-3'}`}></i>
-                        </span>
-                        <span className="fw-semibold text-center small">{action.label}</span>
-                      </button>
-                    </div>
-                  ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                <div className="d-flex gap-2 gap-md-3 overflow-auto pb-2" style={{ scrollbarWidth: 'thin', scrollbarColor: dataTheme === "dark_data_theme" ? '#495057 #343a40' : '#dee2e6 #f8f9fa' }}>
+                  <Button
+                    variant={dataTheme === "dark_data_theme" ? "outline-light" : "outline-info"}
+                    className="d-flex flex-column align-items-center p-2 p-md-3 rounded-4 shadow-sm border-0 w-100 h-100"
+                    style={{ minWidth: isMobile ? '160px' : '200px', maxWidth: isMobile ? '160px' : '200px', minHeight: isMobile ? 120 : 140 }}
+                    onClick={() => setShowChatBotModal(true)}
+                  >
+                    <span className="d-flex align-items-center justify-content-center rounded-circle bg-info mb-2 mb-md-3" style={{ width: isMobile ? 48 : 56, height: isMobile ? 48 : 56 }}>
+                      <i className="ti ti-message-dots text-white fs-3"></i>
+                    </span>
+                    <span className="fw-semibold text-center small">Chat Bot</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Bot Modal */}
+          <Modal show={showChatBotModal} onHide={() => setShowChatBotModal(false)} centered size="md" 
+            className={dataTheme === "dark_data_theme" ? "lxc-dark-modal lxc-chatbot-modal-dark" : ""}>
+            <Modal.Header closeButton className={dataTheme === "dark_data_theme" ? "bg-dark text-white border-0" : ""}>
+              <Modal.Title className={dataTheme === "dark_data_theme" ? "text-white" : ""}>
+                <i className="ti ti-message-dots me-2 text-info"></i>Chat Bot
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body className={dataTheme === "dark_data_theme" ? "bg-dark text-white" : ""}>
+              <div className="d-flex flex-column flex-md-row justify-content-center align-items-center gap-4">
+                <div
+                  className={`card shadow border-0 text-center pointer ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-0" : "bg-light"}`}
+                  style={{ minWidth: 180, minHeight: 180, cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}
+                  onClick={() => { setShowChatBotModal(false); setContactModal({ show: true, studentId: '' }); }}
+                >
+                  <div className="card-body d-flex flex-column justify-content-center align-items-center">
+                    <span className="d-flex align-items-center justify-content-center rounded-circle bg-info mb-3" style={{ width: 56, height: 56 }}>
+                      <i className="ti ti-phone text-white fs-2"></i>
+                    </span>
+                    <h5 className="fw-bold mb-2">Contact</h5>
+                    <p className="mb-0 small">Reach out to the school for any queries or support.</p>
+                  </div>
+                </div>
+                <div
+                  className={`card shadow border-0 text-center pointer ${dataTheme === "dark_data_theme" ? "bg-dark text-white border-0" : "bg-light"}`}
+                  style={{ minWidth: 180, minHeight: 180, cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}
+                  onClick={() => { setShowChatBotModal(false); setAddTicketModal({ show: true, studentId: '' }); }}
+                >
+                  <div className="card-body d-flex flex-column justify-content-center align-items-center">
+                    <span className="d-flex align-items-center justify-content-center rounded-circle bg-warning mb-3" style={{ width: 56, height: 56 }}>
+                      <i className="ti ti-ticket text-white fs-2"></i>
+                    </span>
+                    <h5 className="fw-bold mb-2">Create Ticket</h5>
+                    <p className="mb-0 small">Submit a support ticket for any issues or requests.</p>
+                  </div>
+                </div>
+              </div>
+            </Modal.Body>
+          </Modal>
 
           {/* Children Selection Message */}
           {!activeStudent && dashboardData.students.length > 0 && (
@@ -661,42 +720,43 @@ const ParentDashboard = () => {
           {/* 7 Quick Action Cards in horizontal sliding format - Only show when child is selected */}
           {activeStudent && (
             <div className="mb-4">
-              <h5 className={`mb-3 ${dataTheme === "dark_data_theme" ? "text-white" : ""}`}><i className="ti ti-apps me-2"></i>Quick Actions</h5>
-              <div className={`d-flex gap-2 gap-md-3 overflow-auto pb-2 ${dataTheme === "dark_data_theme" ? "scrollbar-dark" : ""}`} style={{ scrollbarWidth: 'thin', scrollbarColor: dataTheme === "dark_data_theme" ? '#495057 #343a40' : '#dee2e6 #f8f9fa' }}>
-            {[
-              { key: 'studentDetails', icon: 'ti ti-user', label: 'Student Details', color: 'primary' },
-              { key: 'attendance', icon: 'ti ti-calendar-due', label: 'Attendance & Leave', color: 'warning' },
-              { key: 'fees', icon: 'ti ti-report-money', label: 'Fees', color: 'success' },
-              { key: 'timetable', icon: 'ti ti-calendar', label: 'Timetable', color: 'info' },
-              { key: 'assignments', icon: 'ti ti-book', label: 'Assignments & Homework', color: 'secondary' },
-              { key: 'notices', icon: 'ti ti-bell', label: 'Notices & Events', color: 'primary' },
-              { key: 'examResults', icon: 'ti ti-award', label: 'Exam & Result', color: 'danger' },
-              { key: 'contact', icon: 'ti ti-phone', label: 'Contact', color: 'info' },
-            ].map(action => (
+              <h5 className={`mb-3 ${isDarkMode ? "text-white" : ""}`}><i className="ti ti-apps me-2"></i>Quick Actions</h5>
+              <div className={`d-flex gap-2 gap-md-3 overflow-auto pb-2 ${isDarkMode ? "scrollbar-dark" : ""}`} style={{ scrollbarWidth: 'thin', scrollbarColor: isDarkMode ? '#495057 #343a40' : '#dee2e6 #f8f9fa' }}>
+                {[
+                  { key: 'studentDetails', icon: 'ti ti-user', label: 'Student Details', color: 'primary' },
+                  { key: 'attendance', icon: 'ti ti-calendar-due', label: 'Attendance & Leave', color: 'warning' },
+                  { key: 'fees', icon: 'ti ti-report-money', label: 'Fees', color: 'success' },
+                  { key: 'timetable', icon: 'ti ti-calendar', label: 'Timetable', color: 'info' },
+                  { key: 'assignments', icon: 'ti ti-book', label: 'Assignments & Homework', color: 'secondary' },
+                  { key: 'notices', icon: 'ti ti-bell', label: 'Notices & Events', color: 'primary' },
+                  { key: 'examResults', icon: 'ti ti-award', label: 'Exam & Result', color: 'danger' },
+                  { key: 'leaderboard', icon: 'bi bi-trophy', label: 'Leaderboard', color: 'info' },
+                  { key: 'doubtForum', icon: 'bi bi-question-circle', label: 'Doubt Forum', color: 'secondary' },
+                  { key: 'contact', icon: 'ti ti-phone', label: 'Contact', color: 'info' },
+                ].map(action => (
                   <div key={action.key} className="flex-shrink-0" style={{ minWidth: isMobile ? '160px' : '200px', maxWidth: isMobile ? '160px' : '200px' }}>
-                <button
-                      className={`btn btn-outline-${action.color} d-flex flex-column align-items-center p-2 p-md-3 rounded-4 shadow-sm border-0 w-100 h-100 ${dataTheme === "dark_data_theme" ? "dark-mode-btn" : ""}`}
+                    <button
+                      className={`btn btn-outline-${action.color} d-flex flex-column align-items-center p-2 p-md-3 rounded-4 shadow-sm border-0 w-100 h-100 ${isDarkMode ? "dark-mode-btn" : ""}`}
                       style={{ minHeight: isMobile ? 120 : 140 }}
-                  onClick={() => {
-                    if (!activeStudent) {
-                      toast.error('Please select a student first');
-                      return;
-                    }
-                    
-                    const event = new CustomEvent('openParentModal', {
-                      detail: { modalType: action.key, studentId: activeStudent }
-                    });
-                    window.dispatchEvent(event);
-                  }}
-                >
+                      onClick={() => {
+                        if (!activeStudent) {
+                          toast.error('Please select a student first');
+                          return;
+                        }
+                        const event = new CustomEvent('openParentModal', {
+                          detail: { modalType: action.key, studentId: activeStudent }
+                        });
+                        window.dispatchEvent(event);
+                      }}
+                    >
                       <span className={`d-flex align-items-center justify-content-center rounded-circle bg-${action.color} mb-2 mb-md-3`} style={{ width: isMobile ? 48 : 56, height: isMobile ? 48 : 56 }}>
                         <i className={`${action.icon} text-white ${isMobile ? 'fs-4' : 'fs-3'}`}></i>
-                  </span>
+                      </span>
                       <span className="fw-semibold text-center small">{action.label}</span>
-                </button>
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-                        </div>
             </div>
           )}
 
@@ -712,11 +772,10 @@ const ParentDashboard = () => {
                         <div className="row align-items-center">
                             <div className="col-lg-2 col-md-3 col-4 text-center mb-3 mb-md-0">
                             <img
-                              src={activeStudentData?.studentInfo.profilePic}
+                              src={activeStudentData?.studentInfo.profilePic || "/assets/img/default-profile.png"}
                               alt={activeStudentData?.studentInfo.name}
-                              className="rounded-circle border border-2"
-                                width={isMobile ? "60" : "80"}
-                                height={isMobile ? "60" : "80"}
+                              className="rounded-circle border border-2 bg-light shadow-sm object-fit-cover"
+                              style={{ width: isMobile ? 60 : 80, height: isMobile ? 60 : 80, objectFit: 'cover', aspectRatio: '1/1', backgroundColor: '#f8f9fa' }}
                             />
                           </div>
                             <div className="col-lg-10 col-md-9 col-8">
@@ -1465,6 +1524,23 @@ const ParentDashboard = () => {
           onHide={() => setContactModal({ show: false, studentId: '' })}
           studentId={contactModal.studentId}
           parentId={dashboardData?.parentId}
+      />
+      <ParentLeaderboardModal
+        show={leaderboardModal}
+        onHide={() => setLeaderboardModal(false)}
+        studentId={activeStudent}
+        classId={activeStudentClassId}
+        className={activeStudentData?.studentInfo?.class || ''}
+        subjects={activeStudentSubjects}
+      />
+      <ParentDoubtForumModal
+        show={doubtForumModal}
+        onHide={() => setDoubtForumModal(false)}
+        childUserId={activeStudentData?.studentInfo?.userId || ''}
+        studentId={activeStudent}
+        classId={activeStudentClassId}
+        className={activeStudentData?.studentInfo?.class || ''}
+        subjects={activeStudentSubjects}
       />
 
       {/* Notice Attachment Modal */}

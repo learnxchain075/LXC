@@ -13,6 +13,11 @@ import { Table as AntdTable, Button as AntdButton, Modal as AntdModal, Tooltip }
 import { useSelector } from 'react-redux';
 import LoadingSkeleton from '../../components/LoadingSkeleton';
 import { CloudLightning } from 'react-feather';
+import { getMonthlyLeaderboard, getClassInternalLeaderboard, getRoadmapLeaderboard, getStudentUserById } from '../../services/student/StudentAllApi';
+import { getDoubtsByUserId, getAnswersByDoubtId, createDoubt, createAnswer } from '../../services/teacher/doubtForumService';
+import { getSubjectByClassId } from '../../services/teacher/subjectServices';
+import { getClassById, getClassOfStudent } from '../../services/teacher/classServices';
+import dayjs from 'dayjs';
 
 
 const Loader = () => <div className="text-center py-4"><LoadingSkeleton lines={4} height={20} /></div>;
@@ -2851,7 +2856,6 @@ if (typeof document !== 'undefined') {
   }
 } 
 
-// Add/extend dark mode table styles for this modal at the bottom:
 if (typeof document !== 'undefined') {
   const lxcDarkModalTableStyleId = 'lxc-dark-modal-table-styles';
   if (!document.getElementById(lxcDarkModalTableStyleId)) {
@@ -2877,7 +2881,6 @@ if (typeof document !== 'undefined') {
   }
 } 
 
-// Update or add CSS for view modals (details, attachment, document preview) in dark mode
 if (typeof document !== 'undefined') {
   const lxcDarkViewModalStyleId = 'lxc-dark-view-modal-styles';
   if (!document.getElementById(lxcDarkViewModalStyleId)) {
@@ -3001,7 +3004,6 @@ if (typeof document !== 'undefined') {
   }
 } 
 
-// Add or update the CSS for .lxc-notice-attachment-preview at the bottom:
 if (typeof document !== 'undefined') {
   const lxcNoticeAttachmentPreviewStyleId = 'lxc-notice-attachment-preview-styles';
   const existingStyle = document.getElementById(lxcNoticeAttachmentPreviewStyleId);
@@ -3066,8 +3068,7 @@ const fetchAndHandlePDF = async (fileUrl: string, fileName: string, action: 'dow
   try {
     const response = await fetch(fileUrl, {
       method: 'GET',
-      // credentials: 'include', // Uncomment if you need cookies for auth
-      // headers: { Authorization: `Bearer ${token}` }, // Add if you use JWT
+     
     });
     if (!response.ok) throw new Error('Failed to fetch document');
     const blob = await response.blob();
@@ -3114,3 +3115,285 @@ const handleViewDocument = async (payment: any, type: 'receipt' | 'invoice' | 'o
   }
   await fetchAndHandlePDF(url, fileName, 'view');
 };
+
+// --- Parent Leaderboard Modal ---
+export function ParentLeaderboardModal({ show, onHide, studentId, classId, className, subjects }: { show: boolean, onHide: () => void, studentId?: string, classId?: string, className?: string, subjects?: any[] }) {
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [leaderboardType, setLeaderboardType] = useState<'monthly' | 'class' | 'roadmap'>('monthly');
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
+  const isDarkMode = dataTheme === 'dark_data_theme';
+
+  useEffect(() => {
+    if (!show) return;
+    setIsLoading(true);
+    setError(null);
+    let fetchLeaderboard: Promise<any>;
+    const effectiveClassId = classId || '';
+    if (leaderboardType === 'monthly') {
+      fetchLeaderboard = getMonthlyLeaderboard();
+    } else if (leaderboardType === 'class') {
+      fetchLeaderboard = getClassInternalLeaderboard(effectiveClassId);
+    } else {
+      fetchLeaderboard = getRoadmapLeaderboard(effectiveClassId);
+    }
+    fetchLeaderboard
+      .then(res => {
+        if (res.data && res.data.leaderboard) {
+          setLeaderboardData(res.data.leaderboard);
+        } else {
+          setLeaderboardData([]);
+          setError('No leaderboard data available.');
+        }
+      })
+      .catch(err => {
+        setLeaderboardData([]);
+        setError('Failed to load leaderboard data.');
+      })
+      .finally(() => setIsLoading(false));
+  }, [show, leaderboardType, classId]);
+
+  const filteredLeaderboard = leaderboardData.filter((entry: any) => {
+    const name = entry.name || '';
+    return name.toLowerCase().includes(search.toLowerCase());
+  });
+
+  const getRankBadge = (rank: number) => {
+    if (rank === 1) return <span className="badge px-3 py-2" style={{ background: 'linear-gradient(90deg, #FFD700, #FFEA70)', color: '#333', fontWeight: 700 }}>🥇 1st</span>;
+    if (rank === 2) return <span className="badge px-3 py-2" style={{ background: 'linear-gradient(90deg, #C0C0C0, #e0e0e0)', color: '#333', fontWeight: 700 }}>🥈 2nd</span>;
+    if (rank === 3) return <span className="badge px-3 py-2" style={{ background: 'linear-gradient(90deg, #cd7f32, #e6b98a)', color: '#fff', fontWeight: 700 }}>🥉 3rd</span>;
+    return <span className={`badge bg-${isDarkMode ? 'secondary' : 'light'} text-${isDarkMode ? 'light' : 'dark'} px-3 py-2`}>{rank}th</span>;
+  };
+
+  return (
+    <Modal show={show} onHide={onHide} size="lg" centered className={isDarkMode ? 'lxc-dark-modal' : ''}>
+      <Modal.Header closeButton className={isDarkMode ? 'bg-dark text-white border-secondary' : ''}>
+        <Modal.Title>
+          <i className="bi bi-trophy me-2 text-warning"></i>Leaderboard
+          {className && <span className="badge bg-primary-subtle text-primary ms-3">Class: {className}</span>}
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body className={isDarkMode ? 'bg-dark text-white' : ''}>
+        <div className="d-flex gap-2 mb-3">
+          <input
+            type="text"
+            className={`form-control ${isDarkMode ? 'bg-secondary text-light border-0' : ''}`}
+            placeholder="Search participant..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ maxWidth: 220 }}
+          />
+          <Button variant={leaderboardType === 'monthly' ? 'primary' : 'outline-primary'} onClick={() => setLeaderboardType('monthly')} size="sm">Monthly</Button>
+          <Button variant={leaderboardType === 'class' ? 'primary' : 'outline-primary'} onClick={() => setLeaderboardType('class')} size="sm">Class</Button>
+          <Button variant={leaderboardType === 'roadmap' ? 'primary' : 'outline-primary'} onClick={() => setLeaderboardType('roadmap')} size="sm">Roadmap</Button>
+        </div>
+        {isLoading ? (
+          <div className="text-center py-4"><Spinner animation="border" variant="primary" /></div>
+        ) : error ? (
+          <Alert variant="danger">{error}</Alert>
+        ) : filteredLeaderboard.length > 0 ? (
+          <div className="table-responsive" style={{ maxHeight: 400 }}>
+            <table className="table table-hover table-striped align-middle mb-0">
+              <thead className="table-primary sticky-top">
+                <tr>
+                  <th>Rank</th>
+                  <th>Student</th>
+                  <th>Points</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeaderboard.map((entry: any, idx: number) => (
+                  <tr key={entry.userId || entry.studentId || entry.id}>
+                    <td>{getRankBadge(entry.rank)}</td>
+                    <td>
+                      <div className="d-flex align-items-center gap-2">
+                        <div className="bg-light rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: 40, height: 40 }}>
+                          {entry.profilePic ? (
+                            <img src={entry.profilePic} alt={entry.name} className="rounded-circle" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <i className="bi bi-person text-muted"></i>
+                          )}
+                        </div>
+                        <span>{entry.name}</span>
+                      </div>
+                    </td>
+                    <td><span className="fw-bold text-primary">{entry.totalPoints || entry.score || 0}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-muted">No leaderboard data available.</div>
+        )}
+      </Modal.Body>
+    </Modal>
+  );
+}
+
+// --- Parent Doubt Forum Modal ---
+export function ParentDoubtForumModal({ show, onHide, childUserId, studentId, classId, className, subjects }: { show: boolean, onHide: () => void, childUserId: string, studentId?: string, classId?: string, className?: string, subjects?: any[] }) {
+  const [doubts, setDoubts] = useState<any[]>([]);
+  const [selectedDoubtId, setSelectedDoubtId] = useState<string | null>(null);
+  const [answersByDoubt, setAnswersByDoubt] = useState<{ [doubtId: string]: any[] }>({});
+  const [newDoubt, setNewDoubt] = useState({ title: '', content: '', classId: '', subjectId: '' });
+  const [isPosting, setIsPosting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoadingDoubts, setIsLoadingDoubts] = useState(false);
+  const [isLoadingAnswers, setIsLoadingAnswers] = useState<{ [doubtId: string]: boolean }>({});
+  const dataTheme = useSelector((state: any) => state.themeSetting.dataTheme);
+  const isDarkMode = dataTheme === 'dark_data_theme';
+
+  useEffect(() => {
+    if (!show) return;
+    setError(null);
+    setNewDoubt(nd => ({ ...nd, classId: classId || '', subjectId: '' }));
+  }, [show, classId]);
+
+  useEffect(() => {
+    if (!show) return;
+    setIsLoadingDoubts(true);
+    getDoubtsByUserId(childUserId || '').then(res => {
+      setDoubts(res.data || []);
+    }).finally(() => setIsLoadingDoubts(false));
+  }, [show, childUserId]);
+
+  const fetchAnswers = (doubtId: string) => {
+    setIsLoadingAnswers(prev => ({ ...prev, [doubtId]: true }));
+    getAnswersByDoubtId(doubtId).then(res => {
+      setAnswersByDoubt(prev => ({ ...prev, [doubtId]: res.data || [] }));
+    }).finally(() => setIsLoadingAnswers(prev => ({ ...prev, [doubtId]: false })));
+  };
+
+  const handleCreateDoubt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!newDoubt.title || !newDoubt.content || !newDoubt.classId || !newDoubt.subjectId) {
+      setError('All fields are required.');
+      return;
+    }
+    setIsPosting(true);
+    try {
+      await createDoubt({ ...newDoubt, userId: childUserId });
+      toast.success('Doubt created successfully!');
+      setNewDoubt({ title: '', content: '', classId: newDoubt.classId, subjectId: '' });
+      getDoubtsByUserId(childUserId || '').then(res => {
+        setDoubts(res.data || []);
+      });
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleCreateAnswer = async (doubtId: string, content: string) => {
+    if (!content) return;
+    await createAnswer({ content, userId: childUserId, doubtId });
+    fetchAnswers(doubtId);
+  };
+
+  const selectedSubject = (subjects || []).find(s => s.id === newDoubt.subjectId);
+
+  return (
+    <Modal show={show} onHide={onHide} size="lg" centered className={isDarkMode ? 'lxc-dark-modal' : ''}>
+      <ToastContainer position="top-center" autoClose={3000} />
+      <Modal.Header closeButton className={isDarkMode ? 'bg-dark text-white border-secondary' : ''}>
+        <Modal.Title>
+          <i className="bi bi-question-circle me-2 text-info"></i>Doubt Forum
+          {className && <span className="badge bg-primary-subtle text-primary ms-3">Class: {className}</span>}
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body className={isDarkMode ? 'bg-dark text-white' : ''}>
+        {/* Show class name as a badge, not classId */}
+        <div className="mb-3">
+          {className && <span className={`badge ${isDarkMode ? 'bg-primary text-white' : 'bg-primary-subtle text-primary'} me-2`}>Class: {className}</span>}
+          {selectedSubject && <span className={`badge ${isDarkMode ? 'bg-success text-white' : 'bg-success-subtle text-success'}`}>Subject: {selectedSubject.name}</span>}
+        </div>
+        <form onSubmit={handleCreateDoubt} className="mb-4">
+          <div className="mb-2">
+            <input type="text" className={`form-control ${isDarkMode ? 'bg-dark text-white border-secondary' : ''}`} placeholder="Title" value={newDoubt.title} onChange={e => setNewDoubt({ ...newDoubt, title: e.target.value })} />
+          </div>
+          <div className="mb-2">
+            <textarea className={`form-control ${isDarkMode ? 'bg-dark text-white border-secondary' : ''}`} placeholder="Describe your doubt..." value={newDoubt.content} onChange={e => setNewDoubt({ ...newDoubt, content: e.target.value })} />
+          </div>
+          <div className="row mb-2">
+            <div className="col-md-6 mb-2">
+              <select className={`form-select ${isDarkMode ? 'bg-dark text-white border-secondary' : ''}`} value={newDoubt.classId} disabled required>
+                {classId && className && <option value={classId}>{className}</option>}
+              </select>
+            </div>
+            <div className="col-md-6 mb-2">
+              <select className={`form-select ${isDarkMode ? 'bg-dark text-white border-secondary' : ''}`} value={newDoubt.subjectId} onChange={e => setNewDoubt({ ...newDoubt, subjectId: e.target.value })} required disabled={!newDoubt.classId}>
+                <option value="">Select Subject</option>
+                {(subjects || []).map((sub: any) => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {error && <div className="alert alert-danger py-2">{error}</div>}
+          <Button type="submit" variant="primary" disabled={isPosting || !newDoubt.title || !newDoubt.content || !newDoubt.classId || !newDoubt.subjectId}>Post Doubt</Button>
+        </form>
+        {/* All Doubts Section */}
+        <h5 className={`mb-3 ${isDarkMode ? 'text-white' : ''}`}>All Doubts</h5>
+        <div style={{ maxHeight: 350, overflowY: 'auto' }}>
+          {isLoadingDoubts ? (
+            <LoadingSkeleton lines={4} height={24} type="card" />
+          ) : doubts.length === 0 ? (
+            <div className="text-center text-muted py-4">No doubts found.</div>
+          ) : (
+            doubts.map(doubt => (
+              <div key={doubt.id} className={`mb-4 shadow-lg border ${isDarkMode ? 'border-secondary bg-dark text-white' : 'border-primary-subtle'} rounded`}>
+                <div className="p-4">
+                  <div className="mb-2">
+                    <span className={`fw-bold ${isDarkMode ? 'text-info' : 'text-primary'} fs-4`}>{doubt.title}</span>
+                  </div>
+                  <div className="mb-2 text-muted">{doubt.content}</div>
+                  <div className="mb-2 d-flex flex-wrap gap-2 align-items-center">
+                    {doubt.class && doubt.class.name && <span className={`badge ${isDarkMode ? 'bg-primary text-white' : 'bg-primary-subtle text-primary'} rounded-pill text-xs fw-semibold`}>Class: {doubt.class.name}</span>}
+                    {doubt.subject && doubt.subject.name && <span className={`badge ${isDarkMode ? 'bg-success text-white' : 'bg-success-subtle text-success'} rounded-pill text-xs fw-semibold`}>Subject: {doubt.subject.name}</span>}
+                    {doubt.user && doubt.user.name && <span className={`badge ${isDarkMode ? 'bg-info text-white' : 'bg-info-subtle text-info'} rounded-pill text-xs fw-semibold`}>Asked by: {doubt.user.name}</span>}
+                    {doubt.createdAt && <span className={`badge ${isDarkMode ? 'bg-secondary text-white' : 'bg-light text-muted'} rounded-pill text-xs`}>{dayjs(doubt.createdAt).format('DD MMM YYYY, hh:mm A')}</span>}
+                  </div>
+                  {selectedDoubtId === doubt.id && (
+                    <div className="mt-3">
+                      <h6 className={`mb-2 ${isDarkMode ? 'text-white' : ''}`}>Answers</h6>
+                      {isLoadingAnswers[doubt.id] ? (
+                        <LoadingSkeleton lines={2} height={20} type="card" />
+                      ) : (answersByDoubt[doubt.id] || []).length === 0 ? (
+                        <div className="text-muted py-2">No answers yet.</div>
+                      ) : (
+                        (answersByDoubt[doubt.id] || []).map((ans, idx) => (
+                          <div key={ans.id || idx} className={`p-3 rounded border-start border-4 border-primary mb-3 ${isDarkMode ? 'bg-dark text-white' : 'bg-light-subtle'}`}>
+                            <div className="mb-2">{ans.content}</div>
+                            <div className="d-flex flex-wrap gap-2 align-items-center">
+                              {ans.user && ans.user.name && <span className={`badge ${isDarkMode ? 'bg-info text-white' : 'bg-info-subtle text-info'} rounded-pill text-xs fw-semibold`}>Answered by: {ans.user.name}</span>}
+                              {ans.createdAt && <span className={`badge ${isDarkMode ? 'bg-secondary text-white' : 'bg-light text-muted'} rounded-pill text-xs`}>{dayjs(ans.createdAt).format('DD MMM YYYY, hh:mm A')}</span>}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      <form className="mt-2" onSubmit={e => { e.preventDefault(); const content = (e.target as any).answer.value; handleCreateAnswer(doubt.id, content); (e.target as any).reset(); }}>
+                        <input name="answer" className={`form-control ${isDarkMode ? 'bg-dark text-white border-secondary' : ''}`} placeholder="Your answer..." />
+                        <Button type="submit" size="sm" variant="success" className="mt-2">Submit Answer</Button>
+                      </form>
+                    </div>
+                  )}
+                  <div className="d-flex justify-content-end mt-2">
+                    <Button size="sm" variant="outline-info" onClick={() => {
+                      setSelectedDoubtId(selectedDoubtId === doubt.id ? null : doubt.id);
+                      if (!answersByDoubt[doubt.id]) fetchAnswers(doubt.id);
+                    }}>
+                      {selectedDoubtId === doubt.id ? 'Hide Answers' : 'Show Answers'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Modal.Body>
+    </Modal>
+  );
+}
